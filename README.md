@@ -3,7 +3,7 @@
 Sito statico per preparare e condurre l'asta di fantacalcio: la strategia, la rosa
 target e il listone completo con il tetto di prezzo per ogni giocatore.
 
-Quattro pagine, nessun backend, nessun build step. Tema chiaro e scuro con
+Sei pagine, nessun backend, nessun build step. Tema chiaro e scuro con
 interruttore, e i ruoli colorati come su LegheFantacalcio (P arancio, D verde,
 C blu, A rosso).
 
@@ -13,6 +13,8 @@ C blu, A rosso).
 | `listone.html` | Lo strumento d'asta: 540 giocatori filtrabili e ordinabili, tracker dei crediti, scorte per fascia, parametri di lega modificabili |
 | `rosa.html` | La rosa che stai costruendo, l'undici titolare per modulo e il simulatore del modificatore di difesa |
 | `squadre.html` | Le venti squadre di Serie A giocatore per giocatore, con lo stato di ciascuno |
+| `bozza.html` | La rosa ideale costruita in due, **condivisa** |
+| `fantasquadre.html` | Le squadre della lega con proprietario, rosa e crediti residui, **condivise** |
 
 ### Durante l'asta
 
@@ -67,8 +69,10 @@ quanto costerà), `< 0,85` → **lascia**, in mezzo → prezzo giusto.
 ```
 index.html              la guida
 listone.html            lo strumento d'asta
+bozza.html              la bozza condivisa
 rosa.html               la rosa, l'undici, il simulatore
-squadre.html            le venti squadre
+fantasquadre.html       le squadre della lega
+squadre.html            le venti di Serie A
 assets/
   style.css             stili condivisi, tema chiaro e scuro, colori dei ruoli
   app.js                modello di prezzo, simulazione del modificatore, stato dell'asta
@@ -77,6 +81,10 @@ assets/
   listone.js            parametri di lega, filtri, tracker crediti, scorte per fascia
   rosa-page.js          rosa per reparto, undici titolare, simulatore
   squadre.js            vista per squadra
+  db.js                 accesso, lettura e scrittura dei documenti condivisi su Supabase
+  bozza.js              bozza condivisa
+  fantasquadre.js       squadre della lega, rose e crediti
+  data/supabase.json    indirizzo del progetto e chiave anon (da compilare)
   data/
     players.json        540 giocatori: nome, squadra, ruolo, quotazione, coefficiente, nota
     league.json         configurazione della lega: crediti, slot, bonus/malus, modificatore
@@ -87,6 +95,7 @@ data/
 tools/
   build_prices.py       rigenera assets/data/players.json da listone + overrides
   simulate_modifier.py  quanto rende il modificatore, per assetto e qualità del reparto
+  supabase.sql          tabella e regole di sicurezza del database condiviso
 ```
 
 ## Modificare i dati
@@ -185,16 +194,90 @@ Un paio di minuti e il sito è su
 Il file `.nojekyll` impedisce a Jekyll di ignorare file e cartelle che iniziano
 per underscore. Non toccarlo.
 
-## Dove finiscono i dati dell'asta
+## Dati privati e dati condivisi
 
-Tutto nel `localStorage` del browser, sotto quattro chiavi: `pianoAsta:v1` (i tuoi
-acquisti), `pianoAsta:altrui:v1` (chi è andato agli avversari), `pianoAsta:cfg:v1`
-(i parametri di lega che hai modificato) e `pianoAsta:tema`.
+Il sito tiene due categorie di dati, e la differenza conta.
 
-Vuol dire che i dati **non sono condivisi** fra te e chi apre il sito altrove, e
-non sopravvivono a un cambio di browser. Per passarli, il listone ha *Copia lo
-stato dell'asta* e *Incolla uno stato*: producono una stringa che contiene sia i
-tuoi acquisti sia i giocatori usciti dal mercato.
+**Privati del browser** — i parametri di lega che hai modificato e il tema. Stanno
+nel `localStorage`.
+
+**Condivisi nel database** — la bozza, le fantasquadre e lo stato della tua asta.
+Stanno su Supabase, in una tabella `documenti` che tiene blocchi di JSON con una
+chiave: `bozza`, `fantasquadre`, `asta:<id utente>`.
+
+Lo stato dell'asta è **locale-first**: ogni clic aggiorna subito lo schermo e il
+salvataggio parte tre secondi dopo l'ultima modifica. Durante la chiamata random
+non aspetti mai la rete, ma ritrovi tutto sul telefono. Ognuno ha il proprio
+documento: quello non è condiviso, la bozza e le fantasquadre sì.
+
+## Configurare il database
+
+Serve una volta sola, poi non ci si pensa più. Il piano gratuito di Supabase
+basta e avanza.
+
+**1.** Su [supabase.com](https://supabase.com) crea un account e un progetto
+(regione Europa, così è più vicino).
+
+**2.** **SQL Editor → New query**: incolla tutto il contenuto di
+[`tools/supabase.sql`](tools/supabase.sql) e premi **Run**. Crea la tabella e le
+regole di sicurezza.
+
+**3.** **Authentication → Sign In / Providers → Email**: togli **Confirm email**.
+Senza, a ogni registrazione tocca aprire la posta e cliccare un link. Per uno
+strumento fra due persone è attrito inutile.
+
+**4.** **Project Settings → API Keys**: copia il *Project URL* e **una** chiave
+pubblica dentro `assets/data/supabase.json`. Supabase ne offre due formati e
+vanno bene entrambi:
+
+- scheda **Legacy anon, service_role API keys** → la riga `anon` `public`, una
+  stringa lunga che inizia per `eyJ`
+- scheda **Publishable and secret API keys** → *Publishable key*, che inizia per
+  `sb_publishable_`
+
+**Mai** la `secret` o la `service_role`: quelle scavalcano le regole di sicurezza
+e non devono uscire da un server.
+
+```json
+{
+  "url": "https://xxxxxxxx.supabase.co",
+  "anonKey": "eyJhbGciOi..."
+}
+```
+
+**5.** Commit, push. Sul sito, in cima a *Bozza*, ognuno si registra con la
+propria email e una password.
+
+### Perché la chiave pubblica può stare in un repository pubblico
+
+Perché non è un segreto: è un identificatore del progetto, ed è pensata per stare
+nel codice del browser — Supabase la chiama *publishable* proprio per questo. A proteggere i dati sono le policy di Row Level Security
+create dallo script SQL, che permettono di leggere e scrivere **solo a chi ha
+fatto l'accesso**. Chi trova la chiave e non ha un account non può né leggere né
+scrivere niente.
+
+Il rovescio: chiunque può *registrarsi* al progetto. Per due persone non è un
+problema pratico, ma se ti dà fastidio, in **Authentication → Sign In /
+Providers** puoi disattivare le registrazioni dopo che vi siete iscritti
+entrambi.
+
+### Chi ha modificato cosa
+
+Lo sa il database: ogni salvataggio registra il nome dell'account. Nella bozza
+resta scritto accanto a ogni giocatore, nelle fantasquadre in fondo a ogni
+scheda. Nessuno deve dichiarare chi è.
+
+### Modifiche in contemporanea
+
+Ogni documento ha un numero di versione. Se salvi partendo da una versione ormai
+vecchia, il database non aggiorna niente; il sito se ne accorge, rilegge la
+versione fresca, unisce le due tenendo per ogni voce la modifica più recente e
+riprova. Nessuno dei due perde il proprio lavoro. Te lo dice con *"ho unito le
+modifiche arrivate nel frattempo"*.
+
+Le pagine condivise si riallineano da sole ogni dodici secondi quando la scheda è
+in primo piano. Non è websocket ma per due persone la differenza non si vede, e
+non si rompe mai.
 
 ## Un avvertimento
 
@@ -202,6 +285,9 @@ Un sito su GitHub Pages con repository pubblico **è leggibile da chiunque**, e
 Google lo indicizza. Se nella tua lega gioca qualcuno che potrebbe trovarlo, la
 strategia smette di essere un vantaggio: i tetti sui portieri e sui difensori da
 modificatore funzionano finché gli altri non ci pensano.
+
+La bozza invece **non** è nel repository: sta nel database, e la vede solo chi ha
+un account. Su quella potete stare tranquilli.
 
 Se ti serve tenerlo privato, l'alternativa gratuita è Cloudflare Pages con
 Cloudflare Access, che limita l'accesso a un elenco di email.

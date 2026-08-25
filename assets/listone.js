@@ -4,6 +4,10 @@ import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
   toast, badgeRuolo, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
 } from './app.js';
+import {
+  avvia, configurato, collegato, utente, leggi as leggiDb, scrivi as scriviDb,
+  montaAccesso, esc,
+} from './db.js';
 
 const { players, lega } = await caricaDati();
 
@@ -199,6 +203,66 @@ function aggiorna() {
   disegnaTabella();
 }
 
+/* ---------- sincronizzazione con il database ---------- */
+/* L'asta resta locale-first: ogni clic aggiorna subito lo schermo, e il
+   salvataggio parte tre secondi dopo l'ultima modifica. Cosi' durante la
+   chiamata random non aspetti mai la rete, ma ritrovi tutto sull'altro
+   dispositivo. Ognuno ha il proprio documento: questo non e' condiviso. */
+
+const CHIAVE_VER = 'pianoAsta:astaVer';
+let chiaveAsta = null, verAsta = 0, timerSync = null;
+
+function statoSync(msg) {
+  const el = document.getElementById('sync');
+  if (el) el.textContent = msg;
+}
+
+async function avviaSync() {
+  await avvia();
+  montaAccesso(document.getElementById('accesso'), avviaSync);
+  if (!configurato() || !collegato()) {
+    chiaveAsta = null;
+    return statoSync(configurato()
+      ? 'Non collegato: quello che segni resta solo su questo dispositivo.'
+      : 'Database non configurato: quello che segni resta solo su questo dispositivo.');
+  }
+  chiaveAsta = 'asta:' + utente().id;
+  let verLocale = 0;
+  try { verLocale = Number(localStorage.getItem(CHIAVE_VER) || 0); } catch { /* ignora */ }
+  try {
+    const r = await leggiDb(chiaveAsta, null);
+    verAsta = r.versione;
+    if (r.dati && r.versione > verLocale) {
+      stato = r.dati.mia || {};
+      altrui = new Set(r.dati.altrui || []);
+      asta.scrivi(stato);
+      asta.scriviAltrui(altrui);
+      try { localStorage.setItem(CHIAVE_VER, String(verAsta)); } catch { /* ignora */ }
+      statoSync('Ripreso da dove avevi lasciato su un altro dispositivo.');
+      aggiorna();
+    } else {
+      statoSync('Collegato: si salva da solo.');
+    }
+  } catch (e) {
+    statoSync('Non riesco a sincronizzare: ' + e.message);
+  }
+}
+
+function programmaSync() {
+  if (!chiaveAsta) return;
+  clearTimeout(timerSync);
+  timerSync = setTimeout(async () => {
+    try {
+      const r = await scriviDb(chiaveAsta, { mia: stato, altrui: [...altrui] }, verAsta);
+      verAsta = r.versione;
+      try { localStorage.setItem(CHIAVE_VER, String(verAsta)); } catch { /* ignora */ }
+      statoSync('Salvato.');
+    } catch (e) {
+      statoSync('Salvataggio non riuscito: ' + e.message);
+    }
+  }, 3000);
+}
+
 /* ---------- interazioni ---------- */
 
 corpo.addEventListener('change', e => {
@@ -207,6 +271,7 @@ corpo.addEventListener('change', e => {
   const v = parseInt(el.value, 10);
   if (!v || v <= 0) delete stato[el.dataset.id]; else stato[el.dataset.id] = v;
   asta.scrivi(stato);
+  programmaSync();
   disegnaLedger();
   disegnaFasce();
   disegnaTabella();
@@ -224,6 +289,7 @@ corpo.addEventListener('click', e => {
     asta.scrivi(stato);
   }
   asta.scriviAltrui(altrui);
+  programmaSync();
   aggiorna();
 });
 
@@ -277,6 +343,7 @@ document.getElementById('importa').onclick = () => {
     altrui = dati.altrui;
     asta.scrivi(stato);
     asta.scriviAltrui(altrui);
+    programmaSync();
     aggiorna();
     toast('Stato importato');
   } catch {
@@ -301,6 +368,7 @@ btnReset.onclick = () => {
   altrui = new Set();
   asta.scrivi(stato);
   asta.scriviAltrui(altrui);
+  programmaSync();
   aggiorna();
   toast('Asta azzerata');
 };
@@ -315,3 +383,4 @@ document.addEventListener('keydown', e => {
 
 riempiForm();
 aggiorna();
+avviaSync();
