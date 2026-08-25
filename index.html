@@ -11,6 +11,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
 <link rel="stylesheet" href="assets/style.css">
+<script>
+/* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
+try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
+</script>
 </head>
 <body>
 <div class="topbar"><div class="inner">
@@ -18,8 +22,10 @@
   <nav class="nav">
     <a href="./" aria-current="page">La guida</a>
     <a href="listone.html">Listone e asta live</a>
-    <a href="https://github.com/ecommerce-be/piano-asta-bugnara">Codice</a>
+    <a href="rosa.html">La mia rosa</a>
+    <a href="squadre.html">Squadre</a>
   </nav>
+  <div id="tema"></div>
 </div></div>
 <div class="wrap">
 <header class="hero">
@@ -130,11 +136,11 @@
 <section>
   <p class="eyebrow">Strumento</p>
   <h2>Il listone completo e il tracker d'asta</h2>
-  <p>I 540 giocatori con tetto calcolato, filtri per ruolo, squadra, fascia e verdetto, e il tracker che segue crediti e slot mentre batti l'asta. Puoi anche cambiare i parametri di lega — crediti, squadre, slot, sbilanciamento del mercato — e vedere tutti i prezzi ricalcolarsi.</p>
+  <p>I 540 giocatori con tetto calcolato, filtri per ruolo, squadra, fascia e verdetto, e il tracker che segue crediti e slot mentre batti l'asta. Puoi anche cambiare i parametri di lega — crediti, squadre, slot, sbilanciamento del mercato — e vedere tutti i prezzi ricalcolarsi. E puoi segnare i giocatori che finiscono agli avversari, così sai sempre chi è ancora sul mercato.</p>
   <div class="cards">
-    <div class="card"><h3>Listone e asta live</h3><p>Filtri, ordinamento, tetti, tracker crediti e stato esportabile per condividerlo.</p><p style="margin-top:.8rem"><a href="listone.html">Apri lo strumento &rarr;</a></p></div>
-    <div class="card"><h3>Parametri di lega</h3><p>Il modello non è cablato su questa lega: cambia crediti, squadre e slot e funziona per qualsiasi asta.</p><p style="margin-top:.8rem"><a href="listone.html#parametri">Modifica i parametri &rarr;</a></p></div>
-    <div class="card"><h3>Il codice</h3><p>Modello di prezzo, simulazione del modificatore e dati, tutto nel repository.</p><p style="margin-top:.8rem"><a href="https://github.com/ecommerce-be/piano-asta-bugnara">Vai al repository &rarr;</a></p></div>
+    <div class="card"><h3>Listone e asta live</h3><p>Filtri, ordinamento, tetti, tracker crediti e il conteggio di quanti giocatori restano liberi per fascia.</p><p style="margin-top:.8rem"><a href="listone.html">Apri lo strumento &rarr;</a></p></div>
+    <div class="card"><h3>La mia rosa</h3><p>Quello che hai comprato, l'undici titolare e il simulatore che ti dice quanto rende il modificatore con i tuoi difensori.</p><p style="margin-top:.8rem"><a href="rosa.html">Guarda la rosa &rarr;</a></p></div>
+    <div class="card"><h3>Squadre</h3><p>Le venti di Serie A giocatore per giocatore, per vedere chi resta di un club e se stai concentrando troppo.</p><p style="margin-top:.8rem"><a href="squadre.html">Sfoglia le squadre &rarr;</a></p></div>
   </div>
 </section>
 
@@ -144,5 +150,6 @@
 </footer>
 </div>
 <script type="module" src="assets/guida.js"></script>
+<script type="module" src="assets/theme.js"></script>
 </body>
 </html>

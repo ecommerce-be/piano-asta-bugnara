@@ -1,0 +1,44 @@
+/* Interruttore del tema: chiaro / scuro / automatico.
+   La scelta si stampa come data-theme sull'elemento <html>, che è quello che il CSS
+   guarda. "Automatico" toglie l'attributo e lascia decidere al sistema operativo.
+
+   Lo stamp iniziale lo fa uno script inline nel <head> di ogni pagina, prima del
+   primo disegno, altrimenti si vedrebbe un lampo bianco prima del tema scuro. */
+
+const CHIAVE = 'pianoAsta:tema';
+const MODI = [['auto', 'Auto'], ['light', 'Chiaro'], ['dark', 'Scuro']];
+
+export function applicaTema(modo) {
+  if (modo === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = modo;
+  try { localStorage.setItem(CHIAVE, modo); } catch { /* storage non disponibile */ }
+}
+
+export function temaCorrente() {
+  try { return localStorage.getItem(CHIAVE) || 'auto'; } catch { return 'auto'; }
+}
+
+/** Costruisce i tre pulsantini e li appende al contenitore indicato. */
+export function montaInterruttore(contenitore) {
+  if (!contenitore) return;
+  const attuale = temaCorrente();
+  contenitore.className = 'theme';
+  contenitore.setAttribute('role', 'group');
+  contenitore.setAttribute('aria-label', 'Tema della pagina');
+
+  for (const [modo, etichetta] of MODI) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = etichetta;
+    b.dataset.modo = modo;
+    b.setAttribute('aria-pressed', String(modo === attuale));
+    b.onclick = () => {
+      applicaTema(modo);
+      [...contenitore.children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    };
+    contenitore.appendChild(b);
+  }
+}
+
+/* Monta l'interruttore ovunque ci sia il segnaposto. */
+montaInterruttore(document.getElementById('tema'));

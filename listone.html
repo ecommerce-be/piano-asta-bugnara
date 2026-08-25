@@ -11,6 +11,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
 <link rel="stylesheet" href="assets/style.css">
+<script>
+/* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
+try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
+</script>
 </head>
 <body>
 
@@ -19,8 +23,10 @@
   <nav class="nav">
     <a href="./">La guida</a>
     <a href="listone.html" aria-current="page">Listone e asta live</a>
-    <a href="https://github.com/ecommerce-be/piano-asta-bugnara">Codice</a>
+    <a href="rosa.html">La mia rosa</a>
+    <a href="squadre.html">Squadre</a>
   </nav>
+  <div id="tema"></div>
 </div></div>
 
 <div class="wide">
@@ -28,7 +34,7 @@
   <section style="padding-bottom:1.6rem">
     <p class="eyebrow">Strumento</p>
     <h2>Listone e asta live</h2>
-    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato: crediti, slot e sforamenti si aggiornano da soli. Lo stato resta salvato in questo browser, e puoi esportarlo per passarlo a qualcun altro.</p>
+    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato, e premi <em>ad altri</em> quando un giocatore finisce a un avversario. Crediti, slot e scorte per fascia si aggiornano da soli. Tutto resta salvato in questo browser, ed è esportabile per passarlo a qualcun altro.</p>
   </section>
 
   <div class="panel" id="parametri" style="margin-bottom:20px">
@@ -61,6 +67,7 @@
 
   <div class="tool" style="margin-bottom:2.4rem">
     <div class="ledger" id="ledger"></div>
+    <div class="fasce" id="fasce"></div>
 
     <div class="controls">
       <input type="search" id="q" placeholder="Cerca giocatore o squadra…" aria-label="Cerca giocatore o squadra">
@@ -80,6 +87,7 @@
         <option value="3">3ª fascia</option><option value="4">4ª fascia</option>
       </select>
       <button class="chip" id="onlyTaken" aria-pressed="false">Solo la mia rosa</button>
+      <button class="chip" id="hideGone" aria-pressed="false">Nascondi chi è già andato</button>
     </div>
 
     <div class="scroller" style="max-height:66vh">
@@ -89,6 +97,7 @@
         <th class="num sortable" data-k="mkt">Mercato</th>
         <th class="num sortable" data-k="max" data-dir="desc">Mio max</th>
         <th class="num">Preso a</th>
+        <th>Fuori</th>
         <th class="sortable" data-k="v">Verdetto</th>
         <th>Note</th>
       </tr></thead><tbody></tbody></table>
@@ -100,7 +109,7 @@
       <button class="btn ghost" id="esporta">Copia lo stato dell'asta</button>
       <button class="btn ghost" id="importa">Incolla uno stato</button>
       <button class="btn ghost" id="reset">Azzera</button>
-      <span style="font-family:'Archivo',sans-serif;font-size:.8rem;color:var(--ink3)">Lo stato vive solo in questo browser: per passarlo al tuo socio, copialo e mandaglielo.</span>
+      <span style="font-family:'Archivo',sans-serif;font-size:.8rem;color:var(--ink3)">Lo stato vive solo in questo browser: per passarlo al tuo socio, copialo e mandaglielo. Premi <kbd>/</kbd> per saltare nella ricerca.</span>
     </div>
   </div>
 
@@ -111,5 +120,6 @@
 </div>
 
 <script type="module" src="assets/listone.js"></script>
+<script type="module" src="assets/theme.js"></script>
 </body>
 </html>

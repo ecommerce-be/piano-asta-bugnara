@@ -3,12 +3,31 @@
 Sito statico per preparare e condurre l'asta di fantacalcio: la strategia, la rosa
 target e il listone completo con il tetto di prezzo per ogni giocatore.
 
-Due pagine, nessun backend, nessun build step.
+Quattro pagine, nessun backend, nessun build step. Tema chiaro e scuro con
+interruttore, e i ruoli colorati come su LegheFantacalcio (P arancio, D verde,
+C blu, A rosso).
 
 | Pagina | Cosa fa |
 |---|---|
 | `index.html` | La guida: perché in questa lega si vince in difesa, il piano di spesa, la rosa target in 4-5-1, le regole per l'asta a chiamata random, le shortlist per reparto |
-| `listone.html` | Lo strumento: 540 giocatori filtrabili e ordinabili, tracker dei crediti durante l'asta, parametri di lega modificabili |
+| `listone.html` | Lo strumento d'asta: 540 giocatori filtrabili e ordinabili, tracker dei crediti, scorte per fascia, parametri di lega modificabili |
+| `rosa.html` | La rosa che stai costruendo, l'undici titolare per modulo e il simulatore del modificatore di difesa |
+| `squadre.html` | Le venti squadre di Serie A giocatore per giocatore, con lo stato di ciascuno |
+
+### Durante l'asta
+
+Ogni riga del listone ha due comandi: **preso a**, dove scrivi quanto hai pagato
+tu, e **ad altri**, che segna il giocatore come finito a un avversario. Il secondo
+è quello che si usa di più: senza, dopo mezz'ora non sai più chi sia ancora
+libero. I giocatori venduti si sbiadiscono, e il pulsante *Nascondi chi è già
+andato* li toglie del tutto.
+
+Sotto il riepilogo crediti c'è il conteggio delle **scorte per fascia**: quanti
+portieri di prima fascia restano, quanti difensori, e così via. Con la chiamata
+random è l'informazione che decide se rilanciare — se restano due portieri buoni
+e cinque squadre sono ancora senza, il prossimo estratto costerà caro.
+
+`/` porta il cursore nella ricerca.
 
 ## Come funziona il modello di prezzo
 
@@ -47,12 +66,17 @@ quanto costerà), `< 0,85` → **lascia**, in mezzo → prezzo giusto.
 
 ```
 index.html              la guida
-listone.html            lo strumento
+listone.html            lo strumento d'asta
+rosa.html               la rosa, l'undici, il simulatore
+squadre.html            le venti squadre
 assets/
-  style.css             stili condivisi, con tema chiaro e scuro
+  style.css             stili condivisi, tema chiaro e scuro, colori dei ruoli
   app.js                modello di prezzo, simulazione del modificatore, stato dell'asta
+  theme.js              interruttore chiaro / scuro / automatico
   guida.js              grafici, rosa target, shortlist
-  listone.js            parametri di lega, filtri, tracker crediti
+  listone.js            parametri di lega, filtri, tracker crediti, scorte per fascia
+  rosa-page.js          rosa per reparto, undici titolare, simulatore
+  squadre.js            vista per squadra
   data/
     players.json        540 giocatori: nome, squadra, ruolo, quotazione, coefficiente, nota
     league.json         configurazione della lega: crediti, slot, bonus/malus, modificatore
@@ -123,21 +147,21 @@ Poi apri <http://localhost:8000>. `Ctrl+C` per fermarlo.
 senza README, senza .gitignore, senza licenza: ci sono già qui dentro, e un
 repository preinizializzato manda in conflitto il primo push.
 
-**2.** Sostituisci il segnaposto `ecommerce-be` nei link "Codice":
+**2.** Sostituisci il segnaposto `TUO-UTENTE` nei link "Codice":
 
 ```powershell
 # Windows (PowerShell)
 (Get-ChildItem index.html, listone.html) | ForEach-Object {
-  (Get-Content $_ -Raw) -replace 'ecommerce-be', 'il-tuo-username' |
+  (Get-Content $_ -Raw) -replace 'TUO-UTENTE', 'il-tuo-username' |
     Set-Content $_ -NoNewline -Encoding utf8
 }
 ```
 
 ```bash
 # macOS
-sed -i '' 's/ecommerce-be/il-tuo-username/g' index.html listone.html
+sed -i '' 's/TUO-UTENTE/il-tuo-username/g' index.html listone.html
 # Linux
-sed -i 's/ecommerce-be/il-tuo-username/g' index.html listone.html
+sed -i 's/TUO-UTENTE/il-tuo-username/g' index.html listone.html
 ```
 
 **3.** Primo push:
@@ -160,6 +184,17 @@ Un paio di minuti e il sito è su
 
 Il file `.nojekyll` impedisce a Jekyll di ignorare file e cartelle che iniziano
 per underscore. Non toccarlo.
+
+## Dove finiscono i dati dell'asta
+
+Tutto nel `localStorage` del browser, sotto quattro chiavi: `pianoAsta:v1` (i tuoi
+acquisti), `pianoAsta:altrui:v1` (chi è andato agli avversari), `pianoAsta:cfg:v1`
+(i parametri di lega che hai modificato) e `pianoAsta:tema`.
+
+Vuol dire che i dati **non sono condivisi** fra te e chi apre il sito altrove, e
+non sopravvivono a un cambio di browser. Per passarli, il listone ha *Copia lo
+stato dell'asta* e *Incolla uno stato*: producono una stringa che contiene sia i
+tuoi acquisti sia i giocatori usciti dal mercato.
 
 ## Un avvertimento
 

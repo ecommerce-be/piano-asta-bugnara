@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La mia rosa — Piano d'Asta Bugnara</title>
+<meta name="description" content="La rosa costruita all'asta, l'undici titolare e quanto rende il modificatore di difesa con i tuoi difensori.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>
+/* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
+try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
+</script>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
+  <nav class="nav">
+    <a href="./">La guida</a>
+    <a href="listone.html">Listone e asta live</a>
+    <a href="rosa.html" aria-current="page">La mia rosa</a>
+    <a href="squadre.html">Squadre</a>
+  </nav>
+  <div id="tema"></div>
+</div></div>
+
+<div class="wide">
+
+  <section style="padding-bottom:1.4rem">
+    <p class="eyebrow">La mia rosa</p>
+    <h2>Quello che hai comprato</h2>
+    <p class="lede" style="max-width:70ch">Si aggiorna da sola man mano che segni gli acquisti nel <a href="listone.html">listone</a>.</p>
+  </section>
+
+  <div class="ledger" id="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:24px"></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start" id="reparti"></div>
+
+  <section>
+    <p class="eyebrow">Formazione</p>
+    <h2>L'undici che scendi in campo</h2>
+    <p style="color:var(--ink2)">Prende i tuoi giocatori più cari per ruolo, che è una buona approssimazione dei tuoi titolari. Cambia modulo per vedere come si ricompone.</p>
+    <p style="margin:1rem 0"><label for="modulo" class="ui" style="font-family:'Archivo',sans-serif;font-size:.8rem;font-weight:600;color:var(--ink3);margin-right:.5rem">Modulo</label>
+      <select id="modulo"></select></p>
+    <div id="campo"></div>
+    <p id="avvisoCampo" style="color:var(--warn);font-family:'Archivo',sans-serif;font-size:.9rem"></p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Simulatore</p>
+    <h2>Quanto ti rende il modificatore</h2>
+    <p style="color:var(--ink2);max-width:70ch">Scegli il portiere e i difensori che schiereresti, aggiusta la media voto che ti aspetti da ciascuno, e la simulazione ti dice quanti punti regala il modificatore ogni giornata. Gira ventimila giornate a ogni modifica.</p>
+
+    <div class="simbox" style="margin-top:1.4rem">
+      <h3>Portiere</h3>
+      <div class="simpick" id="pickP"></div>
+      <h3>Difensori <span style="font-weight:400;color:var(--ink3);font-size:.9rem" id="contaD"></span></h3>
+      <div class="simpick" id="pickD"></div>
+
+      <div id="cursori" style="margin-top:1.4rem"></div>
+
+      <div class="simres" id="risultato"></div>
+      <p style="font-family:'Archivo',sans-serif;font-size:.85rem;color:var(--ink3);margin:1rem 0 0">
+        Le medie voto di partenza sono stime dedotte dalla fascia del giocatore, non dati reali: correggile con i cursori se conosci il giocatore meglio del modello. La simulazione assume che un titolare salti la giornata nel 5% dei casi e che la panchina lo copra nel 95%.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <p>La rosa vive nel browser, insieme allo stato dell'asta. Se cambi computer, esportala dal <a href="listone.html">listone</a> e reimportala di là.</p>
+  </footer>
+</div>
+
+<script type="module" src="assets/rosa-page.js"></script>
+<script type="module" src="assets/theme.js"></script>
+</body>
+</html>

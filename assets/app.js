@@ -134,18 +134,31 @@ export function simulaModificatore(mediaDifensori, mediaPortiere, mod, opts = {}
   };
 }
 
-/* ---------- stato dell'asta (locale + condivisibile) ---------- */
+/* ---------- stato dell'asta (locale e condivisibile) ---------- */
 
-const CHIAVE = 'pianoAsta:v1';
+const CHIAVE_MIA = 'pianoAsta:v1';        // { "D|Bremer|Juventus": 22 }  quanto ho pagato io
+const CHIAVE_ALTRUI = 'pianoAsta:altrui:v1';  // [ "A|Malen|Roma", ... ]  chi se lo e' preso un avversario
+
+function leggiJSON(chiave, vuoto) {
+  try { return JSON.parse(localStorage.getItem(chiave) || 'null') ?? vuoto; } catch { return vuoto; }
+}
+function scriviJSON(chiave, valore) {
+  try { localStorage.setItem(chiave, JSON.stringify(valore)); } catch { /* storage non disponibile */ }
+}
 
 export const asta = {
-  leggi() {
-    try { return JSON.parse(localStorage.getItem(CHIAVE) || '{}'); } catch { return {}; }
-  },
-  scrivi(stato) {
-    try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch { /* storage non disponibile */ }
-  },
   id(p) { return `${p.r}|${p.n}|${p.sq}`; },
+
+  leggi() { return leggiJSON(CHIAVE_MIA, {}); },
+  scrivi(stato) { scriviJSON(CHIAVE_MIA, stato); },
+
+  leggiAltrui() { return new Set(leggiJSON(CHIAVE_ALTRUI, [])); },
+  scriviAltrui(insieme) { scriviJSON(CHIAVE_ALTRUI, [...insieme]); },
+
+  /** Un giocatore e' fuori dal mercato se l'ho preso io o se se l'e' preso un altro. */
+  disponibile(p, stato, altrui) {
+    return !(stato[asta.id(p)] > 0) && !altrui.has(asta.id(p));
+  },
 
   /** Riepilogo per reparto: speso, residuo, slot liberi, sforamenti. */
   riepilogo(players, stato, lega, piano) {
@@ -164,14 +177,39 @@ export const asta = {
     out.residuoTot = lega.crediti - out.spesoTot;
     return out;
   },
+
+  /**
+   * Quanti giocatori restano liberi, per ruolo e per fascia.
+   * Con la chiamata random e' l'informazione che decide se rilanciare: se in
+   * prima fascia restano due portieri e cinque squadre sono ancora senza, il
+   * prezzo del prossimo estratto sale, non scende.
+   */
+  scorte(players, stato, altrui) {
+    const out = {};
+    for (const r of RUOLI) {
+      out[r] = { 1: { liberi: 0, tot: 0 }, 2: { liberi: 0, tot: 0 }, 3: { liberi: 0, tot: 0 }, 4: { liberi: 0, tot: 0 } };
+      for (const p of players.filter(x => x.r === r)) {
+        const f = out[r][p.f];
+        if (!f) continue;
+        f.tot++;
+        if (asta.disponibile(p, stato, altrui)) f.liberi++;
+      }
+    }
+    return out;
+  },
 };
 
-/** Serializza lo stato dell'asta in una stringa da incollare o mettere nell'URL. */
-export function esportaStato(stato) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(stato))));
+/* Serializza tutto lo stato (mio + avversari) in una stringa da incollare. */
+export function esportaStato(stato, altrui) {
+  const pacco = { v: 2, mia: stato, altrui: [...(altrui || [])] };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(pacco))));
 }
+
 export function importaStato(testo) {
-  return JSON.parse(decodeURIComponent(escape(atob(testo.trim()))));
+  const dati = JSON.parse(decodeURIComponent(escape(atob(testo.trim()))));
+  // il formato vecchio era la sola mappa dei miei acquisti
+  if (dati && dati.v === 2) return { mia: dati.mia || {}, altrui: new Set(dati.altrui || []) };
+  return { mia: dati || {}, altrui: new Set() };
 }
 
 /* ---------- utility ---------- */
@@ -185,6 +223,17 @@ export function toast(messaggio) {
   el._t = setTimeout(() => el.classList.remove('on'), 2200);
 }
 
+/** Pallino colorato col ruolo, come su LegheFantacalcio. */
+export function badgeRuolo(r) {
+  return `<span class="rb rb-${r}" aria-hidden="true">${r}</span>`;
+}
+
 export const CLASSE_VERDETTO = {
   'TARGET': 'p-t', 'LASCIA': 'p-l', 'JOLLY 1 CR': 'p-j', 'PREZZO GIUSTO': 'p-g', 'IGNORA': 'p-g',
 };
+
+/** Media voto attesa di partenza, dedotta dalla fascia. E' una stima, va corretta a mano. */
+export function mvStimata(p) {
+  if (p.r === 'P') return { 1: 6.30, 2: 6.15, 3: 6.00, 4: 5.90 }[p.f] ?? 6.0;
+  return { 1: 6.30, 2: 6.20, 3: 6.08, 4: 6.00 }[p.f] ?? 6.05;
+}

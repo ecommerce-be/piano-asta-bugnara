@@ -1,5 +1,5 @@
 /* Pagina "La guida": grafici del modificatore, rosa target, shortlist per reparto. */
-import { caricaDati, ricalcola, NOME_RUOLO, CLASSE_VERDETTO } from './app.js';
+import { caricaDati, ricalcola, badgeRuolo, NOME_RUOLO, CLASSE_VERDETTO } from './app.js';
 
 /* ---------- i due grafici ---------- */
 
@@ -48,13 +48,13 @@ if (corpoRosa) {
   for (const r of ['P', 'D', 'C', 'A']) {
     const righe = rosa.rosa[r];
     const totale = righe.reduce((a, x) => a + x[1], 0);
-    html += `<tr class="grp"><td colspan="5">${NOME_RUOLO[r]} · ${righe.length} slot · <b>${totale} crediti</b></td></tr>`;
+    html += `<tr class="grp" data-r="${r}"><td colspan="5">${badgeRuolo(r)}${NOME_RUOLO[r]} · ${righe.length} slot · <b>${totale} crediti</b></td></tr>`;
     for (const [nome, prezzo, tag] of righe) {
       const p = perNome[r + '|' + nome];
       if (!p) continue;
       const [testo, cls] = ETICHETTA[tag];
       html += `<tr>
-        <td><span class="nm">${p.n}</span> <span class="sq">${p.sq}</span></td>
+        <td>${badgeRuolo(p.r)}<span class="nm">${p.n}</span> <span class="sq">${p.sq}</span></td>
         <td><span class="pill ${cls}">${testo}</span></td>
         <td class="num mktc">${Math.round(p.mkt)}</td>
         <td class="num maxc">${prezzo}</td>
@@ -84,7 +84,7 @@ function disegnaShortlist(r) {
     const p = perNome[r + '|' + nome];
     if (!p) return '';
     return `<tr>
-      <td><span class="nm">${p.n}</span><br><span class="sq">${p.sq}</span></td>
+      <td>${badgeRuolo(p.r)}<span class="nm">${p.n}</span><br><span class="sq">${p.sq}</span></td>
       <td class="num mktc">${p.q}</td>
       <td class="num mktc">${Math.round(p.mkt)}</td>
       <td class="num maxc">${p.max}</td>

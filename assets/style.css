@@ -225,3 +225,107 @@ select{font-family:"Archivo",sans-serif;border:1px solid var(--line2);background
 .simrow input[type=range]{width:100%;accent-color:var(--acc)}
 .simout{font-family:"Archivo",sans-serif;font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
 @media(max-width:620px){.topbar .inner{padding:.6rem 16px}.wide{padding:0 16px}}
+
+/* ===== ruoli a colori (stile LegheFantacalcio) ===== */
+:root{
+  --rP:#C9721A; --rP-bg:#FBEBD9;
+  --rD:#1F7A3D; --rD-bg:#DCEFE0;
+  --rC:#1F5BA8; --rC-bg:#DCE7F7;
+  --rA:#B0322E; --rA-bg:#F8DCDA;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --rP:#E9A65C; --rP-bg:#3A2A15;
+  --rD:#68C98A; --rD-bg:#16311F;
+  --rC:#7FAEE8; --rC-bg:#152539;
+  --rA:#E88A85; --rA-bg:#3A1C1B;
+}}
+:root[data-theme="dark"]{
+  --rP:#E9A65C; --rP-bg:#3A2A15;
+  --rD:#68C98A; --rD-bg:#16311F;
+  --rC:#7FAEE8; --rC-bg:#152539;
+  --rA:#E88A85; --rA-bg:#3A1C1B;
+}
+.rb{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;
+  border-radius:50%;font-family:"Archivo",sans-serif;font-size:.66rem;font-weight:800;
+  flex:0 0 19px;line-height:1;vertical-align:-3px;margin-right:.35rem}
+.rb-P{background:var(--rP-bg);color:var(--rP)} .rb-D{background:var(--rD-bg);color:var(--rD)}
+.rb-C{background:var(--rC-bg);color:var(--rC)} .rb-A{background:var(--rA-bg);color:var(--rA)}
+.chip[data-r="P"][aria-pressed="true"]{background:var(--rP);border-color:var(--rP);color:#fff}
+.chip[data-r="D"][aria-pressed="true"]{background:var(--rD);border-color:var(--rD);color:#fff}
+.chip[data-r="C"][aria-pressed="true"]{background:var(--rC);border-color:var(--rC);color:#fff}
+.chip[data-r="A"][aria-pressed="true"]{background:var(--rA);border-color:var(--rA);color:#fff}
+:root[data-theme="dark"] .chip[data-r][aria-pressed="true"]{color:#0F1412}
+.lcell[data-r="P"]{box-shadow:inset 3px 0 0 var(--rP)} .lcell[data-r="D"]{box-shadow:inset 3px 0 0 var(--rD)}
+.lcell[data-r="C"]{box-shadow:inset 3px 0 0 var(--rC)} .lcell[data-r="A"]{box-shadow:inset 3px 0 0 var(--rA)}
+tr.grp td[data-r="P"],tr.grp[data-r="P"] td{box-shadow:inset 3px 0 0 var(--rP)}
+tr.grp[data-r="D"] td{box-shadow:inset 3px 0 0 var(--rD)}
+tr.grp[data-r="C"] td{box-shadow:inset 3px 0 0 var(--rC)}
+tr.grp[data-r="A"] td{box-shadow:inset 3px 0 0 var(--rA)}
+
+/* ===== interruttore del tema ===== */
+.theme{display:inline-flex;border:1px solid var(--line2);border-radius:3px;overflow:hidden;margin-left:.6rem}
+.theme button{font-family:"Archivo",sans-serif;font-size:.72rem;font-weight:600;padding:.32rem .5rem;
+  border:0;background:var(--surface);color:var(--ink3);cursor:pointer;line-height:1.4}
+.theme button+button{border-left:1px solid var(--line2)}
+.theme button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.theme button:hover:not([aria-pressed="true"]){color:var(--ink)}
+
+/* ===== stato "preso da altri" ===== */
+tr.altrui td{opacity:.42}
+tr.altrui .nm{text-decoration:line-through}
+.bx{font-family:"Archivo",sans-serif;font-size:.68rem;font-weight:700;padding:.25rem .45rem;
+  border:1px solid var(--line2);background:var(--paper);color:var(--ink3);border-radius:3px;cursor:pointer;white-space:nowrap}
+.bx[aria-pressed="true"]{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+tr.altrui .bx{opacity:1}
+tr.altrui td:last-child,tr.altrui td:nth-last-child(2){opacity:1}
+
+/* ===== contatore per fascia ===== */
+.fasce{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);
+  border-top:1px solid var(--line)}
+.fbox{background:var(--surface);padding:.75rem .9rem}
+.fbox h4{font-family:"Archivo",sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;margin:0 0 .5rem;display:flex;align-items:center}
+.fline{display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;font-family:"Archivo",sans-serif;font-size:.74rem}
+.fline .lab{color:var(--ink3);width:52px;flex:0 0 52px}
+.fline .bar{flex:1;height:7px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.fline .bar i{display:block;height:100%;border-radius:2px;transition:width .3s}
+.fline .cnt{font-variant-numeric:tabular-nums;font-weight:700;width:44px;text-align:right;flex:0 0 44px}
+.fline.esaurita .cnt{color:var(--warn)}
+.fline.esaurita .lab{color:var(--warn)}
+
+/* ===== pagina rosa ===== */
+.repbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;margin-bottom:14px;overflow:hidden}
+.rephead{display:flex;align-items:center;gap:.6rem;padding:.8rem 1rem;background:var(--surface2);
+  font-family:"Archivo",sans-serif;font-size:.8rem;font-weight:700}
+.rephead .sp{margin-left:auto;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums}
+.replist{display:flex;flex-direction:column}
+.repitem{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;border-top:1px solid var(--line);
+  font-family:"Archivo",sans-serif;font-size:.88rem}
+.repitem .pz{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.repitem .sq{font-weight:400}
+.vuoto{padding:1rem;color:var(--ink3);font-size:.9rem}
+.simbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1.2rem}
+.simpick{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0 1rem}
+.simpick button{font-family:"Archivo",sans-serif;font-size:.78rem;font-weight:600;padding:.35rem .6rem;
+  border:1px solid var(--line2);background:var(--paper);color:var(--ink2);border-radius:3px;cursor:pointer}
+.simpick button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+:root[data-theme="dark"] .simpick button[aria-pressed="true"]{color:#0F1412}
+.simres{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-top:1.2rem}
+.simres div{background:var(--surface2);padding:.8rem .9rem}
+.simres .k{font-family:"Archivo",sans-serif;font-size:.63rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+.simres .n{font-family:"Archivo",sans-serif;font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums;margin-top:.15rem}
+
+/* ===== pagina squadre ===== */
+.sqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.sqcard{background:var(--surface);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.sqcard h3{margin:0;padding:.75rem 1rem;background:var(--surface2);font-size:.95rem;
+  display:flex;align-items:center;gap:.5rem}
+.sqcard h3 .n{margin-left:auto;font-size:.72rem;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums}
+.sqrow{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-top:1px solid var(--line);
+  font-family:"Archivo",sans-serif;font-size:.83rem}
+.sqrow .pz{margin-left:auto;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums}
+.sqrow.presoMio{background:var(--acc-soft)}
+.sqrow.presoAltri{opacity:.4}
+.sqrow.presoAltri .nome{text-decoration:line-through}
