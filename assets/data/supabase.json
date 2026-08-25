@@ -1,5 +1,4 @@
 {
-  "_come": "Su supabase.com -> Project Settings -> API Keys. Copia il Project URL e UNA chiave pubblica: va bene sia 'anon public' (scheda Legacy, inizia per eyJ) sia 'Publishable key' (inizia per sb_publishable_). MAI la secret o la service_role. La chiave pubblica non e' un segreto: a proteggere i dati sono le regole in tools/supabase.sql.",
-  "url": "https://DA-COMPILARE.supabase.co",
-  "anonKey": "DA-COMPILARE"
+  "url": "https://nkbdlotnkobycnvzwkzi.supabase.co",
+  "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rYmRsb3Rua29ieWNudnp3a3ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjYyNjAsImV4cCI6MjEwMzI0MjI2MH0.zC3Qd6_oDTXBIkJoDrFQzcUGbLSSI-G01TeHnJ5Ba-Y"
 }
