@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Listone e asta live — Piano d'Asta Bugnara</title>
+<meta name="description" content="I 540 giocatori del listone Serie A 2026/27 con prezzo di mercato atteso, tetto personale e tracker crediti per l'asta.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
+  <nav class="nav">
+    <a href="./">La guida</a>
+    <a href="listone.html" aria-current="page">Listone e asta live</a>
+    <a href="https://github.com/ecommerce-be/piano-asta-bugnara">Codice</a>
+  </nav>
+</div></div>
+
+<div class="wide">
+
+  <section style="padding-bottom:1.6rem">
+    <p class="eyebrow">Strumento</p>
+    <h2>Listone e asta live</h2>
+    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato: crediti, slot e sforamenti si aggiornano da soli. Lo stato resta salvato in questo browser, e puoi esportarlo per passarlo a qualcun altro.</p>
+  </section>
+
+  <div class="panel" id="parametri" style="margin-bottom:20px">
+    <div class="cfg">
+      <div class="fld"><label for="cCrediti">Crediti a squadra</label><input id="cCrediti" type="number" min="50" max="5000" step="1"></div>
+      <div class="fld"><label for="cSquadre">Squadre</label><input id="cSquadre" type="number" min="2" max="20" step="1"></div>
+      <div class="fld"><label for="sP">Slot portieri</label><input id="sP" type="number" min="1" max="6" step="1"></div>
+      <div class="fld"><label for="sD">Slot difensori</label><input id="sD" type="number" min="3" max="14" step="1"></div>
+      <div class="fld"><label for="sC">Slot centrocampisti</label><input id="sC" type="number" min="3" max="14" step="1"></div>
+      <div class="fld"><label for="sA">Slot attaccanti</label><input id="sA" type="number" min="1" max="10" step="1"></div>
+    </div>
+    <details class="adv">
+      <summary>Carattere del mercato e piano di spesa</summary>
+      <div class="cfg" style="padding-top:0">
+        <div class="fld"><label for="qP">Mercato · quota P %</label><input id="qP" type="number" min="1" max="60" step="0.5"></div>
+        <div class="fld"><label for="qD">Mercato · quota D %</label><input id="qD" type="number" min="1" max="60" step="0.5"></div>
+        <div class="fld"><label for="qC">Mercato · quota C %</label><input id="qC" type="number" min="1" max="60" step="0.5"></div>
+        <div class="fld"><label for="qA">Mercato · quota A %</label><input id="qA" type="number" min="1" max="80" step="0.5"></div>
+        <div class="fld"><label for="pP">Il mio piano · P</label><input id="pP" type="number" min="1" step="1"></div>
+        <div class="fld"><label for="pD">Il mio piano · D</label><input id="pD" type="number" min="1" step="1"></div>
+        <div class="fld"><label for="pC">Il mio piano · C</label><input id="pC" type="number" min="1" step="1"></div>
+        <div class="fld"><label for="pA">Il mio piano · A</label><input id="pA" type="number" min="1" step="1"></div>
+      </div>
+      <p style="padding:0 1.1rem 1.1rem;margin:0;font-size:.92rem;color:var(--ink3);font-family:'Archivo',sans-serif">
+        Le quote di mercato dicono quanto del monte crediti di lega finisce in ogni reparto: descrivono il <em>carattere</em> degli avversari, non il tuo piano. Una lega sbilanciata sull'attacco sta intorno a 5 / 12 / 28 / 55, una equilibrata a 6 / 15 / 30 / 49.
+        <span id="avvisoQuote"></span>
+      </p>
+    </details>
+  </div>
+
+  <div class="tool" style="margin-bottom:2.4rem">
+    <div class="ledger" id="ledger"></div>
+
+    <div class="controls">
+      <input type="search" id="q" placeholder="Cerca giocatore o squadra…" aria-label="Cerca giocatore o squadra">
+      <button class="chip" data-r="ALL" aria-pressed="true">Tutti</button>
+      <button class="chip" data-r="P" aria-pressed="false">P</button>
+      <button class="chip" data-r="D" aria-pressed="false">D</button>
+      <button class="chip" data-r="C" aria-pressed="false">C</button>
+      <button class="chip" data-r="A" aria-pressed="false">A</button>
+      <select id="fSquadra" aria-label="Filtra per squadra"><option value="">Tutte le squadre</option></select>
+      <select id="fVerdetto" aria-label="Filtra per verdetto">
+        <option value="">Ogni verdetto</option>
+        <option>TARGET</option><option>PREZZO GIUSTO</option><option>LASCIA</option><option>JOLLY 1 CR</option>
+      </select>
+      <select id="fFascia" aria-label="Filtra per fascia">
+        <option value="">Ogni fascia</option>
+        <option value="1">1ª fascia</option><option value="2">2ª fascia</option>
+        <option value="3">3ª fascia</option><option value="4">4ª fascia</option>
+      </select>
+      <button class="chip" id="onlyTaken" aria-pressed="false">Solo la mia rosa</button>
+    </div>
+
+    <div class="scroller" style="max-height:66vh">
+      <table id="big"><thead><tr>
+        <th class="sortable" data-k="n">Giocatore</th>
+        <th class="num sortable" data-k="q">Quot.</th>
+        <th class="num sortable" data-k="mkt">Mercato</th>
+        <th class="num sortable" data-k="max" data-dir="desc">Mio max</th>
+        <th class="num">Preso a</th>
+        <th class="sortable" data-k="v">Verdetto</th>
+        <th>Note</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="hint" id="hint"></div>
+
+    <div class="controls" style="border-top:1px solid var(--line);border-bottom:none">
+      <button class="btn ghost" id="esporta">Copia lo stato dell'asta</button>
+      <button class="btn ghost" id="importa">Incolla uno stato</button>
+      <button class="btn ghost" id="reset">Azzera</button>
+      <span style="font-family:'Archivo',sans-serif;font-size:.8rem;color:var(--ink3)">Lo stato vive solo in questo browser: per passarlo al tuo socio, copialo e mandaglielo.</span>
+    </div>
+  </div>
+
+  <footer>
+    <p><strong>Come nascono i due numeri.</strong> <em>Mercato</em> ripartisce il monte crediti della lega sui giocatori che verranno effettivamente acquistati, con una curva sulle quotazioni ufficiali: è la stima di quanto quel giocatore costerà agli altri. <em>Mio max</em> corregge quella stima con un coefficiente per giocatore — valore da modificatore di difesa, rigoristi, titolarità, ballottaggi e infortuni aggiornati al 25 agosto 2026 — e la taglia con un tetto derivato dal piano di spesa. Dove il tetto supera il mercato hai un margine; dove sta sotto, il giocatore vale meno di quanto lo pagheranno.</p>
+    <p>Quotazioni dal listone ufficiale Classic 2026/27 di Fantacalcio.it, esportato dalla lega. I coefficienti e le note sono giudizi, non dati: cambiali quando cambia il campo.</p>
+  </footer>
+</div>
+
+<script type="module" src="assets/listone.js"></script>
+</body>
+</html>

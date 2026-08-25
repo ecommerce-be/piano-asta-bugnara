@@ -1,0 +1,168 @@
+{
+ "modulo": "4-5-1",
+ "speso": 479,
+ "tesoretto": 21,
+ "titolari": [
+  "Butez",
+  "Kalulu",
+  "Bremer",
+  "Rrahmani",
+  "Pavlovic",
+  "Zaniolo",
+  "Da Cunha",
+  "Orsolini",
+  "Gudmundsson A.",
+  "Vlasic",
+  "Colombo"
+ ],
+ "rosa": {
+  "P": [
+   [
+    "Butez",
+    38,
+    "t"
+   ],
+   [
+    "Skorupski",
+    13,
+    "c"
+   ],
+   [
+    "Vigorito",
+    1,
+    "r"
+   ]
+  ],
+  "D": [
+   [
+    "Bremer",
+    22,
+    "t"
+   ],
+   [
+    "Pavlovic",
+    19,
+    "t"
+   ],
+   [
+    "Rrahmani",
+    19,
+    "t"
+   ],
+   [
+    "Gila",
+    17,
+    "t"
+   ],
+   [
+    "Ramon",
+    14,
+    "c"
+   ],
+   [
+    "Ostigard",
+    14,
+    "c"
+   ],
+   [
+    "Kalulu",
+    14,
+    "c"
+   ],
+   [
+    "Valeri",
+    7,
+    "r"
+   ],
+   [
+    "Miranda J.",
+    7,
+    "r"
+   ]
+  ],
+  "C": [
+   [
+    "Orsolini",
+    52,
+    "t"
+   ],
+   [
+    "Da Cunha",
+    40,
+    "t"
+   ],
+   [
+    "Zaniolo",
+    37,
+    "t"
+   ],
+   [
+    "Gudmundsson A.",
+    26,
+    "t"
+   ],
+   [
+    "Vlasic",
+    23,
+    "t"
+   ],
+   [
+    "Calò",
+    11,
+    "c"
+   ],
+   [
+    "Berisha M.",
+    1,
+    "r"
+   ],
+   [
+    "Adzic",
+    1,
+    "r"
+   ],
+   [
+    "Cacciamani",
+    1,
+    "r"
+   ]
+  ],
+  "A": [
+   [
+    "Colombo",
+    43,
+    "t"
+   ],
+   [
+    "Adams C.",
+    29,
+    "c"
+   ],
+   [
+    "Piccoli",
+    24,
+    "c"
+   ],
+   [
+    "N'Dri",
+    1,
+    "r"
+   ],
+   [
+    "Kvernadze",
+    3,
+    "r"
+   ],
+   [
+    "Morata",
+    1,
+    "r"
+   ],
+   [
+    "Kuhn",
+    1,
+    "r"
+   ]
+  ]
+ }
+}

@@ -1,0 +1,1190 @@
+{
+ "_commento": "Coefficiente strategico per giocatore: >1 lo vuoi piu del mercato, <1 lascialo agli altri. La nota e il promemoria che leggi durante l asta. Modifica liberamente e rilancia tools/build_prices.py.",
+ "giocatori": {
+  "Svilar": {
+   "mult": 2.1,
+   "nota": "38/38 presenze, Roma 31 gol subiti, Gasperini. Il portiere più affidabile per il modificatore."
+  },
+  "Butez": {
+   "mult": 2.1,
+   "nota": "38/38, Como MIGLIOR DIFESA d'Italia (29 gs). Costa meno di Svilar: il vero affare."
+  },
+  "Carnesecchi": {
+   "mult": 1.95,
+   "nota": "Media voto più alta del campionato tra i portieri. Sarri nuovo, difesa a 4 da rodare."
+  },
+  "Maignan": {
+   "mult": 1.85,
+   "nota": "Milan con Amorim e Gila. Ottimo, ma Amorim ruota tutto."
+  },
+  "Vicario": {
+   "mult": 1.45,
+   "nota": "Nuovo alla Juve, difesa solida (34 gs). Titolare certo."
+  },
+  "Meret": {
+   "mult": 1.45,
+   "nota": "Allegri ha chiuso l'alternanza: è il n.1. Ma Napoli ha 3 centrali infortunati."
+  },
+  "Martinez Jo.": {
+   "mult": 1.05,
+   "nota": "ATTENZIONE: arrivato Provedel dalla Lazio. Ballottaggio 70/30. Rischio rotazione."
+  },
+  "Skorupski": {
+   "mult": 1.3,
+   "nota": "Titolare sicuro, Bologna senza coppe: zero turnover. Ottimo secondo portiere."
+  },
+  "Mandas": {
+   "mult": 1.05
+  },
+  "Caprile": {
+   "mult": 0.95
+  },
+  "De Gea": {
+   "mult": 1.2
+  },
+  "Okoye": {
+   "mult": 0.95
+  },
+  "Falcone": {
+   "mult": 0.85
+  },
+  "Muric": {
+   "mult": 0.8,
+   "nota": "Media voto alta ma 50 gol subiti: -1 a ogni gol ti mangia tutto."
+  },
+  "Bijlow": {
+   "mult": 0.85
+  },
+  "Suzuki": {
+   "mult": 0.85
+  },
+  "Corvi": {
+   "mult": 0.9
+  },
+  "Provedel": {
+   "mult": 0.55,
+   "nota": "Vice all'Inter. Non comprare come titolare."
+  },
+  "Paleari": {
+   "mult": 0.4,
+   "nota": "Torino: caos totale in porta + 63 gol subiti. EVITARE."
+  },
+  "Mascardi": {
+   "mult": 0.35,
+   "nota": "Ha giocato la 1ª ma il Torino ha preso Perri. Caos. EVITARE."
+  },
+  "Stankovic F.": {
+   "mult": 0.75
+  },
+  "Montipo": {
+   "mult": 0.8
+  },
+  "Palmisani": {
+   "mult": 0.8
+  },
+  "Pizzignacco": {
+   "mult": 0.75
+  },
+  "Thiam": {
+   "mult": 0.6
+  },
+  "Di Gregorio": {
+   "mult": 0.35
+  },
+  "Perin": {
+   "mult": 0.5
+  },
+  "Terracciano": {
+   "mult": 0.6
+  },
+  "Gollini": {
+   "mult": 0.6
+  },
+  "Sportiello": {
+   "mult": 0.6
+  },
+  "Sherri": {
+   "mult": 0.55
+  },
+  "Milinkovic-Savic V.": {
+   "mult": 0.7
+  },
+  "Daffara": {
+   "mult": 0.55
+  },
+  "Dimarco": {
+   "mult": 1.45,
+   "nota": "7 gol + 16 assist, punizioni e corner, MV migliore tra i difensori. Il n.1 assoluto, ma solo entro il tetto."
+  },
+  "Bremer": {
+   "mult": 1.55,
+   "nota": "MV altissima + 4 gol. Già a segno alla 1ª. Difensore da modificatore per eccellenza."
+  },
+  "Rrahmani": {
+   "mult": 1.6,
+   "nota": "UNICO centrale garantito del Napoli (Buongiorno, Marianucci, Beukema KO). MV 7.26."
+  },
+  "Pavlovic": {
+   "mult": 1.6,
+   "nota": "5 gol da centrale + MV alta, 34 presenze. Macchina da modificatore."
+  },
+  "Gila": {
+   "mult": 1.8,
+   "nota": "MV 7.21, top-6 del campionato. Ha già scavalcato Gabbia. Quotato solo 12: OCCASIONE."
+  },
+  "Ramon": {
+   "mult": 1.85,
+   "nota": "Perno della miglior difesa d'Italia. Quotato 10. La miglior occasione del reparto."
+  },
+  "Kempf": {
+   "mult": 1.75,
+   "nota": "Como, 4 gol, MV alta. Quotato 5. Regalo."
+  },
+  "Chalobah T.": {
+   "mult": 1.6,
+   "nota": "Riscattato dal Chelsea, titolare Como. Quotato 9."
+  },
+  "Couto": {
+   "mult": 1.35
+  },
+  "Valle": {
+   "mult": 1.35
+  },
+  "Kaiki": {
+   "mult": 1.25
+  },
+  "Mancini": {
+   "mult": 1.5,
+   "nota": "36 presenze, 4 gol, Roma 31 gs. Solidissimo."
+  },
+  "N'Dicka": {
+   "mult": 1.45,
+   "nota": "Titolare fisso Roma, 3 gol. Blocco difensivo top."
+  },
+  "Hermoso": {
+   "mult": 1.2
+  },
+  "Koulierakis": {
+   "mult": 1.15
+  },
+  "Wesley": {
+   "mult": 1.35,
+   "nota": "Quinto offensivo di Gasperini: 5 gol. Bonus + modificatore."
+  },
+  "Rensch": {
+   "mult": 1.1
+  },
+  "Molina N.": {
+   "mult": 0.85,
+   "nota": "ATTENZIONE: alla 1ª ha giocato Lulli, non lui. Quotato 18 = troppo."
+  },
+  "Bastoni": {
+   "mult": 1.35,
+   "nota": "Intoccabile all'Inter. Sicuro."
+  },
+  "Akanji": {
+   "mult": 1.15,
+   "nota": "Intoccabile, ma Inter ha 5 centrali per 3 maglie."
+  },
+  "Bisseck": {
+   "mult": 0.95,
+   "nota": "In vantaggio ma insidiato da Stones e Pavard. Rischio."
+  },
+  "Stones": {
+   "mult": 0.65,
+   "nota": "Panchina alla 1ª. Turnover Inter altissimo."
+  },
+  "Spence": {
+   "mult": 0.65,
+   "nota": "Appena arrivato, ballottaggio con Diouf e Dumfries."
+  },
+  "Pavard": {
+   "mult": 0.55
+  },
+  "Carlos Augusto": {
+   "mult": 0.75
+  },
+  "Solet": {
+   "mult": 1.5,
+   "nota": "MV 7.21, 2°/3° rigorista dell'Udinese. Difensore rigorista = raro."
+  },
+  "Kamara H.": {
+   "mult": 0.9
+  },
+  "Kalulu": {
+   "mult": 1.3,
+   "nota": "37 presenze, 2 gol 4 assist. Ferro della Juve."
+  },
+  "Cambiaso": {
+   "mult": 1.25,
+   "nota": "Tiratore di punizioni/corner Juve, ma FUORI alla 1ª. Ballottaggio con Kelly."
+  },
+  "Kelly L.": {
+   "mult": 0.6,
+   "nota": "In arrivo Lucumì: rischia la panchina."
+  },
+  "Lucumi": {
+   "mult": 1.15
+  },
+  "Celik": {
+   "mult": 0.95
+  },
+  "Gatti": {
+   "mult": 0.65
+  },
+  "Ostigard": {
+   "mult": 1.6,
+   "nota": "5 gol + 2° RIGORISTA del Genoa. Difensore rigorista: unicum."
+  },
+  "Martin": {
+   "mult": 1.3,
+   "nota": "Genoa: 5 assist + tiratore di piazzati."
+  },
+  "Vasquez": {
+   "mult": 1.05
+  },
+  "Marcandalli": {
+   "mult": 1.05
+  },
+  "Di Lorenzo": {
+   "mult": 1.15
+  },
+  "Spinazzola": {
+   "mult": 1.2,
+   "nota": "3 gol 3 assist, ma Napoli in emergenza."
+  },
+  "Buongiorno": {
+   "mult": 0.3,
+   "nota": "Menisco operato: out fino a novembre. NON COMPRARE."
+  },
+  "Beukema": {
+   "mult": 0.7
+  },
+  "Marin R.": {
+   "mult": 1.1,
+   "nota": "Titolare a sorpresa alla 1ª al centro della difesa Napoli."
+  },
+  "Olivera": {
+   "mult": 0.8
+  },
+  "Marianucci": {
+   "mult": 0.3,
+   "nota": "Out fino a fine ottobre."
+  },
+  "Badiashile": {
+   "mult": 0.9
+  },
+  "Gabbia": {
+   "mult": 0.6,
+   "nota": "Scavalcato da Gila. Rischio panchina."
+  },
+  "De Winter": {
+   "mult": 1.05
+  },
+  "Bartesaghi": {
+   "mult": 0.95
+  },
+  "Tomori": {
+   "mult": 0.7
+  },
+  "Estupinan": {
+   "mult": 0.85
+  },
+  "Scalvini": {
+   "mult": 1.0
+  },
+  "Kristensen T.": {
+   "mult": 0.85
+  },
+  "Djimsiti": {
+   "mult": 0.75
+  },
+  "Hien": {
+   "mult": 0.6,
+   "nota": "Out fino alla 6ª giornata."
+  },
+  "Zappacosta": {
+   "mult": 1.0
+  },
+  "Bernasconi": {
+   "mult": 1.05
+  },
+  "Kossounou": {
+   "mult": 0.9
+  },
+  "Bellanova": {
+   "mult": 0.85
+  },
+  "Mina": {
+   "mult": 1.25,
+   "nota": "2°/3° rigorista del Cagliari. Ma fuori alla 1ª giornata."
+  },
+  "Ze Pedro": {
+   "mult": 1.0
+  },
+  "Obert": {
+   "mult": 0.95
+  },
+  "Circati": {
+   "mult": 1.25,
+   "nota": "Blocco Parma intatto, MV 7.00."
+  },
+  "Troilo": {
+   "mult": 1.15
+  },
+  "Delprato": {
+   "mult": 1.1
+  },
+  "Valeri": {
+   "mult": 1.2,
+   "nota": "3° rigorista + piazzati del Parma."
+  },
+  "Ndiaye": {
+   "mult": 0.95
+  },
+  "Miranda J.": {
+   "mult": 1.2,
+   "nota": "Punizioni e corner del Bologna, 3 assist."
+  },
+  "Heggem": {
+   "mult": 1.05
+  },
+  "Zortea": {
+   "mult": 1.05
+  },
+  "Casale": {
+   "mult": 0.7
+  },
+  "Vitik": {
+   "mult": 0.85
+  },
+  "Helland": {
+   "mult": 0.95
+  },
+  "Dodo": {
+   "mult": 1.1
+  },
+  "Dragusin": {
+   "mult": 1.05
+  },
+  "Ranieri L.": {
+   "mult": 0.95
+  },
+  "Parisi": {
+   "mult": 0.2,
+   "nota": "Crociato: out fino a fine novembre. NON COMPRARE."
+  },
+  "Jimenez A.": {
+   "mult": 0.95
+  },
+  "Joao Mario": {
+   "mult": 0.95
+  },
+  "Romagnoli": {
+   "mult": 0.7,
+   "nota": "Problema muscolare, ha saltato la 1ª. Lazio ha perso Gila e Provedel."
+  },
+  "Provstgaard": {
+   "mult": 0.85
+  },
+  "Doekhi": {
+   "mult": 0.85
+  },
+  "Sutalo J.": {
+   "mult": 0.7
+  },
+  "Marusic": {
+   "mult": 0.75
+  },
+  "Pedraza": {
+   "mult": 0.85
+  },
+  "Tavares N.": {
+   "mult": 0.35,
+   "nota": "Scavalcato da Pedraza, situazione contrattuale bloccata."
+  },
+  "Patric": {
+   "mult": 0.55
+  },
+  "Comuzzo": {
+   "mult": 0.55,
+   "nota": "Upgrade per il Torino, ma il Torino ha subito 63 gol."
+  },
+  "Coco": {
+   "mult": 0.45
+  },
+  "Ismajli": {
+   "mult": 0.4
+  },
+  "Comert": {
+   "mult": 0.35
+  },
+  "Pedersen": {
+   "mult": 0.45
+  },
+  "Tiago Gabriel": {
+   "mult": 0.95
+  },
+  "Gaspar K.": {
+   "mult": 0.85
+  },
+  "Gallo": {
+   "mult": 0.85
+  },
+  "Veiga D.": {
+   "mult": 0.85
+  },
+  "Siebert": {
+   "mult": 0.8
+  },
+  "Bella-Kotchap": {
+   "mult": 0.85
+  },
+  "Schingtienne": {
+   "mult": 0.8
+  },
+  "Moreno M.": {
+   "mult": 0.8
+  },
+  "Correia T.": {
+   "mult": 0.85
+  },
+  "Sverko": {
+   "mult": 0.3,
+   "nota": "Out fino a fine ottobre."
+  },
+  "Zanoli": {
+   "mult": 0.3,
+   "nota": "Post-crociato, rientro a settembre."
+  },
+  "Bertola": {
+   "mult": 0.85
+  },
+  "Abankwah": {
+   "mult": 0.85
+  },
+  "Palma": {
+   "mult": 0.85
+  },
+  "Vojvoda": {
+   "mult": 0.9
+  },
+  "Walukiewicz": {
+   "mult": 0.85
+  },
+  "Idzes": {
+   "mult": 0.9
+  },
+  "Odenthal": {
+   "mult": 0.85
+  },
+  "Doig": {
+   "mult": 0.85
+  },
+  "Monterisi": {
+   "mult": 0.8
+  },
+  "Calvani": {
+   "mult": 0.8
+  },
+  "Bracaglia": {
+   "mult": 0.8
+  },
+  "Oyono A.": {
+   "mult": 0.85
+  },
+  "Cittadini": {
+   "mult": 0.75
+  },
+  "Birindelli": {
+   "mult": 0.85
+  },
+  "Lucchesi": {
+   "mult": 0.85
+  },
+  "Carboni A.": {
+   "mult": 0.85
+  },
+  "Smolcic I.": {
+   "mult": 0.95
+  },
+  "Goldaniga": {
+   "mult": 0.9
+  },
+  "Cuenca A.": {
+   "mult": 1.0
+  },
+  "Van Der Brempt": {
+   "mult": 0.9
+  },
+  "Norton-Cuffy": {
+   "mult": 1.05
+  },
+  "Mitaj": {
+   "mult": 0.85
+  },
+  "Ghilardi": {
+   "mult": 0.75
+  },
+  "Angelino": {
+   "mult": 0.85
+  },
+  "Ziolkowski": {
+   "mult": 0.8
+  },
+  "Calhanoglu": {
+   "mult": 1.35,
+   "nota": "5/5 dal dischetto + punizioni + corner. Inter = 12,1 rigori attesi (top campionato). Il C più redditizio."
+  },
+  "Paz N.": {
+   "mult": 1.15,
+   "nota": "12 gol + 6 assist, punizioni. Confermato al Como. Ma il Como gioca la Champions: turnover."
+  },
+  "McTominay": {
+   "mult": 1.1,
+   "nota": "10 gol da mezzala. Solidissimo."
+  },
+  "Orsolini": {
+   "mult": 1.3,
+   "nota": "10 gol di cui 6 su RIGORE + punizioni + corner. Combo perfetta per questa lega."
+  },
+  "Pulisic": {
+   "mult": 0.55,
+   "nota": "MICROFRATTURA tibia/perone. Panchina alla 1ª. NON pagarlo da top."
+  },
+  "Rabiot": {
+   "mult": 0.9,
+   "nota": "Fuori dall'11 di Amorim alla 1ª (poi entra e segna). Rotazione feroce."
+  },
+  "Baturina": {
+   "mult": 1.2,
+   "nota": "6 gol, 2° tiratore punizioni Como."
+  },
+  "Mora": {
+   "mult": 1.1,
+   "nota": "Preferito a Soulé alla 1ª da Gasperini. 62% titolarità."
+  },
+  "Da Cunha": {
+   "mult": 1.35,
+   "nota": "1° RIGORISTA del Como (4 rigori) + piazzati. Quotato 18: ottimo prezzo."
+  },
+  "Zaniolo": {
+   "mult": 1.25,
+   "nota": "Seconda punta a tutti gli effetti ma listato C. 5 gol 6 assist + punizioni + 3° rigorista."
+  },
+  "Barella": {
+   "mult": 1.0
+  },
+  "McKennie": {
+   "mult": 0.95
+  },
+  "De Bruyne": {
+   "mult": 0.95,
+   "nota": "PANCHINA alla 1ª con Allegri (poi entra e segna). Gestione a rotazione: paga meno."
+  },
+  "Zaccagni": {
+   "mult": 1.1,
+   "nota": "1° rigorista Lazio ma ne ha sbagliato uno. Gerarchia contestata."
+  },
+  "Atta": {
+   "mult": 0.95
+  },
+  "Vlasic": {
+   "mult": 1.2,
+   "nota": "5/5 dal dischetto + punizioni + corner. 8 gol. Il Torino è pessimo ma lui i bonus li fa lo stesso."
+  },
+  "Taylor K.": {
+   "mult": 0.95
+  },
+  "Gudmundsson A.": {
+   "mult": 1.35,
+   "nota": "1° RIGORISTA + punizioni della Fiorentina (9,2 rigori attesi). Quotato 13: affare."
+  },
+  "Conceicao": {
+   "mult": 0.95
+  },
+  "Mastantuono": {
+   "mult": 0.9,
+   "nota": "Parte davanti a Gudmundsson ma ha deluso alla 1ª (4-0 a Roma)."
+  },
+  "Rodriguez Je.": {
+   "mult": 1.4,
+   "nota": "Cambio ruolo A->C con 9 assist alle spalle. Titolare Como alla 1ª. Il miglior arbitraggio del listone."
+  },
+  "Modric": {
+   "mult": 0.8,
+   "nota": "Fuori dall'11 alla 1ª."
+  },
+  "Saelemaekers": {
+   "mult": 0.9
+  },
+  "Zielinski": {
+   "mult": 1.05
+  },
+  "Frattesi": {
+   "mult": 1.15,
+   "nota": "Entra e decide anche da subentrato. Alta fantamedia per il prezzo."
+  },
+  "Sucic P.": {
+   "mult": 0.85
+  },
+  "Jones C.": {
+   "mult": 0.9
+  },
+  "Mkhitaryan": {
+   "mult": 0.7
+  },
+  "Diouf": {
+   "mult": 0.95
+  },
+  "Locatelli": {
+   "mult": 0.85
+  },
+  "Douglas Luiz": {
+   "mult": 0.8
+  },
+  "Alajbegovic": {
+   "mult": 1.0
+  },
+  "Thuram K.": {
+   "mult": 0.9
+  },
+  "Zambo Anguissa": {
+   "mult": 0.9
+  },
+  "Lobotka": {
+   "mult": 0.85
+  },
+  "Politano": {
+   "mult": 0.95
+  },
+  "Neres": {
+   "mult": 0.9
+  },
+  "Vergara": {
+   "mult": 1.05
+  },
+  "Lang": {
+   "mult": 0.85
+  },
+  "Rovella": {
+   "mult": 1.1
+  },
+  "Cataldi": {
+   "mult": 0.6,
+   "nota": "Pubalgià operata: rientro dopo la 3a."
+  },
+  "Isaksen": {
+   "mult": 0.6,
+   "nota": "Ernia operata: rientro dopo la 3a."
+  },
+  "Dele-Bashiru": {
+   "mult": 0.85
+  },
+  "Cancellieri": {
+   "mult": 1.0
+  },
+  "Basic": {
+   "mult": 0.85
+  },
+  "Ferguson": {
+   "mult": 0.95
+  },
+  "Moro N.": {
+   "mult": 0.95
+  },
+  "Odgaard": {
+   "mult": 1.0
+  },
+  "Bernardeschi": {
+   "mult": 1.05
+  },
+  "Rowe": {
+   "mult": 1.0
+  },
+  "Cambiaghi": {
+   "mult": 0.95
+  },
+  "Amondarain": {
+   "mult": 0.85
+  },
+  "Fagioli": {
+   "mult": 0.9
+  },
+  "Ndour": {
+   "mult": 0.95
+  },
+  "Brescianini": {
+   "mult": 0.95
+  },
+  "Mandragora": {
+   "mult": 1.1
+  },
+  "Milla": {
+   "mult": 0.95
+  },
+  "Perrone": {
+   "mult": 0.95
+  },
+  "Caqueret": {
+   "mult": 1.05
+  },
+  "Liberali": {
+   "mult": 1.0
+  },
+  "Addai": {
+   "mult": 0.2
+  },
+  "Pasalic": {
+   "mult": 1.0
+  },
+  "Ederson D.S.": {
+   "mult": 0.95
+  },
+  "Gaetano": {
+   "mult": 1.2
+  },
+  "Samardzic": {
+   "mult": 1.05
+  },
+  "Zalewski": {
+   "mult": 1.1
+  },
+  "Sulemana I.": {
+   "mult": 0.45
+  },
+  "Winks": {
+   "mult": 0.9
+  },
+  "Adopo": {
+   "mult": 0.95
+  },
+  "Fazzini": {
+   "mult": 1.25,
+   "nota": "1° rigorista + punizioni del Cagliari secondo la maggioranza delle fonti."
+  },
+  "Romano": {
+   "mult": 0.95
+  },
+  "Deiola": {
+   "mult": 0.9
+  },
+  "Bernabe": {
+   "mult": 1.2
+  },
+  "Nicolussi Caviglia": {
+   "mult": 0.7,
+   "nota": "Lesione muscolare: rientro meta settembre."
+  },
+  "Keita M.": {
+   "mult": 0.9
+  },
+  "Ordonez C.": {
+   "mult": 0.85
+  },
+  "Cristante": {
+   "mult": 0.9
+  },
+  "Konè M.": {
+   "mult": 0.95
+  },
+  "Pellegrini Lo.": {
+   "mult": 0.95
+  },
+  "Pisilli": {
+   "mult": 1.05
+  },
+  "El Aynaoui": {
+   "mult": 0.95
+  },
+  "Thorstvedt": {
+   "mult": 1.1
+  },
+  "Adzic": {
+   "mult": 1.2,
+   "nota": "Titolare alla 1ª, 3° tiratore punizioni Sassuolo."
+  },
+  "Matic": {
+   "mult": 0.8
+  },
+  "Lipani": {
+   "mult": 0.85
+  },
+  "Bakola": {
+   "mult": 0.95
+  },
+  "Volpato": {
+   "mult": 1.1
+  },
+  "Casadei": {
+   "mult": 1.05
+  },
+  "Gineitis": {
+   "mult": 0.75
+  },
+  "Fitz-Jim": {
+   "mult": 0.8
+  },
+  "Cacciamani": {
+   "mult": 1.0
+  },
+  "Oristanio": {
+   "mult": 0.95
+  },
+  "Ekkelenkamp": {
+   "mult": 1.1
+  },
+  "Karlstrom": {
+   "mult": 0.85
+  },
+  "Piotrowski": {
+   "mult": 0.9
+  },
+  "Unai Gomez": {
+   "mult": 0.9
+  },
+  "Busio": {
+   "mult": 1.1
+  },
+  "Sohm": {
+   "mult": 0.9
+  },
+  "Hainaut": {
+   "mult": 0.85
+  },
+  "Calo": {
+   "mult": 1.3,
+   "nota": "1o rigorista + punizioni del Frosinone (7 rigori attesi). A 1-3 crediti."
+  },
+  "Schmid": {
+   "mult": 1.2
+  },
+  "Grillitsch": {
+   "mult": 0.85
+  },
+  "Hasa": {
+   "mult": 1.15
+  },
+  "Cichella": {
+   "mult": 0.85
+  },
+  "Fini": {
+   "mult": 1.0
+  },
+  "Zerbin": {
+   "mult": 0.95
+  },
+  "Colpani": {
+   "mult": 1.3,
+   "nota": "Trequartista di Juric, ritorno in A. Low cost di prima fascia."
+  },
+  "Pessina": {
+   "mult": 0.55
+  },
+  "Mota": {
+   "mult": 0.85
+  },
+  "Akinsanmiro": {
+   "mult": 0.95
+  },
+  "Bakoune": {
+   "mult": 0.85
+  },
+  "Mangas": {
+   "mult": 0.85
+  },
+  "Berisha M.": {
+   "mult": 1.35,
+   "nota": "Fantamedia 7.95, punizioni e 3° rigorista del Lecce. Scommessa a 1-2 crediti."
+  },
+  "Coulibaly L.": {
+   "mult": 0.9
+  },
+  "Gorter": {
+   "mult": 0.95
+  },
+  "Ngom": {
+   "mult": 0.9
+  },
+  "Gandelman": {
+   "mult": 0.85
+  },
+  "Pierotti": {
+   "mult": 1.1
+  },
+  "Baldanzi": {
+   "mult": 1.2,
+   "nota": "Trequartista + punizioni del Genoa."
+  },
+  "Ellertsson": {
+   "mult": 1.15
+  },
+  "Frendrup": {
+   "mult": 0.9
+  },
+  "Sow": {
+   "mult": 0.85
+  },
+  "Traorè Hj.": {
+   "mult": 0.9
+  },
+  "Kone I.": {
+   "mult": 0.15,
+   "nota": "FRATTURA tibia e perone: out fino a GENNAIO. NON COMPRARE."
+  },
+  "Boloca": {
+   "mult": 0.55
+  },
+  "Cremaschi": {
+   "mult": 0.5
+  },
+  "Cissè A.": {
+   "mult": 1.55,
+   "nota": "19 anni, gol al debutto, MVP contro il Torino. Amorim entusiasta. Quotato 5."
+  },
+  "Fofana Y.": {
+   "mult": 0.85
+  },
+  "Jashari": {
+   "mult": 0.9
+  },
+  "Musah": {
+   "mult": 0.8
+  },
+  "Loftus-Cheek": {
+   "mult": 0.9
+  },
+  "Moreira": {
+   "mult": 1.05
+  },
+  "Chukwueze": {
+   "mult": 0.95
+  },
+  "Ricci S.": {
+   "mult": 0.8
+  },
+  "Malen": {
+   "mult": 0.85,
+   "nota": "FM 9.49, 14 gol in 18 gare, TRIPLETTA alla 1ª, 1° rigorista Roma (11,3 rigori attesi). Il migliore. Ma lo pagherai troppo."
+  },
+  "Martinez L.": {
+   "mult": 0.78,
+   "nota": "17 gol. Fuoriclasse, ma su di lui si scatena l'asta: lascialo agli altri."
+  },
+  "Thuram": {
+   "mult": 0.7,
+   "nota": "Pio Esposito titolare alla 1ª al posto suo. Rischio concreto."
+  },
+  "Hojlund": {
+   "mult": 0.9
+  },
+  "Ramos G.": {
+   "mult": 0.9
+  },
+  "Kolo Muani": {
+   "mult": 0.72,
+   "nota": "Spalletti lo ha criticato pubblicamente dopo la 1ª chiedendo un altro centravanti."
+  },
+  "Kean": {
+   "mult": 0.82,
+   "nota": "PANCHINA alla 1ª, Pellegrino preferito. Mercato ancora aperto su di lui."
+  },
+  "Yildiz": {
+   "mult": 0.9
+  },
+  "Douvikas": {
+   "mult": 1.05
+  },
+  "Scamacca": {
+   "mult": 0.9
+  },
+  "Davis K.": {
+   "mult": 0.95,
+   "nota": "1° rigorista Udinese (4 rigori). Ma alla 1ª ha giocato Gueye."
+  },
+  "Krstovic": {
+   "mult": 1.2,
+   "nota": "Entra e segna alla 1ª. Staffetta vera con Scamacca."
+  },
+  "Berardi": {
+   "mult": 0.7,
+   "nota": "Infortunato, out oltre un mese, panchina alla 1ª. Eppure è rigorista+punizioni: scommessa a prezzo basso."
+  },
+  "Leao": {
+   "mult": 0.6,
+   "nota": "Problemi muscolari, forfait alla 1ª, in dubbio per la 2a."
+  },
+  "Esposito F.P.": {
+   "mult": 1.3,
+   "nota": "Titolare e gol di tacco alla 1ª. Chivu ci crede. Quotato 17: il miglior rapporto della fascia."
+  },
+  "De Ketelaere": {
+   "mult": 1.0
+  },
+  "Dybala": {
+   "mult": 1.2,
+   "nota": "3 ASSIST alla 1ª. Rifinitore fisso di Gasperini, 2° rigorista. Quotato 15: ottimo."
+  },
+  "Lauriente": {
+   "mult": 1.05
+  },
+  "Simeone": {
+   "mult": 1.25,
+   "nota": "11 gol la scorsa stagione a prezzo di saldo. Il classico big low cost."
+  },
+  "Dovbyk": {
+   "mult": 0.72,
+   "nota": "PANCHINATO alla 1ª per Piccoli. Non è titolare garantito."
+  },
+  "Nkunku": {
+   "mult": 1.35,
+   "nota": "5 RIGORI segnati nel 25/26 (record di A a pari merito). Se e lui il rigorista del Milan (10,4 rigori attesi) è l'affare dell'asta. Quotato 13."
+  },
+  "Colombo": {
+   "mult": 1.4,
+   "nota": "1° RIGORISTA del Genoa (6,7 rigori attesi), sottovalutato dal mercato."
+  },
+  "Cutrone": {
+   "mult": 1.45,
+   "nota": "Titolare fisso + rigorista de facto finché Pessina e out (fino alla 9ª)."
+  },
+  "Pinamonti": {
+   "mult": 0.55,
+   "nota": "Infortunato, panchina alla 1ª nella rivoluzione di Aquilani."
+  },
+  "Piccoli": {
+   "mult": 1.2,
+   "nota": "Titolare alla 1ª al posto di Dovbyk."
+  },
+  "Geubbels": {
+   "mult": 1.1
+  },
+  "Raimondo": {
+   "mult": 1.2,
+   "nota": "11 gol la scorsa stagione, centravanti titolare Frosinone."
+  },
+  "Adams A.": {
+   "mult": 1.1
+  },
+  "Rrahmani Al.": {
+   "mult": 1.15,
+   "nota": "15 gol allo Sparta Praga, 3° rigorista Venezia."
+  },
+  "Stulic": {
+   "mult": 1.05
+  },
+  "N'Dri": {
+   "mult": 1.1
+  },
+  "Ghedjemis": {
+   "mult": 1.2,
+   "nota": "15 gol in Serie B + tiratore di punizioni."
+  },
+  "Castro S.": {
+   "mult": 0.55,
+   "nota": "20% di titolarità a quotazione 14. Trappola classica."
+  },
+  "Soulè": {
+   "mult": 0.8
+  },
+  "Raspadori": {
+   "mult": 1.2,
+   "nota": "Titolare esterno con Sarri e gol alla 1ª."
+  },
+  "Mendy P.": {
+   "mult": 1.0
+  },
+  "Kevin Carlos": {
+   "mult": 1.1
+  },
+  "Vitinha O.": {
+   "mult": 1.05
+  },
+  "Romero D.": {
+   "mult": 1.15
+  },
+  "Tourè E.": {
+   "mult": 1.0
+  },
+  "Bowie": {
+   "mult": 1.2,
+   "nota": "Titolare con Berardi e Pinamonti out."
+  },
+  "Pellegrino M.": {
+   "mult": 1.0
+  },
+  "Lucca": {
+   "mult": 0.7,
+   "nota": "Distorsione caviglia, rientro a settembre. Vice-Hojlund."
+  },
+  "Santos A.": {
+   "mult": 1.05
+  },
+  "Diao": {
+   "mult": 1.05
+  },
+  "Morata": {
+   "mult": 0.75
+  },
+  "Kuhn": {
+   "mult": 0.9
+  },
+  "Gimenez": {
+   "mult": 0.6
+  },
+  "Camarda": {
+   "mult": 0.85
+  },
+  "Vaz": {
+   "mult": 0.4,
+   "nota": "Collaterale mediale, in dubbio."
+  },
+  "Adams C.": {
+   "mult": 1.05
+  },
+  "Zapata D.": {
+   "mult": 0.55
+  },
+  "Borrelli": {
+   "mult": 0.95
+  },
+  "Esposito Se.": {
+   "mult": 0.6
+  },
+  "Frigan": {
+   "mult": 0.95
+  },
+  "Lontani": {
+   "mult": 0.9
+  },
+  "Kvernadze": {
+   "mult": 1.0
+  },
+  "Elphege": {
+   "mult": 0.95
+  },
+  "Adorante": {
+   "mult": 0.35,
+   "nota": "Schiena: out fino a ottobre."
+  },
+  "Gueye": {
+   "mult": 1.05,
+   "nota": "Ha giocato centravanti alla 1ª al posto di Davis."
+  },
+  "Messias": {
+   "mult": 0.85
+  },
+  "Maldini": {
+   "mult": 1.0
+  },
+  "Varela G.": {
+   "mult": 0.95
+  },
+  "Yeboah J.": {
+   "mult": 1.05
+  },
+  "Sulemana K.": {
+   "mult": 0.45
+  }
+ }
+}

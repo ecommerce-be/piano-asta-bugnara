@@ -1,0 +1,119 @@
+{
+  "nome": "Lega Bugnara",
+  "stagione": "2026/27",
+  "modalita": "Classic",
+  "crediti": 500,
+  "squadre": 10,
+  "slot": {
+    "P": 3,
+    "D": 9,
+    "C": 9,
+    "A": 7
+  },
+  "quotaMercato": {
+    "P": 0.05,
+    "D": 0.12,
+    "C": 0.285,
+    "A": 0.545
+  },
+  "alpha": 1.4,
+  "piano": {
+    "P": 60,
+    "D": 135,
+    "C": 145,
+    "A": 160
+  },
+  "tettoFrazione": {
+    "P": 0.75,
+    "D": 0.34,
+    "C": 0.36,
+    "A": 0.44
+  },
+  "pianoModulo": {
+    "4-5-1": {
+      "P": 52,
+      "D": 140,
+      "C": 200,
+      "A": 108
+    },
+    "5-4-1": {
+      "P": 60,
+      "D": 150,
+      "C": 180,
+      "A": 110
+    },
+    "default": {
+      "P": 60,
+      "D": 135,
+      "C": 145,
+      "A": 160
+    }
+  },
+  "moduli": [
+    "3-4-3",
+    "3-5-2",
+    "4-3-3",
+    "4-4-2",
+    "4-5-1",
+    "5-3-2",
+    "5-4-1"
+  ],
+  "sostituzioni": 5,
+  "tipoSostituzioni": "Traditional",
+  "bonus": {
+    "gol": 3,
+    "rigoreSegnato": 3,
+    "rigoreParato": 3,
+    "assist": 1,
+    "assistGold": 1,
+    "assistSoft": 1,
+    "portaInviolata": 0,
+    "golSubito": -1,
+    "ammonizione": -0.5,
+    "espulsione": -1,
+    "autogol": -2,
+    "rigoreSbagliato": -3
+  },
+  "modificatoreDifesa": {
+    "attivo": true,
+    "minDifensori": 4,
+    "includiPortiere": true,
+    "migliori": 3,
+    "tabella": [
+      [
+        0,
+        0
+      ],
+      [
+        6.0,
+        1
+      ],
+      [
+        6.25,
+        1
+      ],
+      [
+        6.5,
+        3
+      ],
+      [
+        6.75,
+        3
+      ],
+      [
+        7.0,
+        6
+      ],
+      [
+        7.25,
+        6
+      ],
+      [
+        7.5,
+        6
+      ]
+    ]
+  },
+  "fonteQuotazioni": "Listone ufficiale Classic 2026/27 — Fantacalcio.it, esportato dalla lega su LegheFantacalcio",
+  "aggiornatoAl": "2026-08-25"
+}
