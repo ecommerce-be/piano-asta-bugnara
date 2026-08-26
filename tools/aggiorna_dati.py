@@ -467,7 +467,7 @@ def marca_dati(testo_json: str) -> None:
     print(f"    impronta dati {impronta}, aggiornato il {oggi}")
 
 
-def aggiorna_infortuni() -> None:
+def aggiorna_infortuni(diagnosi: bool = False) -> None:
     """Aggiorna anche l'infermeria, subito dopo il listone.
 
     Se questa parte non riesce NON facciamo fallire tutto: il listone appena
@@ -477,9 +477,13 @@ def aggiorna_infortuni() -> None:
     print("\n=== indisponibili")
     try:
         import infortuni
-        codice = infortuni.main_da_aggiornamento()
+        codice = infortuni.main_da_aggiornamento(diagnosi)
     except SystemExit as e:
-        codice = e.code or 1
+        # scarica() esce con un messaggio testuale quando la pagina risponde
+        # male: senza ristamparlo qui, il motivo del guasto andrebbe perso
+        if e.code and not isinstance(e.code, int):
+            print(f"    {e.code}")
+        codice = e.code if isinstance(e.code, int) else 1
     except Exception as e:                                    # noqa: BLE001
         print(f"    errore inatteso: {e}")
         codice = 1
@@ -553,6 +557,8 @@ def main() -> int:
         return 1
 
     if args.diagnosi:
+        # anche in diagnosi guardiamo l'infermeria: e' li' che serve capire
+        aggiorna_infortuni(diagnosi=True)
         print("\n(diagnosi: non ho scritto niente)")
         return 0
 

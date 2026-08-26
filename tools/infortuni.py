@@ -29,6 +29,7 @@ import datetime
 import json
 import re
 import sys
+import urllib.parse
 from pathlib import Path
 
 try:
@@ -229,9 +230,89 @@ def anatomia(html: str, noti: dict) -> None:
             print(f"        titolo: {h.get_text(' ', strip=True)[:70]}")
 
 
-def main_da_aggiornamento() -> int:
+FONTI_ALTERNATIVE = [
+    ("fantacalcio.it /infortunati", "https://www.fantacalcio.it/infortunati-serie-a"),
+    ("fantacalcio-online", "https://www.fantacalcio-online.com/it/infortunati-serie-a"),
+    ("pianetafanta", "https://www.pianetafanta.it/giocatori-infortunati.asp"),
+    ("fantacalciopedia", "https://www.fantacalciopedia.com/lista-infortunati-serie-a/"),
+]
+
+# indirizzi che somigliano a un'interfaccia dati citata dentro gli script
+INDIRIZZI = re.compile(r"""['"](/?(?:https?://[^'"]+)?[a-zA-Z0-9/_.-]*"""
+                       r"""(?:api|json|indisponibil|infortun)[a-zA-Z0-9/_.-]*)['"]""", re.I)
+
+
+def quanti_nomi(testo: str, noti: dict) -> tuple[int, list[str]]:
+    """Quanti giocatori del nostro listone compaiono in questo testo?
+
+    E' il modo piu' diretto per sapere se i dati veri sono dentro la pagina o
+    se stiamo guardando solo la cornice. Consideriamo i nomi lunghi almeno
+    cinque lettere, per non contare coincidenze come 'Mout' dentro altre parole.
+    """
+    visti = []
+    for lista in noti.values():
+        n = lista[0]["n"]
+        if len(n) >= 5 and n in testo:
+            visti.append(n)
+    return len(visti), visti[:8]
+
+
+def sonda(html: str, noti: dict, url_base: str) -> None:
+    """Cerca dove stiano davvero i dati, provando tre strade in un colpo solo.
+
+    1. un'interfaccia dati citata negli script della pagina;
+    2. altre pagine dello stesso sito;
+    3. altri siti che pubblicano la stessa informazione.
+    """
+    print("\n    ═════ sonda: dove stanno davvero i dati ═════")
+
+    zuppa = BeautifulSoup(html, "html.parser")
+    print(f"    [1] indirizzi che somigliano a un'interfaccia dati, dentro gli script")
+    trovati, visti = [], set()
+    for s in zuppa.find_all("script"):
+        for pezzo in (s.string or "", s.get("src") or ""):
+            for m in INDIRIZZI.findall(pezzo or ""):
+                if m in visti or len(m) < 8:
+                    continue
+                visti.add(m)
+                trovati.append(m)
+    for t in trovati[:14]:
+        print(f"        {t[:110]}")
+    if not trovati:
+        print("        nessuno")
+
+    da_provare = []
+    for t in trovati[:8]:
+        u = t if t.startswith("http") else urllib.parse.urljoin(url_base, t)
+        if u.startswith("http"):
+            da_provare.append(u)
+
+    for u in da_provare:
+        try:
+            testo = scarica(u)
+        except SystemExit as e:
+            print(f"        {u[:80]} -> {e.code}")
+            continue
+        n, esempi = quanti_nomi(testo, noti)
+        print(f"        {u[:80]} -> {len(testo):,} caratteri, {n} nomi del listone {esempi[:3]}")
+
+    print(f"\n    [2-3] altre pagine e altri siti")
+    for nome, u in FONTI_ALTERNATIVE:
+        try:
+            testo = scarica(u)
+        except SystemExit as e:
+            print(f"        {nome:<26} {e.code}")
+            continue
+        n, esempi = quanti_nomi(testo, noti)
+        verdetto = "DATI PRESENTI" if n >= 15 else "solo cornice" if n < 5 else "pochi nomi"
+        print(f"        {nome:<26} {len(testo):>9,} car · {n:>3} nomi · {verdetto} {esempi[:3]}")
+
+    print("\n    ═════ fine sonda ═════")
+
+
+def main_da_aggiornamento(diagnosi: bool = False) -> int:
     """Punto d'ingresso per tools/aggiorna_dati.py, senza argomenti da riga di comando."""
-    return main(argparse.Namespace(diagnosi=False, url=URL))
+    return main(argparse.Namespace(diagnosi=diagnosi, url=URL))
 
 
 def main(args=None) -> int:
@@ -258,6 +339,7 @@ def main(args=None) -> int:
 
     if len(voci) < SOGLIA:
         anatomia(html, noti)
+        sonda(html, noti, args.url)
         print(f"\nSolo {len(voci)} voci, sotto il minimo di {SOGLIA}: non scrivo niente.")
         print("Rilancia con --diagnosi e mandami l'output.")
         return 1
