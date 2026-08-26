@@ -7,9 +7,9 @@
 import {
   caricaDati, ricalcola, asta, simulaModificatore, badgeRuolo, mvStimata,
   gestisce, RUOLI, NOME_RUOLO,
-} from './app.js?v=9';
-import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=9';
-import { toast } from './ui.js?v=9';
+} from './app.js?v=11';
+import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=11';
+import { toast } from './ui.js?v=11';
 
 const { players, lega } = await caricaDati();
 

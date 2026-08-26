@@ -1,7 +1,7 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=9';
-import { avvia, configurato, leggi, esc } from './db.js?v=9';
+import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=11';
+import { avvia, configurato, leggi, esc } from './db.js?v=11';
 
 const { players, lega } = await caricaDati();
 
@@ -86,7 +86,7 @@ function disegna() {
       <td class="num mktc">${num(p.qi)}</td>
       <td class="num mktc">${num(p.fvm)}</td>
       <td><span class="pill ${st.pill}">${esc(st.testo)}</span></td>
-      <td class="note">${esc(p.nota || '')}</td></tr>`;
+      <td class="note">${p.nota ? `<span class="txt" title="${esc(p.nota)}">${esc(p.nota)}</span>` : ''}</td></tr>`;
   }).join('') || '<tr><td colspan="20" class="note" style="color:var(--ink3)">Nessun giocatore con questi filtri.</td></tr>';
 
   /* riepilogo della squadra scelta */
@@ -139,6 +139,12 @@ selSquadra.addEventListener('change', () => {
 });
 
 document.getElementById('q').addEventListener('input', e => { cerca = e.target.value; disegna(); });
+
+/* un clic sulla nota la apre per intero, un altro la richiude */
+document.querySelector('#rosa tbody').addEventListener('click', e => {
+  const t = e.target.closest('.note .txt');
+  if (t) t.classList.toggle('aperta');
+});
 
 document.querySelectorAll('.chip[data-r]').forEach(c => c.onclick = () => {
   filtroRuolo = c.dataset.r;

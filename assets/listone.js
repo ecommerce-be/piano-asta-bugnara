@@ -3,12 +3,12 @@
 import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
   toast, badgeRuolo, gestisce, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=9';
+} from './app.js?v=11';
 import {
   avvia, configurato, collegato, utente, leggi as leggiDb, scrivi as scriviDb,
   montaAccesso, esc,
-} from './db.js?v=9';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=9';
+} from './db.js?v=11';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=11';
 
 const { players, lega } = await caricaDati();
 

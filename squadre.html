@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=9">
+<link rel="stylesheet" href="assets/style.css?v=11">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="9">
+<meta name="versione" content="11">
 </head>
 <body>
 
@@ -54,6 +54,28 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 
   <div id="riepilogo" class="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:20px"></div>
 
+  <div class="legenda">
+    <span><b>Quot.</b>quotazione ufficiale</span>
+    <span><b>Mercato</b>quanto costerà davvero all'asta</span>
+    <span><b>Max</b>il tuo tetto di spesa</span>
+    <span><b>Pres.</b>presenze con voto</span>
+    <span><b>MV</b>media voto</span>
+    <span><b>FM</b>fantamedia</span>
+    <div class="sep"></div>
+    <span><b>G</b>gol fatti</span>
+    <span><b>A</b>assist</span>
+    <span><b>GS</b>gol subiti <em>(portieri)</em></span>
+    <span><b>RP</b>rigori parati <em>(portieri)</em></span>
+    <span><b>R+</b>rigori segnati</span>
+    <span><b>R−</b>rigori sbagliati</span>
+    <span><b>AU</b>autogol</span>
+    <span><b>🟨</b>ammonizioni</span>
+    <span><b>🟥</b>espulsioni</span>
+    <div class="sep"></div>
+    <span><b>QI</b>quotazione a inizio stagione</span>
+    <span><b>FVM</b>Fanta Valore di Mercato, su base 1000 crediti</span>
+  </div>
+
   <div class="tblwrap"><table id="rosa"><thead><tr>
     <th>Giocatore</th>
     <th class="num" title="Quotazione ufficiale">Quot.</th>
@@ -87,7 +109,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </footer>
 </div>
 
-<script type="module" src="assets/squadre.js?v=9"></script>
-<script type="module" src="assets/theme.js?v=9"></script>
+<script type="module" src="assets/squadre.js?v=11"></script>
+<script type="module" src="assets/theme.js?v=11"></script>
 </body>
 </html>
