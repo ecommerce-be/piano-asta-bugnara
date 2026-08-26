@@ -132,11 +132,16 @@ tr:last-child td{border-bottom:none}
 /* la tabella non si comprime sotto la sua misura naturale: preferiamo scorrerla */
 .tblwrap table{min-width:100%}
 #rosa{min-width:1150px}
-/* con venti colonne si scorre di lato: il nome del giocatore resta agganciato
-   a sinistra, altrimenti guardi una fila di numeri senza sapere di chi sono */
+/* La tabella scorre dentro il suo riquadro, non insieme alla pagina: cosi'
+   restano fermi sia le intestazioni in alto sia il nome del giocatore a
+   sinistra. Senza, scorrendo ti ritrovi una griglia di numeri senza sapere
+   ne' di chi sono ne' che cosa misurano. */
+#rosaWrap{max-height:74vh;overflow:auto}
+#rosa thead th{position:sticky;top:0;z-index:3;box-shadow:0 1px 0 var(--line)}
 #rosa th:first-child,#rosa td:first-child{position:sticky;left:0;z-index:2;
   background:var(--surface);box-shadow:1px 0 0 var(--line)}
-#rosa thead th:first-child{z-index:3;background:var(--surface2)}
+#rosa thead th:first-child{z-index:4;background:var(--surface2);
+  box-shadow:1px 0 0 var(--line),0 1px 0 var(--line)}
 #rosa tr.taken td:first-child{background:var(--acc-soft)}
 
 /* legenda delle sigle sopra la tabella */

@@ -1,11 +1,11 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=12';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=13';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=12';
-import { autosalva, conferma as chiediConferma } from './ui.js?v=12';
+} from './db.js?v=13';
+import { autosalva, conferma as chiediConferma } from './ui.js?v=13';
 
 const CHIAVE = 'bozza';
 const VUOTA = { giocatori: [] };
