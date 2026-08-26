@@ -218,37 +218,93 @@ def leggi_tabelle(html: str, campi_attesi: list[str]) -> tuple[list[dict], dict]
     if not candidate:
         return [], {"tabelle": len(zuppa.find_all("table")), "motivo": "nessuna tabella con una colonna nome riconoscibile"}
 
+    # dalla piu' promettente in giu': se una non produce righe si prova la prossima
     candidate.sort(key=lambda c: (c[0], c[1]), reverse=True)
-    _, _, tab, mappa, inizio = candidate[0]
+    scartate = []
 
-    righe: list[dict] = []
-    for r in tab.find_all("tr")[inizio:]:
-        celle = testo_celle(r)
-        if len(celle) <= mappa["nome"]:
-            continue
-        nome = celle[mappa["nome"]]
-        if not nome or chiave_intestazione(nome) in ("nome", "giocatore"):
-            continue
-        d: dict = {"nome": nome}
-        for campo, i in mappa.items():
-            if campo == "nome" or i >= len(celle):
+    for _, _, tab, mappa, inizio in candidate:
+        righe: list[dict] = []
+        for r in tab.find_all("tr")[inizio:]:
+            celle = testo_celle(r)
+            if len(celle) <= mappa["nome"]:
                 continue
-            grezzo = celle[i]
-            if campo in ("sq", "r"):
-                d[campo] = grezzo
-            else:
-                v = numero(grezzo)
-                if v is not None:
-                    d[campo] = int(round(v)) if campo in INTERI else round(v, 2)
-        righe.append(d)
+            nome = celle[mappa["nome"]]
+            if not nome or chiave_intestazione(nome) in ("nome", "giocatore"):
+                continue
+            d: dict = {"nome": nome}
+            for campo, i in mappa.items():
+                if campo == "nome" or i >= len(celle):
+                    continue
+                grezzo = celle[i]
+                if campo in ("sq", "r"):
+                    d[campo] = grezzo
+                else:
+                    v = numero(grezzo)
+                    if v is not None:
+                        d[campo] = int(round(v)) if campo in INTERI else round(v, 2)
+            righe.append(d)
 
-    diagnosi = {
+        if righe:
+            return righe, {
+                "tabelle_nella_pagina": len(zuppa.find_all("table")),
+                "tabelle_scartate_perche_vuote": scartate,
+                "colonne_riconosciute": sorted(mappa),
+                "righe_lette": len(righe),
+                "esempio": righe[0],
+            }
+        scartate.append(sorted(mappa))
+
+    return [], {
         "tabelle_nella_pagina": len(zuppa.find_all("table")),
-        "colonne_riconosciute": sorted(mappa),
-        "righe_lette": len(righe),
-        "esempio": righe[0] if righe else None,
+        "tabelle_con_intestazione_ma_senza_righe": scartate,
+        "motivo": "intestazioni trovate ma nessuna riga di giocatori: "
+                  "probabilmente la tabella la riempie JavaScript",
     }
-    return righe, diagnosi
+
+
+def anatomia(html: str, campione: str = "Malen") -> None:
+    """Racconta com'e' fatta la pagina. Serve quando la lettura non riesce:
+    dice dove stanno davvero i dati, tabella per tabella, e se il nome di un
+    giocatore compare nell'HTML o solo dopo che il browser ha eseguito lo script."""
+    zuppa = BeautifulSoup(html, "html.parser")
+    tabelle = zuppa.find_all("table")
+    print(f"    --- anatomia della pagina: {len(tabelle)} tabelle ---")
+
+    for i, tab in enumerate(tabelle[:12]):
+        righe = tab.find_all("tr")
+        segni = " ".join(filter(None, [
+            "id=" + tab.get("id") if tab.get("id") else "",
+            "class=" + ".".join(tab.get("class", [])) if tab.get("class") else "",
+        ])) or "(senza id o class)"
+        corpo = tab.find("tbody")
+        n_corpo = len(corpo.find_all("tr")) if corpo else 0
+        print(f"    [{i}] {segni} — {len(righe)} righe totali, {n_corpo} nel tbody")
+        for j, r in enumerate(righe[:3]):
+            celle = testo_celle(r)
+            testo = " | ".join(c[:18] for c in celle[:14])
+            print(f"        riga {j}: {len(celle)} celle · {testo[:150]}")
+
+    # dove sta davvero il nome di un giocatore?
+    pos = [m.start() for m in re.finditer(re.escape(campione), html)]
+    print(f"    --- \"{campione}\" compare {len(pos)} volte nell'HTML ---")
+    for p in pos[:3]:
+        pezzo = re.sub(r"\s+", " ", html[max(0, p - 130):p + 90])
+        print(f"        …{pezzo}…")
+    if not pos:
+        print("        MAI: i dati non sono nell'HTML, li mette JavaScript.")
+
+    # c'e' un blocco JSON con i giocatori dentro uno <script>?
+    for s in zuppa.find_all("script"):
+        t = s.string or ""
+        if len(t) > 2000 and campione in t:
+            print(f"    --- trovato uno <script> di {len(t):,} caratteri che contiene "
+                  f"\"{campione}\": i dati arrivano da li' ---")
+            k = t.find(campione)
+            print(f"        …{t[max(0, k - 200):k + 200]}…")
+            break
+    else:
+        grossi = [len(s.string or "") for s in zuppa.find_all("script") if len(s.string or "") > 5000]
+        print(f"    script grossi nella pagina: {grossi[:6] or 'nessuno'}")
 
 
 # ------------------------------------------------------------ aggancio
@@ -345,8 +401,12 @@ def main() -> int:
             print(f"    {k}: {v}")
 
         if not righe:
+            anatomia(html)
             problemi.append(f"{pagina}: nessuna riga letta")
             continue
+
+        if args.diagnosi:
+            anatomia(html)
 
         campi = [c for c in ATTESI[pagina] if any(c in r for r in righe)]
         if not campi:
