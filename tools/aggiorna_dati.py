@@ -558,16 +558,18 @@ def main() -> int:
 
     dopo = json.dumps(giocatori, ensure_ascii=False, sort_keys=True)
     if prima == dopo:
-        print("\nNiente di nuovo: players.json resta com'era.")
-        return 0
+        print("\nStatistiche e quotazioni identiche a ieri: players.json resta com'era.")
+    else:
+        compatto = json.dumps(giocatori, ensure_ascii=False, separators=(",", ":"))
+        PLAYERS.write_text(compatto, encoding="utf-8")
+        marca_dati(compatto)
+        con_stat = sum(1 for g in giocatori if g.get("gol") is not None)
+        print(f"\nScritto {PLAYERS.relative_to(RADICE)} — {totale} giocatori, "
+              f"{con_stat} con gol/assist/cartellini.")
 
-    compatto = json.dumps(giocatori, ensure_ascii=False, separators=(",", ":"))
-    PLAYERS.write_text(compatto, encoding="utf-8")
-    marca_dati(compatto)
+    # L'infermeria si aggiorna SEMPRE, anche quando il listone non e' cambiato:
+    # le statistiche restano ferme per giorni, gli infortuni no.
     aggiorna_infortuni()
-    con_stat = sum(1 for g in giocatori if g.get("gol") is not None)
-    print(f"\nScritto {PLAYERS.relative_to(RADICE)} — {totale} giocatori, "
-          f"{con_stat} con gol/assist/cartellini.")
     return 0
 
 

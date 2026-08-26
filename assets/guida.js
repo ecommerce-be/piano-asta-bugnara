@@ -1,5 +1,5 @@
 /* Pagina "La guida": grafici del modificatore, rosa target, shortlist per reparto. */
-import { caricaDati, ricalcola, badgeRuolo, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=19';
+import { caricaDati, ricalcola, badgeRuolo, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=20';
 
 /* ---------- i due grafici ---------- */
 
@@ -39,7 +39,7 @@ const perNome = Object.fromEntries(players.map(p => [p.r + '|' + p.n, p]));
 
 /* ---------- rosa target ---------- */
 
-const rosa = await fetch('assets/data/rosa.json?v=19').then(r => r.json());
+const rosa = await fetch('assets/data/rosa.json?v=20').then(r => r.json());
 const ETICHETTA = { t: ['Titolare', 'rt'], c: ['Primo cambio', 'rc'], r: ['Copertura', 'rr'] };
 const corpoRosa = document.getElementById('rosaBody');
 
