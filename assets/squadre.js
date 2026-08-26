@@ -1,15 +1,13 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=23';
-import { avvia, configurato, leggi, esc } from './db.js?v=23';
+import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=30';
+import { avvia, configurato, leggi, esc } from './db.js?v=30';
+import { leggiCfg } from './cfg.js?v=30';
 
 const { players, lega } = await caricaDati();
 
-let cfg = lega;
-try {
-  const salvata = JSON.parse(localStorage.getItem('pianoAsta:cfg:v1') || 'null');
-  if (salvata) cfg = { ...structuredClone(lega), ...salvata };
-} catch { /* storage non disponibile */ }
+/* Le regole della lega arrivano dal database condiviso: vedi assets/cfg.js */
+const { cfg } = await leggiCfg(lega);
 ricalcola(players, cfg, cfg.piano);
 
 const stato = asta.leggi();

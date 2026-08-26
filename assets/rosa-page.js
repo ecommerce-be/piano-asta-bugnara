@@ -5,21 +5,28 @@
    la fantasquadra vive nel database ed e' condivisa con Aurelio. Qui leggiamo
    entrambi, e quando togli un giocatore lo togliamo da tutti e due. */
 import {
-  caricaDati, ricalcola, asta, simulaModificatore, badgeRuolo, mvStimata,
+  caricaDati, caricaInfortuni, ricalcola, asta, simulaModificatore, badgeRuolo,
   gestisce, RUOLI, NOME_RUOLO,
-} from './app.js?v=23';
-import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=23';
-import { toast } from './ui.js?v=23';
+} from './app.js?v=30';
+import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=30';
+import { toast } from './ui.js?v=30';
+import { leggiCfg } from './cfg.js?v=30';
+import { valuta } from './consiglio.js?v=30';
 
 const { players, lega } = await caricaDati();
 
-let cfg = lega;
-try {
-  const salvata = JSON.parse(localStorage.getItem('pianoAsta:cfg:v1') || 'null');
-  if (salvata) cfg = { ...structuredClone(lega), ...salvata };
-} catch { /* storage non disponibile */ }
+/* Le regole della lega arrivano dal database condiviso: vedi assets/cfg.js */
+const { cfg } = await leggiCfg(lega);
 
 ricalcola(players, cfg, cfg.piano);
+
+/* Attacca a ogni giocatore la media voto attesa (`mvAtt`). Prima il simulatore
+   partiva da una stima per fascia, e usciva 6.30 identico per tutti: si vedeva
+   un cursore che non diceva niente. Adesso ogni giocatore ha il suo numero,
+   ricavato dalla sua posizione nel ruolo e corretto coi voti veri di questa
+   stagione, quindi il simulatore ha qualcosa da simulare. */
+const infortuni = await caricaInfortuni();
+const info = valuta(players, infortuni.per);
 
 const stato = asta.leggi();
 const altrui = asta.leggiAltrui();
@@ -157,7 +164,7 @@ const selModulo = document.getElementById('modulo');
 for (const m of lega.moduli) {
   const o = document.createElement('option');
   o.value = o.textContent = m;
-  if (m === '4-5-1') o.selected = true;
+  if (m === cfg.modulo) o.selected = true;
   selModulo.appendChild(o);
 }
 
@@ -176,8 +183,8 @@ function disegnaCampo() {
   const mancano = RUOLI.filter(x => scelti[x].length < { P: 1, D: nD, C: nC, A: nA }[x]);
   const avvisi = [];
   if (mancano.length) avvisi.push(`Ti mancano giocatori in ${mancano.map(x => NOME_RUOLO[x].toLowerCase()).join(', ')} per completare questo modulo.`);
-  if (nD < lega.modificatoreDifesa.minDifensori) {
-    avvisi.push(`Con ${nD} difensori il modificatore non si applica: ne servono almeno ${lega.modificatoreDifesa.minDifensori}.`);
+  if (nD < cfg.modificatoreDifesa.minDifensori) {
+    avvisi.push(`Con ${nD} difensori il modificatore non si applica: ne servono almeno ${cfg.modificatoreDifesa.minDifensori}.`);
   }
   document.getElementById('avvisoCampo').textContent = avvisi.join(' ');
 }
@@ -185,10 +192,13 @@ selModulo.addEventListener('change', disegnaCampo);
 
 /* ---------- simulatore del modificatore ---------- */
 
-const mod = lega.modificatoreDifesa;
+const mod = cfg.modificatoreDifesa;
 const MAX_DIF = 5;
 const sceltiSim = { P: null, D: [] };
 const mv = {};   // media voto per giocatore, modificabile coi cursori
+
+/** La media voto attesa del modello, arrotondata al passo del cursore. */
+const stima = p => Math.round((p.mvAtt ?? 6.0) * 20) / 20;
 
 function candidati(ruolo) {
   const lista = mieiPerRuolo[ruolo];
@@ -223,19 +233,54 @@ function disegnaCursori() {
   }).join('');
 }
 
+/* Il metro di paragone: la stessa difesa presa a un credito. Senza, "80 punti"
+   non dice niente — non si sa se sia tanto o poco. Il numero che conta e' il
+   divario, perche' e' quello che stai comprando davvero. */
+const RACCATTATA = 5.95;
+let riferimento = null;
+
 function simula() {
   const box = document.getElementById('risultato');
+  const nota = document.getElementById('notaSim');
+
+  if (!mod?.attivo) {
+    box.innerHTML = `<div style="grid-column:1/-1"><div class="k">Modificatore spento</div>
+      <div class="n" style="font-size:1rem;font-weight:600">Nelle impostazioni il modificatore di difesa
+      risulta disattivato, quindi questa difesa non produce punti extra.</div></div>`;
+    if (nota) nota.textContent = '';
+    return;
+  }
   if (!sceltiSim.P || sceltiSim.D.length < mod.minDifensori) {
     box.innerHTML = `<div style="grid-column:1/-1"><div class="k">In attesa</div>
       <div class="n" style="font-size:1rem;font-weight:600">Scegli un portiere e almeno ${mod.minDifensori} difensori</div></div>`;
+    if (nota) nota.textContent = '';
     return;
   }
-  const res = simulaModificatore(sceltiSim.D.map(id => mv[id]), mv[sceltiSim.P], mod);
+
+  const voti = sceltiSim.D.map(id => mv[id]);
+  const res = simulaModificatore(voti, mv[sceltiSim.P], mod);
+
+  riferimento ??= simulaModificatore(
+    Array(Math.max(mod.minDifensori, voti.length)).fill(RACCATTATA), RACCATTATA, mod);
+  const guadagno = res.stagione - riferimento.stagione;
+
   box.innerHTML = `
     <div><div class="k">Punti a giornata</div><div class="n">${res.perGiornata.toFixed(2)}</div></div>
     <div><div class="k">In una stagione</div><div class="n">${Math.round(res.stagione)}</div></div>
+    <div><div class="k">In più di una difesa da 1 credito</div>
+      <div class="n">${guadagno >= 0 ? '+' : ''}${Math.round(guadagno)}</div></div>
     <div><div class="k">Giornate con +3 o più</div><div class="n">${Math.round(res.quotaAlmenoTre * 100)}%</div></div>
     <div><div class="k">Modificatore azzerato</div><div class="n">${(res.quotaAzzerate * 100).toFixed(1)}%</div></div>`;
+
+  /* Quanto costa o rende mezzo voto: e' la risposta alla domanda per cui il
+     simulatore esiste, cioe' "vale la pena pagare di piu' quel difensore?" */
+  if (nota) {
+    const meglio = simulaModificatore(voti.map(v => v + 0.10), mv[sceltiSim.P] + 0.10, mod);
+    nota.innerHTML = `Alzando di <strong>un decimo di voto</strong> tutti e ${voti.length + 1}
+      — cioè comprando la versione migliore di ognuno — passeresti a
+      <strong>${Math.round(meglio.stagione)} punti</strong>, ${Math.round(meglio.stagione - res.stagione)} in più.
+      È quello che stai valutando quando decidi se rilanciare su un difensore.`;
+  }
 }
 
 document.getElementById('pickP').addEventListener('click', e => scegli(e));
@@ -245,7 +290,7 @@ function scegli(e) {
   const b = e.target.closest('button[data-id]');
   if (!b) return;
   const { id, ruolo } = b.dataset;
-  if (!(id in mv)) mv[id] = mvStimata(perId[id]);
+  if (!(id in mv)) mv[id] = stima(perId[id]);
   if (ruolo === 'P') {
     sceltiSim.P = sceltiSim.P === id ? null : id;
   } else if (sceltiSim.D.includes(id)) {
@@ -266,11 +311,11 @@ document.getElementById('cursori').addEventListener('input', e => {
 
 /* preselezione: portiere e primi difensori che hai in rosa */
 const primoP = candidati('P')[0];
-if (primoP) { sceltiSim.P = asta.id(primoP); mv[sceltiSim.P] = mvStimata(primoP); }
+if (primoP) { sceltiSim.P = asta.id(primoP); mv[sceltiSim.P] = stima(primoP); }
 for (const p of candidati('D').slice(0, 4)) {
   const id = asta.id(p);
   sceltiSim.D.push(id);
-  mv[id] = mvStimata(p);
+  mv[id] = stima(p);
 }
 
 disegnaLedger();

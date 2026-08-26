@@ -1,22 +1,20 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=23';
+import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=30';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=23';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=23';
+} from './db.js?v=30';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=30';
+import { leggiCfg } from './cfg.js?v=30';
 
 const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [] };
 
 const { players, lega } = await caricaDati();
 
-let cfg = lega;
-try {
-  const salvata = JSON.parse(localStorage.getItem('pianoAsta:cfg:v1') || 'null');
-  if (salvata) cfg = { ...structuredClone(lega), ...salvata };
-} catch { /* storage non disponibile */ }
+/* Le regole della lega arrivano dal database condiviso: vedi assets/cfg.js */
+const { cfg } = await leggiCfg(lega);
 ricalcola(players, cfg, cfg.piano);
 
 const perId = Object.fromEntries(players.map(p => [`${p.r}|${p.n}|${p.sq}`, p]));

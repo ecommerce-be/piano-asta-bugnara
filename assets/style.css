@@ -216,6 +216,29 @@ tr.grp td b{color:var(--acc)}
   text-decoration:none;padding:.4rem .7rem;border-radius:3px}
 .nav a:hover{background:var(--surface2);color:var(--ink)}
 .nav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+
+/* la stessa nav, ripiegata a tendina da assets/menu.js */
+.nav.menu{position:relative;display:block;flex-wrap:nowrap}
+.menubtn{font-family:"Archivo",sans-serif;font-size:.82rem;font-weight:700;color:var(--ink);
+  background:var(--surface2);border:1px solid var(--line2);border-radius:3px;cursor:pointer;
+  padding:.45rem .7rem;display:flex;align-items:center;gap:.55rem;min-width:12rem}
+.menubtn:hover{border-color:var(--acc)}
+.menubtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.menubtn .dove{flex:1;text-align:left}
+.menubtn .chev{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:5px solid var(--ink3);transition:transform .12s ease}
+.menubtn[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.menupanel{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:15rem;
+  display:flex;flex-direction:column;gap:1px;padding:5px;
+  background:var(--surface);border:1px solid var(--line2);border-radius:4px;box-shadow:var(--shadow)}
+.menupanel[hidden]{display:none}
+.menupanel a{padding:.5rem .7rem;border-radius:3px;white-space:nowrap}
+.menupanel a:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+@media(max-width:560px){
+  .nav.menu{margin-left:0;width:100%}
+  .menubtn{width:100%}
+  .menupanel{left:0;right:0}
+}
 .wide{max-width:1180px;margin:0 auto;padding:0 22px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow)}
 .cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;padding:1.1rem}
@@ -445,6 +468,32 @@ tr.altrui td:last-child,tr.altrui td:nth-last-child(2){opacity:1}
 .assbox .btn{padding:.28rem .5rem;font-size:.72rem}
 td .propr{font-family:"Archivo",sans-serif;font-size:.72rem;color:var(--warn);white-space:nowrap}
 tr.taken td .propr{color:var(--acc)}
+
+/* ===== impostazioni ===== */
+.sez{font-family:"Archivo",sans-serif;font-size:.72rem;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink3);margin:0;padding:.9rem 1.1rem .2rem}
+.spiega{padding:0 1.1rem 1.1rem;margin:0;font-size:.92rem;color:var(--ink3);
+  font-family:"Archivo",sans-serif;line-height:1.5;max-width:78ch}
+.panel .spiega strong{color:var(--ink2)}
+
+/* ===== rosa ideale ===== */
+.scelte{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.strat{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;padding:1rem 1.1rem}
+.strat button{text-align:left;padding:.7rem .85rem;border:1px solid var(--line);border-radius:4px;
+  background:var(--surface);cursor:pointer;font-family:"Archivo",sans-serif;color:var(--ink)}
+.strat button b{display:block;font-size:.9rem;font-weight:800;margin-bottom:.15rem}
+.strat button span{font-size:.78rem;color:var(--ink3);line-height:1.4}
+.strat button[aria-pressed="true"]{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.strat button[aria-pressed="true"] b{color:var(--acc)}
+.ideale{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;align-items:start}
+.idrow{display:flex;align-items:center;gap:.5rem;padding:.45rem 1rem;border-top:1px solid var(--line);
+  font-family:"Archivo",sans-serif;font-size:.86rem}
+.idrow.panca{opacity:.6}
+.idrow .pz{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.idrow .pt{font-size:.72rem;color:var(--ink3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.idsep{padding:.3rem 1rem;font-family:"Archivo",sans-serif;font-size:.66rem;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);background:var(--surface2);
+  border-top:1px solid var(--line)}
 
 /* ===== infortunati ===== */
 .infrow{padding:.6rem 1rem;border-top:1px solid var(--line)}

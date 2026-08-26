@@ -7,7 +7,7 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
 /* Impronta dei dati: cambia solo quando players.json cambia davvero.
    La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
    ha la versione vecchia in cache. NON toccare a mano. */
-export const VERSIONE_DATI = 'c2ce2abd0f';
+export const VERSIONE_DATI = '2d3b9e98f2';
 export const AGGIORNATO_IL = '2026-08-26';
 
 /**
@@ -145,11 +145,29 @@ export function puntiModificatore(media, tabella) {
  * copertura:      probabilita' che la panchina lo sostituisca con un voto valido
  */
 export function simulaModificatore(mediaDifensori, mediaPortiere, mod, opts = {}) {
-  const { pSalta = 0.05, copertura = 0.95, n = 20000, sdDif = 0.6, sdPor = 0.75 } = opts;
+  const { pSalta = 0.05, copertura = 0.95, n = 20000, sdDif = 0.6, sdPor = 0.75, seme = 20260826 } = opts;
+
+  /* Numeri casuali RIPRODUCIBILI, non veri numeri casuali.
+     Con Math.random() due pagine che simulano la stessa difesa ottenevano
+     risultati leggermente diversi, e il consigliere — che sceglie fra
+     giocatori quasi equivalenti — finiva per proporre rose diverse nella
+     guida e nella pagina "Rosa ideale". Le differenze erano minuscole e la
+     matematica era giusta lo stesso, ma leggere due liste diverse per la
+     stessa domanda fa perdere fiducia nello strumento, giustamente.
+     Con un seme fisso la simulazione resta statisticamente identica e in
+     piu' e' ripetibile: stessa domanda, stessa risposta, ovunque. */
+  let s = seme >>> 0;
+  const caso = () => {
+    s ^= s << 13; s >>>= 0;
+    s ^= s >>> 17;
+    s ^= s << 5; s >>>= 0;
+    return s / 4294967296;
+  };
+
   const gauss = () => {
     let u = 0, v = 0;
-    while (u === 0) u = Math.random();
-    while (v === 0) v = Math.random();
+    while (u === 0) u = caso();
+    while (v === 0) v = caso();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   };
   const arrotonda = x => Math.round(x * 2) / 2;
@@ -158,8 +176,8 @@ export function simulaModificatore(mediaDifensori, mediaPortiere, mod, opts = {}
   for (let i = 0; i < n; i++) {
     const voti = [];
     for (const mu of mediaDifensori) {
-      if (Math.random() < pSalta) {
-        if (Math.random() < copertura) voti.push(arrotonda(6.05 + gauss() * sdDif));
+      if (caso() < pSalta) {
+        if (caso() < copertura) voti.push(arrotonda(6.05 + gauss() * sdDif));
       } else {
         voti.push(arrotonda(mu + gauss() * sdDif));
       }

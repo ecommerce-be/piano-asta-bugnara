@@ -1,0 +1,245 @@
+/* Controllo di coerenza fra le pagine del sito.
+ *
+ * Serve a una cosa sola: accorgersi dei refusi prima che li veda Pierre.
+ * Un refuso qui non e' un errore di JavaScript — il sito funziona benissimo
+ * mentre la guida dice "500 crediti" e le impostazioni ne dicono 700. Il solo
+ * modo di trovarli e' aprire davvero le pagine e confrontare i numeri.
+ *
+ * Uso:
+ *     python3 -m http.server 8123 &
+ *     node tools/coerenza.mjs [indirizzo]
+ *
+ * Esce con codice 1 se qualcosa non torna, cosi' si puo' incatenare a un
+ * commit o a una GitHub Action.
+ */
+import pw from '/tmp/node_modules/playwright/index.js';
+
+const BASE = process.argv[2] || 'http://localhost:8123/';
+const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+
+const PAGINE = ['index.html', 'listone.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
+  'fantasquadre.html', 'squadre.html', 'infortunati.html', 'impostazioni.html'];
+
+/* rumore di fondo del banco di prova, non difetti del sito: in locale non c'e'
+   ne' rete verso i font ne' il database */
+const RUMORE = /fonts\.(googleapis|gstatic)|:8766|ERR_TUNNEL|ERR_CONNECTION_REFUSED|Failed to load resource|infortuni\.json/;
+
+const problemi = [];
+const nota = t => problemi.push(t);
+
+const browser = await pw.chromium.launch({ executablePath: CHROME });
+const ctx = await browser.newContext({ viewport: { width: 1400, height: 1100 } });
+
+async function apri(pagina) {
+  const p = await ctx.newPage();
+  p.on('pageerror', e => nota(`[${pagina}] errore JavaScript: ${e.message}`));
+  p.on('console', m => {
+    if (m.type() === 'error' && !RUMORE.test(m.text())) nota(`[${pagina}] console: ${m.text()}`);
+  });
+  p.on('requestfailed', r => { if (!RUMORE.test(r.url())) nota(`[${pagina}] richiesta fallita: ${r.url()}`); });
+  await p.goto(BASE + pagina, { waitUntil: 'domcontentloaded' });
+  await p.waitForTimeout(2600);
+  return p;
+}
+
+/* ---------- 1. ogni pagina si apre e si disegna ---------- */
+
+console.log('— le pagine si aprono —');
+const testi = {};
+for (const pagina of PAGINE) {
+  const p = await apri(pagina);
+  const t = await p.locator('body').innerText();
+  testi[pagina] = t;
+  const voci = await p.locator('.menupanel a').count();
+  const bottone = await p.locator('.menubtn .dove').textContent().catch(() => '');
+  if (t.trim().length < 400) nota(`[${pagina}] la pagina è praticamente vuota`);
+  if (voci !== PAGINE.length) nota(`[${pagina}] il menu ha ${voci} voci invece di ${PAGINE.length}`);
+  console.log(`  ${pagina.padEnd(20)} ${t.length} caratteri · menu "${bottone}" con ${voci} voci`);
+  await p.close();
+}
+
+/* ---------- 2. i numeri di lega coincidono ovunque ---------- */
+
+console.log('\n— gli stessi numeri su tutte le pagine —');
+const imp = await apri('impostazioni.html');
+const atteso = {
+  crediti: Number(await imp.locator('#crediti').inputValue()),
+  squadre: Number(await imp.locator('#squadre').inputValue()),
+  modulo: await imp.locator('#moduloPref').inputValue(),
+  strategia: await imp.locator('#strategiaPref').inputValue(),
+  slot: Object.fromEntries(await Promise.all(['P', 'D', 'C', 'A'].map(async r =>
+    [r, Number(await imp.locator('#s' + r).inputValue())]))),
+  piano: Object.fromEntries(await Promise.all(['P', 'D', 'C', 'A'].map(async r =>
+    [r, Number(await imp.locator('#p' + r).inputValue())]))),
+};
+await imp.close();
+const slotTot = Object.values(atteso.slot).reduce((a, b) => a + b, 0);
+console.log(`  impostazioni: ${atteso.crediti} crediti · ${atteso.squadre} squadre · rosa ${slotTot} · ${atteso.modulo} · ${atteso.strategia}`);
+
+const pianoTot = Object.values(atteso.piano).reduce((a, b) => a + b, 0);
+if (pianoTot !== atteso.crediti) nota(`il piano di spesa somma a ${pianoTot} invece di ${atteso.crediti}`);
+
+/* La guida e' quella che prima mentiva di piu': deve nominare il modulo giusto,
+   i crediti giusti e il numero di slot giusto. */
+const guida = testi['index.html'];
+for (const [che, valore] of [['crediti', atteso.crediti], ['modulo', atteso.modulo], ['slot', slotTot]]) {
+  if (!guida.includes(String(valore))) nota(`la guida non nomina mai ${che} = ${valore}`);
+}
+
+const MODULI = ['3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-5-1', '5-3-2', '5-4-1'];
+
+/* Un altro modulo puo' comparire, ma solo come confronto esplicito ("col
+   5-3-2 ne renderebbe..."). Se lo nomina come se fosse il tuo, o lo consiglia,
+   e' un refuso: sono le formule con cui la vecchia guida parlava del 4-5-1. */
+for (const m of MODULI) {
+  if (m === atteso.modulo) continue;
+  for (const modo of ['il ' + m + ' e', 'in ' + m, 'col ' + m + ' in testa',
+    'costruisci la rosa per giocarli', m + ' sono ammessi', m + ' è ammesso']) {
+    if (guida.includes(modo)) {
+      nota(`la guida dice «${modo}» ma il tuo modulo è ${atteso.modulo}`);
+    }
+  }
+}
+
+/* Il titolo deve seguire la STRATEGIA, non solo il modificatore: con "tutto
+   sull'attacco" una guida che apre con «si vince in difesa» racconta l'asta di
+   qualcun altro. */
+const titolo = guida.split('\n').find(r => r.includes('La tua asta si vince')) || '';
+const asseAtteso = { attacco: 'sui bonus', centrocampo: 'a centrocampo' }[atteso.strategia] || 'in difesa';
+const difensivo = titolari => Number(atteso.modulo.split('-')[0]) >= 4;
+if (!titolo.includes(asseAtteso)) {
+  nota(`col modulo ${atteso.modulo} e la strategia "${atteso.strategia}" il titolo dovrebbe parlare di `
+     + `«${asseAtteso}», invece dice «${titolo.trim()}»`);
+}
+if (!difensivo() && titolo.includes('in difesa')) {
+  nota(`il titolo dice «in difesa» ma col ${atteso.modulo} il modificatore non scatta`);
+}
+
+/* ---------- 3. la guida e la rosa ideale propongono la stessa rosa ---------- */
+
+console.log('\n— guida e consigliere dicono la stessa cosa —');
+const gp = await apri('index.html');
+const rosaGuida = await gp.locator('#rosaBody .nm').evaluateAll(e => e.map(x => x.textContent.trim()));
+const spesaGuida = (await gp.locator('#rosaNota').innerText()).match(/(\d+)\s*crediti/)?.[1];
+await gp.close();
+
+const rp = await apri('rosaideale.html');
+const rosaCons = await rp.locator('.idrow .nm').evaluateAll(e => e.map(x => x.textContent.replace(/(KO|SQ)$/, '').trim()));
+const spesaCons = (await rp.locator('#totali').innerText()).match(/(\d+)\s*\/\s*\d+\s*cr/)?.[1];
+await rp.close();
+
+console.log(`  guida: ${rosaGuida.length} giocatori, ${spesaGuida} crediti`);
+console.log(`  rosa ideale: ${rosaCons.length} giocatori, ${spesaCons} crediti`);
+if (rosaGuida.length !== slotTot) nota(`la guida mostra ${rosaGuida.length} giocatori invece di ${slotTot}`);
+if (rosaCons.length !== slotTot) nota(`la rosa ideale mostra ${rosaCons.length} giocatori invece di ${slotTot}`);
+
+const soloGuida = rosaGuida.filter(n => !rosaCons.includes(n));
+const soloCons = rosaCons.filter(n => !rosaGuida.includes(n));
+if (soloGuida.length || soloCons.length) {
+  nota(`le due pagine consigliano rose diverse — solo nella guida: ${soloGuida.join(', ') || '—'}; `
+     + `solo nel consigliere: ${soloCons.join(', ') || '—'}`);
+} else {
+  console.log('  le due rose coincidono giocatore per giocatore');
+}
+if (spesaGuida && spesaCons && spesaGuida !== spesaCons) {
+  nota(`spesa diversa fra guida (${spesaGuida}) e rosa ideale (${spesaCons})`);
+}
+
+/* ---------- 4. nessun nome di giocatore inchiodato nell'HTML ---------- */
+
+console.log('\n— niente nomi scritti a mano nelle pagine —');
+const fs = await import('node:fs/promises');
+const listone = JSON.parse(await fs.readFile(new URL('../assets/data/players.json', import.meta.url), 'utf8'));
+/* Aurelio e' sia un giocatore del listone sia il compagno di lega di Pierre:
+   quando compare nelle pagine parla di lui, non del calciatore. */
+const ECCEZIONI = new Set(['Aurelio']);
+
+/* La prima versione di questo controllo chiedeva nomi di almeno sei lettere e
+   li cercava solo fra spazi: si e' lasciata sfuggire "Malen", "Gila" e
+   "Lautaro" dentro una frase, che erano esattamente i refusi da trovare.
+   Adesso cerca il nome per intero con un confine di parola, e accetta anche i
+   nomi corti — 4 lettere bastano. Le maiuscole aiutano a non pescare parole
+   comuni: nel listone i cognomi cominciano sempre in maiuscola. */
+const nomi = [...new Set(listone.map(p => p.n))]
+  .filter(n => n.length >= 4 && !ECCEZIONI.has(n) && /^[A-ZÀ-Þ]/.test(n));
+
+const fuga = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+for (const pagina of PAGINE) {
+  const sorgente = await fs.readFile(new URL('../' + pagina, import.meta.url), 'utf8');
+  /* solo il testo visibile: fuori i tag, gli attributi e i commenti */
+  const corpo = sorgente.slice(sorgente.indexOf('<body>'))
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<[^>]*>/g, ' ');
+  const trovati = nomi.filter(n => new RegExp(`(^|[\\s"'«(])${fuga(n)}([\\s.,;:!?"'»)]|$)`).test(corpo));
+  if (trovati.length) {
+    nota(`[${pagina}] nomi di giocatori scritti nell'HTML: ${trovati.join(', ')} — invecchieranno`);
+  }
+}
+
+/* ---------- 5. la guida regge ogni modulo e ogni strategia ---------- */
+
+/* I refusi non stavano nella configurazione di partenza: stavano nelle altre.
+   Con il 4-3-3 e la strategia "attacco" la guida apriva ancora con «la tua
+   asta si vince in difesa» e consigliava di passare al 5-4-1. Quindi si
+   provano tutte le combinazioni, non solo quella salvata. */
+
+console.log('\n— la guida regge ogni modulo e ogni strategia —');
+
+const MODULI_DA_PROVARE = ['3-4-3', '4-3-3', '4-5-1', '5-3-2'];
+const STRATEGIE_DA_PROVARE = ['totale', 'modificatore', 'attacco', 'centrocampo'];
+
+/* frasi che hanno senso solo se stai davvero puntando sulla difesa */
+const DIFENSIVE = ['si vince in difesa', 'denaro gratis'];
+
+for (const m of MODULI_DA_PROVARE) {
+  for (const s of STRATEGIE_DA_PROVARE) {
+    const scelta = await ctx.newPage();
+    await scelta.goto(BASE + 'rosaideale.html', { waitUntil: 'domcontentloaded' });
+    await scelta.waitForTimeout(2400);
+    await scelta.selectOption('#modulo', m);
+    await scelta.locator(`#strategie button[data-s="${s}"]`).click();
+    await scelta.waitForTimeout(1600);
+    await scelta.close();
+
+    const g = await apri('index.html');
+    const t = await g.locator('body').innerText();
+    const titolo = t.split('\n').find(r => r.includes('La tua asta si vince')) || '';
+
+    const dif = Number(m.split('-')[0]);
+    const puntaDifesa = dif >= 4 && (s === 'totale' || s === 'modificatore');
+    const guai = [];
+
+    if (!puntaDifesa) {
+      for (const frase of DIFENSIVE) {
+        if (t.includes(frase)) guai.push(`dice «${frase}»`);
+      }
+    }
+    for (const altro of MODULI) {
+      if (altro === m) continue;
+      for (const modo of [`il ${altro} e`, `in ${altro}`, `col ${altro} in testa`,
+        `${altro} sono ammessi`, `${altro} è ammesso`, 'costruisci la rosa per giocarli']) {
+        if (t.includes(modo)) guai.push(`dice «${modo}»`);
+      }
+    }
+    if (!t.includes(`con il ${m} in testa`)) guai.push(`non nomina il ${m} come tuo modulo`);
+
+    const esito = guai.length ? '✗ ' + guai.join(' · ') : '✓';
+    console.log(`  ${m} · ${s.padEnd(13)} ${titolo.trim().padEnd(38)} ${esito}`);
+    guai.forEach(x => nota(`[guida ${m}/${s}] ${x}`));
+    await g.close();
+  }
+}
+
+/* ---------- esito ---------- */
+
+await browser.close();
+
+console.log(`\n${'='.repeat(52)}`);
+if (!problemi.length) {
+  console.log('Tutto coerente.');
+  process.exit(0);
+}
+console.log(`${problemi.length} ${problemi.length === 1 ? 'problema' : 'problemi'}:`);
+for (const p of problemi) console.log('  · ' + p);
+process.exit(1);

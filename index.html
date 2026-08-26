@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Piano d'Asta Bugnara — la guida</title>
-<meta name="description" content="Strategia, rosa target in 4-5-1 e listino prezzi massimi per l'asta di fantacalcio Serie A 2026/27.">
+<meta name="description" content="Strategia, rosa consigliata e listino prezzi massimi per l'asta di fantacalcio Serie A 2026/27.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=23">
+<link rel="stylesheet" href="assets/style.css?v=30">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="23">
+<meta name="versione" content="30">
 </head>
 <body>
 <div class="topbar"><div class="inner">
@@ -23,116 +23,97 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <nav class="nav">
     <a href="./" aria-current="page">La guida</a>
     <a href="listone.html">Listone e asta live</a>
+    <a href="rosaideale.html">Rosa ideale</a>
     <a href="bozza.html">Bozza</a>
     <a href="rosa.html">La mia rosa</a>
     <a href="fantasquadre.html">Fantasquadre</a>
     <a href="squadre.html">Serie A</a>
     <a href="infortunati.html">Infortunati</a>
+    <a href="impostazioni.html">Impostazioni</a>
   </nav>
   <div id="tema"></div>
 </div></div>
 <div class="wrap">
 <header class="hero">
-  <div class="kicker"><span>Serie A 2026/27</span><span>·</span><span>Lega Bugnara</span><span>·</span><b>500 crediti · 10 squadre · rosa 28</b></div>
-  <h1>La tua asta si vince <em>in difesa</em>.</h1>
-  <p class="lede">Nove avversari arrivano all'asta con i crediti stretti in mano per l'attacco. Ma nella tua lega il modificatore di difesa vale fino a <strong>+6 punti a giornata, senza mai un malus</strong>, e la chiamata parte dai portieri — quando nessuno vuole ancora spendere. Questo è il piano per comprare quel vantaggio mentre gli altri guardano altrove.</p>
-  <div class="stats">
-    <div class="stat"><div class="v">500</div><div class="l">Crediti</div></div>
-    <div class="stat"><div class="v">28</div><div class="l">Slot · 3-9-9-7</div></div>
-    <div class="stat"><div class="v">270</div><div class="l">Su 540 restano liberi</div></div>
-    <div class="stat"><div class="v">+6</div><div class="l">Modificatore max</div></div>
-  </div>
+  <div class="kicker" id="kicker"></div>
+  <h1 id="titolo">La tua asta si vince <em>in difesa</em>.</h1>
+  <p class="lede" id="occhiello"></p>
+  <div class="stats" id="stats"></div>
 </header>
 
 <section>
   <p class="eyebrow">La tesi</p>
-  <h2>Un modificatore senza malus è denaro gratis</h2>
-  <p>La tabella della tua lega parte da zero e sale: sotto il 6 non perdi nulla, a 6 prendi +1, a 6,5 prendi +3, a 7 prendi +6. Non esiste un solo scenario in cui la difesa ti toglie punti. Il calcolo si fa sulla media dei <strong>3 migliori difensori più il portiere</strong>, sul voto puro, e richiede almeno quattro difensori in campo con voto valido.</p>
-  <p>Ho simulato 400.000 giornate su quella tabella, con i voti distribuiti come si distribuiscono davvero nel fantacalcio italiano. Ecco cosa separa una difesa costruita da una difesa raccattata:</p>
+  <h2 id="tesiTit"></h2>
+  <p id="tesi1"></p>
+  <p id="tesi2">Ecco cosa separa una difesa costruita da una difesa raccattata, simulando la tabella della tua lega:</p>
 
-  <div class="figure">
+  <div class="figure" id="figDifesa">
     <div class="ftitle">Punti regalati dal modificatore, per qualità del reparto</div>
-    <div class="fsub">Media per giornata, schierando cinque difensori. Simulazione Monte Carlo, 400.000 giornate.</div>
+    <div class="fsub" id="fsub1"></div>
     <div class="bars" id="bars"></div>
-    <div class="faxis">Il divario tra la prima e l'ultima riga vale <strong>63 punti in una stagione</strong>: più o meno quello che ti darebbe un attaccante da 20 gol rispetto a uno da 6. Solo che l'attaccante da 20 gol costa un terzo del tuo budget, e questa difesa no.</div>
+    <div class="faxis" id="faxis1"></div>
   </div>
 
-  <p>Due dettagli che cambiano la spesa più di quanto sembri. Il primo: <strong>il portiere pesa per un quarto della media</strong>. Con la stessa difesa, passare da un portiere medio a uno da difesa solida vale +0,48 punti a giornata — diciotto punti a stagione presi da un solo slot che i tuoi avversari considereranno un ripiego. E nella tua lega la porta inviolata vale zero mentre ogni gol subito vale −1: il portiere di una squadra che prende 60 gol è un disastro doppio.</p>
-  <p>Il secondo: <strong>schierare cinque difensori invece di quattro vale +0,31 punti a giornata</strong>, perché il calcolo prende i tre migliori e con cinque in campo scarti i due voti peggiori. In più ti mette al riparo dalla clausola che azzera tutto il modificatore se i voti validi in difesa scendono sotto quattro. I moduli 5-3-2 e 5-4-1 sono ammessi: costruisci la rosa per giocarli.</p>
+  <p id="dettaglio1"></p>
+  <p id="dettaglio2"></p>
 
   <div class="callout">
-    <p><strong>Il vero arbitraggio non è nella matematica, è nel prezzo.</strong> Su Lautaro e Malen si scatenano dieci fantallenatori e il prezzo finisce sopra il valore. Su Gila, Ramón e Østigård non litiga nessuno, e il prezzo finisce sotto. Compri la stessa quantità di punti pagandola metà.</p>
+    <p id="arbitraggio"></p>
   </div>
 </section>
 
 <section>
   <p class="eyebrow">Il piano</p>
-  <h2>Come spendere i 500</h2>
-  <p>La ripartizione qui sotto è tarata sul tuo formato: dieci squadre, ventotto slot, modificatore attivo. Non è la ripartizione classica — sposta circa 60 crediti dall'attacco verso porta e difesa.</p>
-  <div class="plan">
-    <div class="pcard hi"><div class="rl">Portieri · 3 slot</div><div class="cr">60<small> cr</small></div>
-      <div class="sh">Un titolare di una difesa top (fino a 44), un secondo titolare vero (10-16), un vice a 1. Non uscire dal reparto con più di 60 spesi, né con un portiere di una squadra che subisce.</div></div>
-    <div class="pcard hi"><div class="rl">Difensori · 9 slot</div><div class="cr">135<small> cr</small></div>
-      <div class="sh">Sei difensori che giocano davvero, di cui due o tre colonne da 15-22 crediti, più tre riempitivi a 1-2. Ti serve poter schierare cinque titolari ogni domenica.</div></div>
-    <div class="pcard"><div class="rl">Centrocampisti · 9 slot</div><div class="cr">145<small> cr</small></div>
-      <div class="sh">Un rigorista-punizioni da 40-52, due da 20-26, poi jolly da 1-15. Qui il listone ha decine di trequartisti classificati come centrocampisti: è il reparto dove si trova più valore per credito.</div></div>
-    <div class="pcard"><div class="rl">Attaccanti · 7 slot</div><div class="cr">160<small> cr</small></div>
-      <div class="sh">Due punte da 45-70 e nessuna da 100. Su sette slot con dieci squadre si svuota il reparto: gli ultimi tre li prendi a 1-3 crediti e va bene così, li prenderanno scarsi anche gli altri.</div></div>
-  </div>
-  <p style="color:var(--ink2);font-size:.98rem">Restano 500 esatti. Se un reparto chiude sotto il piano, il residuo scivola su quello successivo — mai al contrario. E i crediti che avanzano non sono sprecati: nella tua lega restano disponibili per svincoli e riparazione, dove venti crediti a gennaio comprano un titolare vero.</p>
+  <h2 id="pianoTit">Come spendere i crediti</h2>
+  <p id="pianoIntro"></p>
+  <div class="plan" id="plan"></div>
+  <p style="color:var(--ink2);font-size:.98rem" id="pianoNota"></p>
 </section>
 
 
 <section id="rosa">
   <p class="eyebrow">La rosa</p>
-  <h2>Le 28 scelte, con il 4-5-1 in testa</h2>
-  <p>Il 4-5-1 e il modificatore tirano in direzioni opposte: quattro difensori sono il minimo consentito, e se uno resta senza voto e la panchina non lo copre il modificatore si azzera per intero. Ma il 4-5-1 ha un vantaggio che in questa lega vale molto: nel listone Classic decine di trequartisti ed esterni offensivi sono classificati come centrocampisti, quindi i cinque slot di centrocampo comprano attaccanti veri a prezzo di mediani.</p>
-  <p>La conclusione della simulazione è netta: <strong>in 4-5-1 non compri cinque difensori discreti, ne compri quattro eccellenti.</strong> Concentrando il budget, il quarto difensore recupera quasi tutto il divario col 5-4-1.</p>
+  <h2 id="rosaTit">Le scelte</h2>
+  <p id="rosaIntro1"></p>
+  <p id="rosaIntro2"></p>
 
   <div class="figure">
     <div class="ftitle">Cosa produce il modificatore, per assetto</div>
-    <div class="fsub">Punti medi a giornata. Voti reali di media voto 2025/26, panchina che copre nel 95% dei casi.</div>
+    <div class="fsub" id="fsub2"></div>
     <div class="bars" id="bars2"></div>
-    <div class="faxis">Il costo vero del 4-5-1 non è il quarto difensore: è la <strong>panchina</strong>. Con una copertura al 60% invece che al 95% perdi 0,17 punti a giornata e resti senza modificatore in una giornata su tredici. Per questo tutti e nove i difensori della rosa qui sotto sono gente che gioca.</div>
+    <div class="faxis" id="faxis2"></div>
   </div>
 
   <h3 style="margin-top:2.4rem">L'undici che scendi in campo</h3>
-  <p style="color:var(--ink2);font-size:.98rem">Cinque rigoristi designati nella stessa formazione — Orsolini, Da Cunha, Gudmundsson, Vlasic e Colombo — in una lega dove il rigore vale +3.</p>
-  <div class="pitch"><div class="prow"><div class="pp"><span>Butez</span></div></div><div class="prow"><div class="pp"><span>Kalulu</span></div><div class="pp"><span>Bremer</span></div><div class="pp"><span>Rrahmani</span></div><div class="pp"><span>Pavlovic</span></div></div><div class="prow"><div class="pp"><span>Zaniolo</span></div><div class="pp"><span>Da Cunha</span></div><div class="pp"><span>Orsolini</span></div><div class="pp"><span>Gudmundsson</span></div><div class="pp"><span>Vlasic</span></div></div><div class="prow"><div class="pp"><span>Colombo</span></div></div></div>
+  <p style="color:var(--ink2);font-size:.98rem" id="undiciNota"></p>
+  <div id="campo"></div>
 
   <h3 style="margin-top:2.4rem">La rosa completa</h3>
-  <p style="color:var(--ink2);font-size:.98rem">479 crediti spesi, <strong>21 di tesoretto</strong> per svincoli e riparazione. Nessun acquisto sopra il proprio tetto. La colonna <em>mercato</em> è quanto costerà agli altri: la differenza è il tuo margine.</p>
-  <div class="tblwrap"><table class="rosat"><thead><tr><th>Giocatore</th><th>Ruolo in rosa</th><th class="num">Mercato</th><th class="num">Paghi</th><th>Perché</th></tr></thead><tbody id="rosaBody"></tbody></table></div>
+  <p style="color:var(--ink2);font-size:.98rem" id="rosaNota"></p>
+  <div class="tblwrap"><table class="rosat"><thead><tr><th>Giocatore</th><th>Ruolo in rosa</th><th class="num">Mercato</th><th class="num">Punti</th><th>Perché</th></tr></thead><tbody id="rosaBody"></tbody></table></div>
 
-  <div class="callout" style="margin-top:2rem">
-    <p><strong>I tre bivi da tenere a mente.</strong></p>
-    <p style="margin-top:.6rem"><b>Se Dimarco scende sotto i 46.</b> Prendilo al posto di Gila: la sua media voto è di un'altra categoria e da sola porta il modificatore da 79 a 90 punti stagionali, bonus personali esclusi. Recuperi i crediti rinunciando ad Adams C. in attacco.</p>
-    <p style="margin-top:.6rem"><b>Se la difesa costa meno del previsto.</b> Ogni credito risparmiato va sull'attaccante titolare, non sulla panchina: da Colombo si sale verso Nkunku (52) o Krstović. In 4-5-1 quello slot gioca ogni domenica.</p>
-    <p style="margin-top:.6rem"><b>Se ti sfugge Orsolini.</b> Non inseguirlo oltre i 52. Il piano B è Da Cunha più Baturina, oppure Zaccagni: ti serve il pacchetto rigori-più-piazzati, non quel nome.</p>
-  </div>
-
-  <p style="margin-top:1.6rem;color:var(--ink2);font-size:.98rem">Un avvertimento sulla concentrazione: tre titolari vengono dal Como (Butez, Ramón, Da Cunha), che quest'anno gioca la Champions con una rosa non profondissima. È un rischio calcolato — sono la miglior difesa d'Italia a prezzo di saldo — ma se all'asta i primi due ti costano poco, il terzo prendilo altrove.</p>
+  <div class="callout" style="margin-top:2rem" id="bivi"></div>
 </section>
 
 <section>
   <p class="eyebrow">Regole operative</p>
-  <h2>Sette regole per un'asta a chiamata random</h2>
+  <h2 id="regoleTit">Sette regole per un'asta a chiamata random</h2>
   <p>Il formato è il vincolo più duro che hai: non decidi tu quando esce il tuo obiettivo, e il reparto si completa tutto insieme. Chi improvvisa in questo formato perde.</p>
   <div class="rules">
     <div class="rule"><div><h3>Il tetto si scrive prima, non durante</h3><p>Nel formato random non puoi aspettare il tuo uomo: quando esce, decidi in otto secondi. L'unica difesa è avere un numero già scritto accanto a ogni nome. Il tavolo qui sotto è quel numero.</p></div></div>
-    <div class="rule"><div><h3>Il reparto portieri è dove si perde l'asta</h3><p>Si parte da lì e tutti hanno 500 crediti in tasca: o si strapaga il primo estratto o lo si regala. Tu hai un obiettivo solo — uscire con il portiere di una difesa da top-4 e non più di 60 spesi.</p></div></div>
+    <div class="rule"><div><h3>Il reparto portieri è dove si perde l'asta</h3><p id="regolaPortieri"></p></div></div>
     <div class="rule"><div><h3>Non essere mai l'ultimo con uno slot vuoto</h3><p>Chi arriva in fondo a un reparto con slot da riempire e crediti in mano paga cinque volte il valore, perché tutti lo sanno. Riempi presto gli slot di completamento quando escono nomi che nessuno vuole.</p></div></div>
-    <div class="rule"><div><h3>Checkpoint alla fine di ogni reparto</h3><p>Dopo i portieri devi avere almeno 440 crediti. Dopo i difensori almeno 305. Dopo i centrocampisti almeno 160. Se sfori un checkpoint, il reparto successivo si compra a saldo — non c'è recupero.</p></div></div>
-    <div class="rule"><div><h3>Sei difensori che giocano, non nove nomi</h3><p>Il modificatore si azzera se in campo non hai quattro voti validi in difesa, e i cambi sono solo tra pari ruolo. Servono sei difensori titolari veri; i tre restanti sono assicurazione da 1 credito.</p></div></div>
-    <div class="rule"><div><h3>Se parte la guerra su un top d'attacco, esci al secondo rilancio</h3><p>Due fantallenatori che si sfidano su Malen o Lautaro stanno bruciando un terzo del loro budget. Il tuo compito non è vincere quel duello: è incassare il fatto che l'hanno vinto.</p></div></div>
-    <div class="rule"><div><h3>Il tesoretto è un'arma</h3><p>Chiudere a 470 spesi non è un errore, è una posizione. I crediti restano per svincoli e riparazione, e ogni anno alla quinta giornata si libera un titolare che nessuno può più permettersi.</p></div></div>
+    <div class="rule"><div><h3>Checkpoint alla fine di ogni reparto</h3><p>Dopo i portieri devi avere almeno <b data-cfg="ckP"></b> crediti. Dopo i difensori almeno <b data-cfg="ckD"></b>. Dopo i centrocampisti almeno <b data-cfg="ckC"></b>. Se sfori un checkpoint, il reparto successivo si compra a saldo — non c'è recupero.</p></div></div>
+    <div class="rule"><div><h3 id="difTit">Difensori che giocano, non nomi</h3><p id="difTesto"></p></div></div>
+    <div class="rule"><div><h3>Se parte la guerra su un big, esci al secondo rilancio</h3><p id="regolaGuerra"></p></div></div>
+    <div class="rule"><div><h3>Il tesoretto è un'arma</h3><p>Chiudere con qualche credito in mano non è un errore, è una posizione. I crediti restano per svincoli e riparazione, e ogni anno alla quinta giornata si libera un titolare che nessuno può più permettersi.</p></div></div>
   </div>
 </section>
 
 <section>
   <p class="eyebrow">Target</p>
   <h2>Chi comprare, reparto per reparto</h2>
-  <p><strong>Mercato atteso</strong> è la stima di quanto quel giocatore costerà davvero al tavolo. <strong>Mio max</strong> è il tuo tetto. Dove il tetto è più alto del mercato, hai un vantaggio: quello è un <span class="pill p-t">target</span>. Dove è più basso, il giocatore vale meno di quanto lo pagheranno: <span class="pill p-l">lascia</span>.</p>
+  <p>I diciotto che rendono di più per credito speso in ogni ruolo, ricalcolati sui dati di oggi — non una lista scritta a mano che invecchia. <strong>Mercato atteso</strong> è quanto quel giocatore costerà davvero al tavolo; <strong>mio max</strong> è il tuo tetto. Dove il tetto è più alto del mercato hai un vantaggio: quello è un <span class="pill p-t">target</span>. Dove è più basso, il giocatore vale meno di quanto lo pagheranno: <span class="pill p-l">lascia</span>.</p>
   <div class="tabs" role="tablist" id="tabs"></div>
   <div class="tblwrap"><table id="short"><thead><tr><th>Giocatore</th><th class="num">Quot.</th><th class="num">Mercato atteso</th><th class="num">Mio max</th><th>Verdetto</th><th>Perché</th></tr></thead><tbody></tbody></table></div>
 </section>
@@ -140,7 +121,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 <section>
   <p class="eyebrow">Strumento</p>
   <h2>Il listone completo e il tracker d'asta</h2>
-  <p>I 540 giocatori con tetto calcolato, filtri per ruolo, squadra, fascia e verdetto, e il tracker che segue crediti e slot mentre batti l'asta. Puoi anche cambiare i parametri di lega — crediti, squadre, slot, sbilanciamento del mercato — e vedere tutti i prezzi ricalcolarsi. E puoi segnare i giocatori che finiscono agli avversari, così sai sempre chi è ancora sul mercato.</p>
+  <p><span id="quantiGiocatori"></span> con tetto calcolato, filtri per ruolo, squadra, fascia e verdetto, e il tracker che segue crediti e slot mentre batti l'asta. I parametri di lega — crediti, squadre, slot, carattere del mercato — si cambiano nelle <a href="impostazioni.html">impostazioni</a>, e tutti i prezzi si ricalcolano. E puoi segnare i giocatori che finiscono agli avversari, così sai sempre chi è ancora sul mercato.</p>
   <div class="cards">
     <div class="card"><h3>Listone e asta live</h3><p>Filtri, ordinamento, tetti, tracker crediti e il conteggio di quanti giocatori restano liberi per fascia.</p><p style="margin-top:.8rem"><a href="listone.html">Apri lo strumento &rarr;</a></p></div>
     <div class="card"><h3>La mia rosa</h3><p>Quello che hai comprato, l'undici titolare e il simulatore che ti dice quanto rende il modificatore con i tuoi difensori.</p><p style="margin-top:.8rem"><a href="rosa.html">Guarda la rosa &rarr;</a></p></div>
@@ -149,11 +130,12 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 </section>
 
 <footer>
-  <p><strong>Come è stato costruito.</strong> Quotazioni dal listone ufficiale della tua lega. Il <em>mercato atteso</em> ripartisce il monte crediti di lega (5.000) sui 280 giocatori che verranno acquistati, con una curva sulle quotazioni e uno split di reparto stimato al 5 / 12 / 28,5 / 54,5 per cento — cioè una lega sbilanciata sull'attacco, come la tua. Il <em>mio max</em> corregge quella stima giocatore per giocatore con il valore da modificatore, i rigoristi, i ballottaggi e gli infortuni aggiornati al 25 agosto 2026, dopo la prima giornata.</p>
+  <p id="comeCostruito"></p>
   <p>Il mercato chiude il 1° settembre: prima di sedersi al tavolo vanno ricontrollati i rigoristi di Milan e Juventus, la porta del Torino e la punta che l'Atalanta sta ancora cercando.</p>
 </footer>
 </div>
-<script type="module" src="assets/guida.js?v=23"></script>
-<script type="module" src="assets/theme.js?v=23"></script>
+<script type="module" src="assets/guida.js?v=30"></script>
+<script type="module" src="assets/menu.js?v=30"></script>
+<script type="module" src="assets/theme.js?v=30"></script>
 </body>
 </html>

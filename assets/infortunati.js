@@ -4,16 +4,14 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo,
   giorniAlRientro, gravita, classeGravita, RUOLI,
-} from './app.js?v=23';
-import { esc } from './db.js?v=23';
+} from './app.js?v=30';
+import { esc } from './db.js?v=30';
+import { leggiCfg } from './cfg.js?v=30';
 
 const { players, lega } = await caricaDati();
 
-let cfg = lega;
-try {
-  const salvata = JSON.parse(localStorage.getItem('pianoAsta:cfg:v1') || 'null');
-  if (salvata) cfg = { ...structuredClone(lega), ...salvata };
-} catch { /* storage non disponibile */ }
+/* Le regole della lega arrivano dal database condiviso: vedi assets/cfg.js */
+const { cfg } = await leggiCfg(lega);
 ricalcola(players, cfg, cfg.piano);
 
 const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
@@ -80,9 +78,23 @@ function disegna() {
   const box = document.getElementById('elenco');
 
   if (!voci.length) {
-    box.innerHTML = `<div class="vuotafs">Nessun dato sugli infortuni, ancora. Il file viene creato la prima volta
-      che gira l'aggiornamento automatico: su GitHub, scheda <strong>Actions</strong> →
-      <strong>Aggiorna dati giocatori</strong> → <strong>Run workflow</strong>.</div>`;
+    /* Due cause diverse, e il consiglio giusto e' l'opposto nei due casi.
+       In locale il file quasi sempre esiste gia' su GitHub — lo scrive
+       l'aggiornamento automatico — e manca solo perche' non hai ancora
+       tirato giu' il commit. Mandarti a rilanciare il workflow, come faceva
+       la versione precedente di questo messaggio, ti fa perdere tempo. */
+    const inLocale = ['localhost', '127.0.0.1', ''].includes(location.hostname)
+      || location.protocol === 'file:';
+    box.innerHTML = inLocale
+      ? `<div class="vuotafs">Qui non c'è il file degli infortuni, ma su GitHub quasi certamente sì:
+         lo scrive da solo l'aggiornamento delle 8 del mattino. Stai guardando una copia locale che non l'ha
+         ancora scaricato — fai <strong><code>git pull</code></strong> nella cartella del sito e ricarica.
+         Se anche dopo il pull la cartella <code>assets/data/</code> non contiene
+         <code>infortuni.json</code>, allora l'aggiornamento non è mai andato a buon fine: lancialo a mano
+         da <strong>Actions → Aggiorna dati giocatori → Run workflow</strong>.</div>`
+      : `<div class="vuotafs">Nessun dato sugli infortuni, ancora. Il file viene creato la prima volta
+         che gira l'aggiornamento automatico: su GitHub, scheda <strong>Actions</strong> →
+         <strong>Aggiorna dati giocatori</strong> → <strong>Run workflow</strong>.</div>`;
     return disegnaTotali(lista);
   }
   if (!lista.length) {

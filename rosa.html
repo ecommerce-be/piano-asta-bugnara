@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=23">
+<link rel="stylesheet" href="assets/style.css?v=30">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="23">
+<meta name="versione" content="30">
 </head>
 <body>
 
@@ -24,11 +24,13 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <nav class="nav">
     <a href="./">La guida</a>
     <a href="listone.html">Listone e asta live</a>
+    <a href="rosaideale.html">Rosa ideale</a>
     <a href="bozza.html">Bozza</a>
     <a href="rosa.html" aria-current="page">La mia rosa</a>
     <a href="fantasquadre.html">Fantasquadre</a>
     <a href="squadre.html">Serie A</a>
     <a href="infortunati.html">Infortunati</a>
+    <a href="impostazioni.html">Impostazioni</a>
   </nav>
   <div id="tema"></div>
 </div></div>
@@ -58,7 +60,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <section>
     <p class="eyebrow">Simulatore</p>
     <h2>Quanto ti rende il modificatore</h2>
-    <p style="color:var(--ink2);max-width:70ch">Scegli il portiere e i difensori che schiereresti, aggiusta la media voto che ti aspetti da ciascuno, e la simulazione ti dice quanti punti regala il modificatore ogni giornata. Gira ventimila giornate a ogni modifica.</p>
+    <p style="color:var(--ink2);max-width:72ch"><strong>A cosa serve.</strong> All'asta la domanda è sempre la stessa: <em>vale la pena rilanciare ancora su questo difensore?</em> Il modificatore non paga il singolo giocatore, paga la <em>media</em> del reparto — quindi il valore di un difensore dipende da chi ha accanto, e non si legge sulla sua quotazione. Qui componi la difesa che pensi di schierare e vedi quanti punti produce in una stagione.</p>
+    <p style="color:var(--ink2);max-width:72ch"><strong>Perché i cursori.</strong> Le medie voto sono la stima del modello, non un dato certo. Se sai qualcosa che il modello non sa — un difensore appena arrivato in una squadra migliore, uno che secondo te è sopravvalutato — spostala e guarda di quanto cambia il totale. Se cambia poco, quel dubbio non merita crediti; se cambia molto, sai quanto puoi permetterti di pagare.</p>
 
     <div class="simbox" style="margin-top:1.4rem">
       <h3>Portiere</h3>
@@ -69,8 +72,9 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
       <div id="cursori" style="margin-top:1.4rem"></div>
 
       <div class="simres" id="risultato"></div>
-      <p style="font-family:'Archivo',sans-serif;font-size:.85rem;color:var(--ink3);margin:1rem 0 0">
-        Le medie voto di partenza sono stime dedotte dalla fascia del giocatore, non dati reali: correggile con i cursori se conosci il giocatore meglio del modello. La simulazione assume che un titolare salti la giornata nel 5% dei casi e che la panchina lo copra nel 95%.
+      <p id="notaSim" style="font-family:'Archivo',sans-serif;font-size:.9rem;color:var(--ink2);margin:1rem 0 0"></p>
+      <p style="font-family:'Archivo',sans-serif;font-size:.85rem;color:var(--ink3);margin:.7rem 0 0">
+        Le medie voto di partenza sono quelle che il consigliere si aspetta da ciascuno: nascono dalla posizione del giocatore nel suo ruolo e si spostano verso i voti veri man mano che la stagione va avanti. La simulazione gira ventimila giornate a ogni modifica e assume che un titolare salti la giornata nel 5% dei casi e che la panchina lo copra nel 95%.
       </p>
     </div>
   </section>
@@ -80,7 +84,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </footer>
 </div>
 
-<script type="module" src="assets/rosa-page.js?v=23"></script>
-<script type="module" src="assets/theme.js?v=23"></script>
+<script type="module" src="assets/rosa-page.js?v=30"></script>
+<script type="module" src="assets/menu.js?v=30"></script>
+<script type="module" src="assets/theme.js?v=30"></script>
 </body>
 </html>

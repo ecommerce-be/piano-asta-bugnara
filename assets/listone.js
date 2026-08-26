@@ -3,12 +3,13 @@
 import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
   toast, badgeRuolo, gestisce, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=23';
+} from './app.js?v=30';
 import {
   avvia, configurato, collegato, utente, leggi as leggiDb, scrivi as scriviDb,
   montaAccesso, esc,
-} from './db.js?v=23';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=23';
+} from './db.js?v=30';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=30';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=30';
 
 const { players, lega } = await caricaDati();
 
@@ -31,7 +32,9 @@ function scriviCfg(c) {
   } catch { /* storage non disponibile */ }
 }
 
-let cfg = leggiCfg();
+/* Le regole della lega stanno nel database e si cambiano nella pagina
+   Impostazioni: qui le leggiamo e basta. */
+let cfg = (await leggiCfgCondivisa(lega)).cfg;
 
 const CAMPI = [
   ['cCrediti', c => c.crediti, (c, v) => c.crediti = v],
