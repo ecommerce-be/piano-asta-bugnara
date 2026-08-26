@@ -4,10 +4,14 @@
     python3 tools/infortuni.py             # aggiorna
     python3 tools/infortuni.py --diagnosi  # guarda e riferisce, senza scrivere
 
-Perche' un lettore diverso da tools/aggiorna_dati.py: la pagina degli
-indisponibili non e' una tabella. E' un elenco discorsivo, raggruppato per
-squadra, dove ogni voce e' una frase ("lesione del collaterale mediale di
-secondo grado del ginocchio sinistro, recuperabile da inizio ottobre").
+Perche' un lettore diverso da tools/aggiorna_dati.py: qui non ci sono tabelle.
+Sono elenchi discorsivi, raggruppati per squadra, dove ogni voce e' una frase
+("lesione del collaterale mediale di secondo grado del ginocchio sinistro,
+recuperabile da inizio ottobre").
+
+Leggiamo DUE pagine: /infortunati-serie-a e /squalificati-e-diffidati. La terza,
+/indisponibili-serie-a, sembrerebbe la piu' completa ma arriva vuota: la riempie
+JavaScript, e chi scarica l'HTML vede solo la cornice.
 
 Quindi qui non cerchiamo righe e colonne: ci ancoriamo a due cose che restano
 stabili anche se cambia la grafica.
@@ -43,7 +47,14 @@ from aggiorna_dati import SQUADRE, chiave_nome, chiave_intestazione, scarica  # 
 
 PLAYERS = RADICE / "assets" / "data" / "players.json"
 USCITA = RADICE / "assets" / "data" / "infortuni.json"
-URL = "https://www.fantacalcio.it/indisponibili-serie-a"
+# Due pagine, non una. La sonda ha stabilito che /indisponibili-serie-a arriva
+# vuota — la riempie JavaScript — mentre queste due hanno i dati gia' scritti
+# nell'HTML. Ognuna porta un tipo di assenza diverso.
+FONTI = [
+    ("infortunio", "https://www.fantacalcio.it/infortunati-serie-a"),
+    ("squalifica", "https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"),
+]
+URL = FONTI[0][1]
 
 # quante voci ci aspettiamo come minimo perche' la lettura sia credibile:
 # in Serie A c'e' sempre qualche decina di indisponibili
@@ -121,8 +132,11 @@ def squadra_da_indirizzo(href: str) -> str | None:
     return SQUADRE.get(chiave_intestazione(slug)) or SQUADRE.get(chiave_intestazione(slug.split("-")[-1]))
 
 
-def categoria_precedente(nodo) -> str:
-    """Risale il documento cercando l'ultimo titolo tipo "Infortunati"."""
+def categoria_precedente(nodo, predefinito: str = "infortunio") -> str:
+    """Risale il documento cercando l'ultimo titolo tipo "Infortunati".
+
+    Se non ne trova, vale il tipo della pagina da cui stiamo leggendo: la
+    pagina degli infortunati porta infortuni, quella delle squalifiche no."""
     for prec in nodo.find_all_previous(string=True, limit=400):
         t = chiave_intestazione(prec)
         if not t or len(t) > 24:
@@ -133,7 +147,7 @@ def categoria_precedente(nodo) -> str:
             return "squalifica"
         if t.startswith("diffidat"):
             return "diffida"
-    return "infortunio"
+    return predefinito
 
 
 def blocco_di(link, nome: str) -> str:
@@ -165,7 +179,58 @@ def blocco_di(link, nome: str) -> str:
     return t.strip(" ,;:–—-·|").strip()
 
 
-def leggi(html: str, noti: dict[str, list[dict]]) -> tuple[list[dict], dict]:
+def leggi_scorrendo(zuppa, noti: dict, tipo_default: str) -> dict[str, dict]:
+    """Legge la pagina scorrendola dall'inizio alla fine, come la leggeresti tu.
+
+    Serve quando i nomi non sono link e quindi non c'e' un indirizzo da cui
+    ricavare la squadra. Attraversiamo il documento tenendo a mente due cose:
+    l'ultima squadra nominata e l'ultimo titolo di sezione visto. Quando
+    incontriamo un nome del listone, sappiamo gia' di chi e' e perche' e' fermo.
+    """
+    voci: dict[str, dict] = {}
+    squadra, tipo = None, tipo_default
+
+    for pezzo in zuppa.find_all(string=True):
+        testo = " ".join(str(pezzo).split())
+        if not testo or len(testo) > 40:
+            continue
+
+        sq = SQUADRE.get(chiave_intestazione(testo))
+        if sq:
+            squadra = sq
+            continue
+
+        k = chiave_intestazione(testo)
+        if k.startswith("infortunat"):
+            tipo = "infortunio"; continue
+        if k.startswith("squalificat"):
+            tipo = "squalifica"; continue
+        if k.startswith("diffidat"):
+            tipo = "diffida"; continue
+
+        candidati = noti.get(chiave_nome(testo))
+        if not candidati:
+            continue
+        g = next((x for x in candidati if x["sq"] == squadra), None) if squadra else None
+        if not g and len(candidati) == 1:
+            g = candidati[0]
+        if not g:
+            continue
+
+        desc = blocco_di(pezzo.parent, testo)
+        if len(desc) < 4:
+            continue
+        etichetta, data = quando_rientra(desc)
+        chiave = f"{g['r']}|{g['n']}|{g['sq']}"
+        if chiave in voci and len(voci[chiave]["desc"]) >= len(desc):
+            continue
+        voci[chiave] = {"id": chiave, "n": g["n"], "sq": g["sq"], "r": g["r"],
+                        "tipo": tipo, "desc": desc[:300],
+                        "rientro": etichetta, "quando": data}
+    return voci
+
+
+def leggi(html: str, noti: dict[str, list[dict]], tipo_default: str = "infortunio") -> tuple[list[dict], dict]:
     zuppa = BeautifulSoup(html, "html.parser")
     voci: dict[str, dict] = {}
     link_totali = 0
@@ -198,14 +263,21 @@ def leggi(html: str, noti: dict[str, list[dict]]) -> tuple[list[dict], dict]:
             continue
         voci[chiave] = {
             "id": chiave, "n": g["n"], "sq": g["sq"], "r": g["r"],
-            "tipo": categoria_precedente(a),
+            "tipo": categoria_precedente(a, tipo_default),
             "desc": desc[:300],
             "rientro": etichetta,
             "quando": data,
         }
 
+    da_link = len(voci)
+    # Se i nomi non sono link, il passo sopra non trova niente: allora leggiamo
+    # la pagina scorrendola, che funziona anche col testo semplice.
+    if da_link < 5:
+        voci.update(leggi_scorrendo(zuppa, noti, tipo_default))
+
     diagnosi = {
-        "link_di_giocatori_riconosciuti": link_totali,
+        "voci_dai_link": da_link,
+        "voci_scorrendo_il_testo": len(voci) - da_link,
         "senza_squadra_nell_indirizzo": senza_squadra,
         "voci_tenute": len(voci),
     }
@@ -329,17 +401,32 @@ def main(args=None) -> int:
     for g in listone:
         noti.setdefault(chiave_nome(g["n"]), []).append(g)
 
-    print(f"=== indisponibili — {args.url}")
-    html = scarica(args.url)
-    print(f"    scaricati {len(html):,} caratteri")
+    fonti = [("infortunio", args.url)] if args.url != URL else FONTI
+    voci: list[dict] = []
+    ultimo_html, ultima_url = "", args.url
 
-    voci, diagnosi = leggi(html, noti)
-    for k, v in diagnosi.items():
-        print(f"    {k}: {v}")
+    for tipo, url in fonti:
+        print(f"=== {tipo} — {url}")
+        try:
+            html = scarica(url)
+        except SystemExit as e:
+            print(f"    {e.code}")
+            continue
+        print(f"    scaricati {len(html):,} caratteri")
+        ultimo_html, ultima_url = html, url
+
+        parziali, diagnosi = leggi(html, noti, tipo)
+        for k, v in diagnosi.items():
+            print(f"    {k}: {v}")
+        # la prima fonte vince sui doppioni: un infortunato squalificato resta
+        # prima di tutto un infortunato, che e' l'informazione che pesa
+        gia = {v["id"] for v in voci}
+        voci.extend(v for v in parziali if v["id"] not in gia)
 
     if len(voci) < SOGLIA:
-        anatomia(html, noti)
-        sonda(html, noti, args.url)
+        if ultimo_html:
+            anatomia(ultimo_html, noti)
+            sonda(ultimo_html, noti, ultima_url)
         print(f"\nSolo {len(voci)} voci, sotto il minimo di {SOGLIA}: non scrivo niente.")
         print("Rilancia con --diagnosi e mandami l'output.")
         return 1
@@ -356,7 +443,6 @@ def main(args=None) -> int:
               f"rientro: {v['rientro'] or '—':<18} {v['desc'][:60]}")
 
     if args.diagnosi:
-        anatomia(html, noti)
         print("\n(diagnosi: non ho scritto niente)")
         return 0
 

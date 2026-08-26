@@ -4,8 +4,8 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo,
   giorniAlRientro, gravita, classeGravita, RUOLI,
-} from './app.js?v=22';
-import { esc } from './db.js?v=22';
+} from './app.js?v=23';
+import { esc } from './db.js?v=23';
 
 const { players, lega } = await caricaDati();
 
