@@ -1,7 +1,7 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=7';
-import { avvia, configurato, leggi, esc } from './db.js?v=7';
+import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=8';
+import { avvia, configurato, leggi, esc } from './db.js?v=8';
 
 const { players, lega } = await caricaDati();
 
@@ -102,9 +102,12 @@ function disegna() {
   /* avviso sulle statistiche che mancano */
   const conVoto = players.filter(p => p.mv != null).length;
   const conGol = players.filter(p => p.gol != null).length;
-  document.getElementById('avvisoStat').innerHTML = conGol
+  const quando = AGGIORNATO_IL
+    ? ` Dati aggiornati il ${new Date(AGGIORNATO_IL).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}.`
+    : '';
+  document.getElementById('avvisoStat').innerHTML = (conGol
     ? `Statistiche complete per ${conGol} giocatori.`
-    : `Presenze, media voto e fantamedia ci sono per ${conVoto} giocatori su ${players.length} — chi non ha ancora giocato è vuoto. Le colonne gol, assist e cartellini restano vuote finché non aggiungi <code>data/statistiche.json</code>.`;
+    : `Presenze, media voto e fantamedia ci sono per ${conVoto} giocatori su ${players.length} — chi non ha ancora giocato è vuoto.`) + quando;
 
   /* schede compatte, solo quando si guardano tutte le squadre */
   const griglia = document.getElementById('griglia');

@@ -4,11 +4,18 @@
 export const RUOLI = ['P', 'D', 'C', 'A'];
 export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', A: 'Attaccanti' };
 
+/* Impronta dei dati: cambia solo quando players.json cambia davvero.
+   La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
+   ha la versione vecchia in cache. NON toccare a mano. */
+export const VERSIONE_DATI = 'c2ce2abd0f';
+export const AGGIORNATO_IL = '2026-08-26';
+
 /** Carica listone + configurazione di lega. */
 export async function caricaDati(base = 'assets/data/') {
+  const v = '?d=' + encodeURIComponent(VERSIONE_DATI);
   const [players, lega] = await Promise.all([
-    fetch(base + 'players.json').then(r => r.json()),
-    fetch(base + 'league.json').then(r => r.json()),
+    fetch(base + 'players.json' + v).then(r => r.json()),
+    fetch(base + 'league.json' + v).then(r => r.json()),
   ]);
   return { players, lega };
 }

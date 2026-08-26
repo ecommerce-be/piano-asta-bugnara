@@ -100,10 +100,14 @@ def main() -> int:
     giocatori.sort(key=lambda g: (ordine.get(g["r"], 9), -g["q"] * g["mult"], g["n"]))
 
     USCITA.parent.mkdir(parents=True, exist_ok=True)
-    USCITA.write_text(
-        json.dumps(giocatori, ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8",
-    )
+    compatto = json.dumps(giocatori, ensure_ascii=False, separators=(",", ":"))
+    USCITA.write_text(compatto, encoding="utf-8")
+
+    # stessa impronta usata dall'aggiornamento automatico: senza, il browser
+    # continua a servire il listone vecchio dalla cache
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from aggiorna_dati import marca_dati
+    marca_dati(compatto)
 
     print(f"{len(giocatori)} giocatori scritti in {USCITA.relative_to(RADICE)}")
     print(f"{sum(1 for g in giocatori if g['nota'])} con nota, "

@@ -1,0 +1,51 @@
+name: Aggiorna dati giocatori
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      diagnosi:
+        description: "Solo diagnosi: guarda le pagine senza modificare niente"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aggiorna-dati
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Prepara Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Installa le dipendenze
+        run: pip install --quiet beautifulsoup4
+
+      - name: Leggi le pagine e aggiorna il listone
+        run: |
+          python tools/aggiorna_dati.py \
+            ${{ inputs.diagnosi && '--diagnosi' || '' }}
+
+      - name: Fai commit se qualcosa e' cambiato
+        if: ${{ !inputs.diagnosi }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Nessuna modifica: non committo niente."
+            exit 0
+          fi
+          git config user.name  "aggiornamento automatico"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/players.json assets/app.js
+          git commit -m "Dati giocatori aggiornati da Fantacalcio.it ($(date -u +%d/%m/%Y))"
+          git push
