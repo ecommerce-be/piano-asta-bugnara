@@ -2,13 +2,13 @@
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
-  toast, badgeRuolo, gestisce, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=14';
+  toast, badgeRuolo, gestisce, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
+} from './app.js?v=19';
 import {
   avvia, configurato, collegato, utente, leggi as leggiDb, scrivi as scriviDb,
   montaAccesso, esc,
-} from './db.js?v=14';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=14';
+} from './db.js?v=19';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=19';
 
 const { players, lega } = await caricaDati();
 
@@ -85,6 +85,17 @@ for (const [id, , scrivi] of CAMPI) {
 
 let stato = asta.leggi();
 let altrui = asta.leggiAltrui();
+
+/* Chi e' fermo: la pastiglia accanto al nome serve proprio qui, durante la
+   chiamata, quando hai due secondi per decidere se rilanciare. */
+const infortuni = await caricaInfortuni();
+const segnale = p => {
+  const v = infortuni.per.get(asta.id(p));
+  if (!v) return '';
+  const sigla = v.tipo === 'infortunio' ? 'KO' : v.tipo === 'squalifica' ? 'SQ' : 'DIFF';
+  const dettaglio = [v.tipo, v.rientro && `rientro ${v.rientro}`, v.desc].filter(Boolean).join(' — ');
+  return `<span class="ko ${classeGravita(v)}" title="${esc(dettaglio)}">${sigla}</span>`;
+};
 
 /* fantasquadre condivise: servono per assegnare un giocatore a chi se l'e' preso */
 let fsDati = { squadre: [] }, fsVer = 0, fsPronte = false;
@@ -182,7 +193,7 @@ function disegnaTabella() {
     const via = altrui.has(id);
     const cls = via ? 'altrui' : pagato ? (pagato > p.max ? 'over' : 'taken') : '';
     return `<tr class="${cls}">
-      <td><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}</span>
+      <td><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}</span>
         <span class="sq">${esc(p.sq)}</span></span></span></td>
       <td class="num mktc">${p.q}</td>
       <td class="num mktc">${Math.round(p.mkt)}</td>

@@ -10,6 +10,47 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
 export const VERSIONE_DATI = 'c2ce2abd0f';
 export const AGGIORNATO_IL = '2026-08-26';
 
+/**
+ * Chi e' fermo: infortunati e squalificati, da assets/data/infortuni.json.
+ * Se il file non c'e' ancora (prima che l'aggiornamento automatico giri la
+ * prima volta) non e' un errore: restituiamo un elenco vuoto e le pagine
+ * continuano a funzionare come prima.
+ */
+export async function caricaInfortuni(base = 'assets/data/') {
+  const vuoto = { aggiornato: '', voci: [], per: new Map() };
+  try {
+    const r = await fetch(`${base}infortuni.json?d=${encodeURIComponent(VERSIONE_DATI)}-${AGGIORNATO_IL}`);
+    if (!r.ok) return vuoto;
+    const d = await r.json();
+    const voci = Array.isArray(d.voci) ? d.voci : [];
+    return { aggiornato: d.aggiornato || '', voci, per: new Map(voci.map(v => [v.id, v])) };
+  } catch {
+    return vuoto;   // offline, o file non ancora generato
+  }
+}
+
+/** Fra quanti giorni rientra? null se non lo sappiamo. */
+export function giorniAlRientro(voce) {
+  if (!voce?.quando) return null;
+  const d = Math.round((new Date(voce.quando) - new Date()) / 86400000);
+  return d > 0 ? d : 0;
+}
+
+/** Quanto pesa: serve a colorare la pastiglia allo stesso modo ovunque. */
+export function gravita(voce) {
+  if (!voce) return '';
+  if (voce.tipo === 'diffida') return 'lieve';
+  if (voce.tipo === 'squalifica') return 'breve';
+  const g = giorniAlRientro(voce);
+  if (g === null) return 'ignota';
+  if (g <= 14) return 'breve';
+  if (g <= 45) return 'media';
+  return 'lunga';
+}
+
+/** La classe CSS che colora la pastiglia, per averla identica in ogni pagina. */
+export const classeGravita = v => 'g-' + (gravita(v) || 'ignota');
+
 /** Carica listone + configurazione di lega. */
 export async function caricaDati(base = 'assets/data/') {
   const v = '?d=' + encodeURIComponent(VERSIONE_DATI);

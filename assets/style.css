@@ -446,6 +446,32 @@ tr.altrui td:last-child,tr.altrui td:nth-last-child(2){opacity:1}
 td .propr{font-family:"Archivo",sans-serif;font-size:.72rem;color:var(--warn);white-space:nowrap}
 tr.taken td .propr{color:var(--acc)}
 
+/* ===== infortunati ===== */
+.infrow{padding:.6rem 1rem;border-top:1px solid var(--line)}
+.infrow:first-child{border-top:0}
+.infrow.mia{box-shadow:inset 3px 0 0 var(--acc)}
+.infrow .capo{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+  font-family:"Archivo",sans-serif;font-size:.87rem}
+.infrow .quando{font-family:"Archivo",sans-serif;font-size:.76rem;font-weight:700}
+.infrow .perche{font-family:"Newsreader",serif;font-size:.93rem;color:var(--ink2);
+  line-height:1.45;margin-top:.2rem;max-width:82ch}
+/* quanto manca al rientro, con lo stesso colore ovunque nel sito */
+.g-lunga{background:var(--warn-soft);color:var(--warn)}
+.g-media{background:var(--gold-soft);color:var(--gold)}
+.g-breve,.g-lieve{background:var(--surface2);color:var(--ink2)}
+.g-ignota{background:var(--surface2);color:var(--ink3)}
+.quando.g-lunga{background:none;color:var(--warn)}
+.quando.g-media{background:none;color:var(--gold)}
+.quando.g-breve,.quando.g-lieve,.quando.g-ignota{background:none;color:var(--ink3)}
+/* pastiglia compatta accanto al nome, nel listone e in Serie A */
+.ko{display:inline-block;margin-left:.35rem;font-family:"Archivo",sans-serif;font-size:.6rem;
+  font-weight:900;letter-spacing:.06em;padding:.05rem .3rem;border-radius:2px;
+  cursor:help;vertical-align:middle}
+.ko.g-lunga{background:var(--warn);color:#fff}
+.ko.g-media{background:var(--gold);color:#231a05}
+.ko.g-breve,.ko.g-lieve,.ko.g-ignota{background:var(--line2);color:var(--ink2)}
+:root[data-theme="dark"] .ko.g-lunga{color:#2a0f04}
+
 /* ===== finestre di dialogo del sito ===== */
 dialog.modale{border:0;padding:0;background:transparent;max-width:min(94vw,460px);width:100%;color:var(--ink)}
 dialog.modale::backdrop{background:rgba(10,16,13,.55);backdrop-filter:blur(2px)}

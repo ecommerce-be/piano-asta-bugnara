@@ -467,6 +467,28 @@ def marca_dati(testo_json: str) -> None:
     print(f"    impronta dati {impronta}, aggiornato il {oggi}")
 
 
+def aggiorna_infortuni() -> None:
+    """Aggiorna anche l'infermeria, subito dopo il listone.
+
+    Se questa parte non riesce NON facciamo fallire tutto: il listone appena
+    letto e' buono e va salvato lo stesso. Segnaliamo pero' con un avviso che
+    GitHub mostra fra le Annotations del run, cosi' non passa inosservato.
+    """
+    print("\n=== indisponibili")
+    try:
+        import infortuni
+        codice = infortuni.main_da_aggiornamento()
+    except SystemExit as e:
+        codice = e.code or 1
+    except Exception as e:                                    # noqa: BLE001
+        print(f"    errore inatteso: {e}")
+        codice = 1
+    if codice:
+        print("::warning::Infortuni non aggiornati: la pagina degli indisponibili "
+              "non e' stata letta. Il listone e' stato salvato lo stesso; "
+              "lancia 'python tools/infortuni.py --diagnosi' per capire perche'.")
+
+
 # ------------------------------------------------------------------ main
 
 def main() -> int:
@@ -542,6 +564,7 @@ def main() -> int:
     compatto = json.dumps(giocatori, ensure_ascii=False, separators=(",", ":"))
     PLAYERS.write_text(compatto, encoding="utf-8")
     marca_dati(compatto)
+    aggiorna_infortuni()
     con_stat = sum(1 for g in giocatori if g.get("gol") is not None)
     print(f"\nScritto {PLAYERS.relative_to(RADICE)} — {totale} giocatori, "
           f"{con_stat} con gol/assist/cartellini.")

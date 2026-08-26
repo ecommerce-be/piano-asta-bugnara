@@ -1,7 +1,7 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=14';
-import { avvia, configurato, leggi, esc } from './db.js?v=14';
+import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=19';
+import { avvia, configurato, leggi, esc } from './db.js?v=19';
 
 const { players, lega } = await caricaDati();
 
@@ -14,6 +14,16 @@ ricalcola(players, cfg, cfg.piano);
 
 const stato = asta.leggi();
 const altrui = asta.leggiAltrui();
+
+/* la stessa pastiglia del listone: chi e' fermo si vede senza cambiare pagina */
+const infortuni = await caricaInfortuni();
+const segnale = p => {
+  const v = infortuni.per.get(asta.id(p));
+  if (!v) return '';
+  const sigla = v.tipo === 'infortunio' ? 'KO' : v.tipo === 'squalifica' ? 'SQ' : 'DIFF';
+  const dettaglio = [v.tipo, v.rientro && `rientro ${v.rientro}`, v.desc].filter(Boolean).join(' — ');
+  return `<span class="ko ${classeGravita(v)}" title="${esc(dettaglio)}">${sigla}</span>`;
+};
 
 /* Chi ha preso chi, secondo le fantasquadre condivise. */
 let proprietario = {};   // idGiocatore -> { squadra, prezzo }
@@ -80,7 +90,7 @@ function disegna() {
   corpo.innerHTML = lista.map(p => {
     const st = statoDi(p);
     return `<tr class="${st.cls}">
-      <td><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}</span>${sq ? '' : `
+      <td><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}</span>${sq ? '' : `
         <span class="sq">${esc(p.sq)}</span>`}</span></span></td>
       <td class="num mktc">${p.q}</td>
       <td class="num mktc">${Math.round(p.mkt)}</td>
