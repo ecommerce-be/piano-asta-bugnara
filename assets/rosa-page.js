@@ -7,11 +7,11 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, simulaModificatore, badgeRuolo,
   gestisce, RUOLI, NOME_RUOLO,
-} from './app.js?v=30';
-import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=30';
-import { toast } from './ui.js?v=30';
-import { leggiCfg } from './cfg.js?v=30';
-import { valuta } from './consiglio.js?v=30';
+} from './app.js?v=31';
+import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=31';
+import { toast } from './ui.js?v=31';
+import { leggiCfg } from './cfg.js?v=31';
+import { valuta } from './consiglio.js?v=31';
 
 const { players, lega } = await caricaDati();
 

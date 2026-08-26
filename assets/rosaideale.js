@@ -2,12 +2,12 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=30';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=30';
-import { leggiCfg, salvaCfg } from './cfg.js?v=30';
-import { esc } from './db.js?v=30';
-import { toast } from './ui.js?v=30';
-import { avvia, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=30';
+} from './app.js?v=31';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=31';
+import { leggiCfg, salvaCfg } from './cfg.js?v=31';
+import { esc } from './db.js?v=31';
+import { toast } from './ui.js?v=31';
+import { avvia, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=31';
 
 const { players, lega } = await caricaDati();
 const { cfg, versione } = await leggiCfg(lega);
@@ -121,7 +121,7 @@ function disegna() {
         <span class="pz">${prezzo(p)}</span></div>`;
     }).join('');
     return `<div class="repbox"><div class="rephead" data-r="${x}">${badgeRuolo(x)}${NOME_RUOLO[x]}
-      <span class="sp">${nTit} titolari · ${r.reparti[x].spesa} cr</span></div>
+      <span class="sp">${nTit} ${nTit === 1 ? 'titolare' : 'titolari'} · ${r.reparti[x].spesa} cr</span></div>
       <div class="replist">${righe}</div></div>`;
   }).join('');
 
@@ -177,6 +177,88 @@ function disegnaSpiegazione() {
         rende di più per credito speso — ${r.passi} scambi in ${r.ms} millisecondi. È lo stesso ragionamento che faresti
         tu, applicato a tutti i ${players.length} giocatori invece che ai venti che hai in testa.</p></div></div>
     </div>`;
+
+  disegnaConfronto();
+}
+
+/* ---------- cosa cambia davvero fra una strategia e l'altra ----------
+
+   Molti nomi tornano in tutte e quattro le strategie, e la prima reazione e'
+   che il sito non stia ascoltando la scelta. Non e' cosi': quei giocatori
+   sono le occasioni vere del listone, e un consigliere onesto continua a
+   indicarteli. Quello che mancava era dirlo. Qui separo i due gruppi — chi
+   compreresti comunque, e chi compri solo per via di questa strategia — che
+   e' anche l'informazione piu' utile da avere al tavolo. */
+
+let cacheConfronto = null;
+
+function rosePerStrategia() {
+  const chiave = modulo + '|' + rischio;
+  if (cacheConfronto?.chiave === chiave) return cacheConfronto.per;
+  const fuori = esclusi();
+  const per = {};
+  for (const k of Object.keys(STRATEGIE)) {
+    const res = componiRosa({ players, cfg, modulo, strategia: k, tab, esclusi: fuori });
+    per[k] = new Map(RUOLI.flatMap(x => res.rosa[x]).map(p => [asta.id(p), p]));
+  }
+  cacheConfronto = { chiave, per };
+  return per;
+}
+
+function elenco(lista) {
+  return lista.sort((a, b) => b.val - a.val)
+    .map(p => `<span class="nm">${esc(p.n)}</span> <span class="firma">${prezzo(p)}</span>`)
+    .join(' · ');
+}
+
+function disegnaConfronto() {
+  const box = document.getElementById('confronto');
+  if (!box) return;
+  const per = rosePerStrategia();
+  const altre = Object.keys(STRATEGIE).filter(k => k !== strategia);
+  const mia = per[strategia];
+
+  const sempre = [...mia.values()].filter(p => altre.every(k => per[k].has(asta.id(p))));
+  const solo = [...mia.values()].filter(p => altre.every(k => !per[k].has(asta.id(p))));
+
+  const spesaSempre = sempre.reduce((a, p) => a + prezzo(p), 0);
+
+  box.innerHTML = `<div class="rules">
+    <div class="rule"><div><h3>Li compreresti comunque — ${sempre.length} su ${mia.size}</h3>
+      <p>Questi entrano in <em>tutte e quattro</em> le strategie, per ${spesaSempre} crediti in tutto: non
+      sono un limite del consigliere, sono le occasioni vere di questo listone. Se all'asta esce uno di
+      loro sotto il prezzo indicato, prendilo e non pensarci.</p>
+      <p style="margin-top:.5rem">${elenco(sempre) || '<em>nessuno</em>'}</p></div></div>
+
+    <div class="rule"><div><h3>Li compri solo con «${esc(STRATEGIE[strategia].nome)}» — ${solo.length}</h3>
+      <p>${solo.length >= 3
+        ? `Questi non compaiono in nessuna delle altre tre: sono il prezzo e il senso della strategia che hai
+           scelto. È qui che la scelta si vede.`
+        : solo.length
+          ? `Solo ${solo.length === 1 ? 'uno' : 'due'}, e vuol dire una cosa precisa: con questo modulo il
+             vincolo di questa strategia quasi non morde, perché i crediti finivano già lì da soli. Non è un
+             difetto — è la risposta alla tua domanda: qui non c'è molto da scegliere.`
+          : `Nessuno: con questo modulo questa strategia arriva alla stessa rosa delle altre. Il vincolo che
+             impone non morde, i crediti finivano già lì. Se vuoi vedere una rosa davvero diversa, prova
+             «modificatore di difesa»: è quella che cambia di più.`}</p>
+      ${solo.length ? `<p style="margin-top:.5rem">${elenco(solo)}</p>` : ''}</div></div>
+
+    <div class="rule"><div><h3>Le quattro a confronto</h3>
+      <p>Quanti crediti per reparto, e quanti giocatori diversi dalla rosa che stai guardando.</p>
+      <div class="tblwrap" style="margin-top:.6rem;max-height:none"><table><thead><tr>
+        <th>Strategia</th>${RUOLI.map(x => `<th class="num">${x}</th>`).join('')}
+        <th class="num">Punti</th><th class="num">Diversi</th></tr></thead><tbody>
+        ${Object.keys(STRATEGIE).map(k => {
+    const res = componiRosa({ players, cfg, modulo, strategia: k, tab, esclusi: esclusi() });
+    const diversi = [...per[k].keys()].filter(id => !mia.has(id)).length;
+    return `<tr${k === strategia ? ' style="font-weight:700"' : ''}>
+            <td>${esc(STRATEGIE[k].nome)}${k === strategia ? ' ←' : ''}</td>
+            ${RUOLI.map(x => `<td class="num">${Math.round(res.reparti[x].spesa / res.costo * 100)}%</td>`).join('')}
+            <td class="num">${Math.round(res.puntiTitolari + res.puntiModificatore)}</td>
+            <td class="num">${diversi}</td></tr>`;
+  }).join('')}
+      </tbody></table></div></div></div>
+  </div>`;
 }
 
 /* ---------- interazioni ---------- */

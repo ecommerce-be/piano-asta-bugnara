@@ -485,7 +485,11 @@ tr.taken td .propr{color:var(--acc)}
 .strat button span{font-size:.78rem;color:var(--ink3);line-height:1.4}
 .strat button[aria-pressed="true"]{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
 .strat button[aria-pressed="true"] b{color:var(--acc)}
-.ideale{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;align-items:start}
+/* Quattro reparti, quattro colonne: con auto-fit ne entravano tre e gli
+   attaccanti finivano da soli sotto i portieri, lasciando un buco. */
+.ideale{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
+@media(max-width:1100px){.ideale{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.ideale{grid-template-columns:1fr}}
 .idrow{display:flex;align-items:center;gap:.5rem;padding:.45rem 1rem;border-top:1px solid var(--line);
   font-family:"Archivo",sans-serif;font-size:.86rem}
 .idrow.panca{opacity:.6}

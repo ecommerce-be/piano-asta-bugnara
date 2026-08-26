@@ -1,12 +1,12 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=30';
+import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=31';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=30';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=30';
-import { leggiCfg } from './cfg.js?v=30';
+} from './db.js?v=31';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=31';
+import { leggiCfg } from './cfg.js?v=31';
 
 const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [] };

@@ -7,7 +7,7 @@
      3. COMPOSIZIONE quali 28 comprare, dato il budget e una strategia.
 
    Nessuna dipendenza esterna: gira nel browser in qualche decimo di secondo. */
-import { asta, simulaModificatore, RUOLI } from './app.js?v=30';
+import { asta, simulaModificatore, RUOLI } from './app.js?v=31';
 
 const GIORNATE = 38;
 
@@ -196,26 +196,56 @@ export function erroreTabella(tab, mod, gruppi, n = 60000) {
 
 /* ═══════════════ 3. quale rosa comprare ═══════════════ */
 
+/**
+ * Le strategie.
+ *
+ * Ognuna ha due leve, e servono a cose diverse.
+ *
+ *   `peso` e `pesoMod` cambiano il GIUDIZIO: quanto conta un punto fatto da un
+ *   difensore rispetto a uno fatto da un attaccante. Sono ritocchi fini, e da
+ *   soli non bastano: i centrocampisti del listone Classic valgono cosi' tanti
+ *   punti — sono trequartisti travestiti — che qualunque peso ragionevole
+ *   lasciava il grosso dei crediti a centrocampo. Il risultato era che
+ *   «Modificatore di difesa» spendeva il 43% a centrocampo e il 21% dietro,
+ *   cioe' l'opposto di quello che prometteva l'etichetta.
+ *
+ *   `tetto` cambia le REGOLE: e' la quota massima di budget che un reparto
+ *   puo' assorbire. Non e' un ritocco, e' un vincolo — e siccome
+ *   l'ottimizzatore vuole sempre spendere tutto, tappare un reparto spinge i
+ *   crediti dove la strategia li vuole. E' anche il modo in cui ragiona una
+ *   persona: «dietro non ci metto piu' di un quinto».
+ *
+ * Regola per chi tocca questi numeri: se cambi un tetto, cambia anche la riga
+ * di descrizione. L'etichetta deve dire quello che il codice fa davvero.
+ */
 export const STRATEGIE = {
   totale: {
     nome: 'Punti totali',
     riga: 'Nessun vincolo: sceglie da solo dove conviene spendere.',
     pesoMod: 1, peso: { P: 1, D: 1, C: 1, A: 1 },
+    tetto: null,
   },
   modificatore: {
     nome: 'Modificatore di difesa',
-    riga: 'Difesa e portiere prima di tutto, il modificatore vale doppio nella scelta.',
-    pesoMod: 2, peso: { P: 1.2, D: 1.25, C: 1, A: 0.9 },
+    riga: 'Tetto del 30% a centrocampo e del 20% in attacco: il resto va dietro.',
+    pesoMod: 2, peso: { P: 1.25, D: 1.3, C: 1, A: 0.9 },
+    tetto: { C: 0.30, A: 0.20 },
   },
   attacco: {
     nome: 'Tutto sull\'attacco',
-    riga: 'Gol e bonus davanti, difesa comprata al risparmio.',
-    pesoMod: 0.35, peso: { P: 0.85, D: 0.85, C: 1, A: 1.35 },
+    riga: 'Porta e difesa al risparmio: massimo un quinto dei crediti dietro.',
+    pesoMod: 0.35, peso: { P: 0.85, D: 0.85, C: 1, A: 1.4 },
+    /* Niente tetto al centrocampo, di proposito: tappandolo anche quello i
+       crediti finivano su attaccanti di PANCHINA, che in un 4-5-1 con un solo
+       titolare davanti non scendono mai in campo. Meglio lasciarli andare
+       dove producono punti veri. */
+    tetto: { P: 0.06, D: 0.16 },
   },
   centrocampo: {
     nome: 'Centrocampo dominante',
-    riga: 'Il reparto piu' + '’' + ' folto del 4-5-1: tanti centrocampisti da bonus.',
-    pesoMod: 1, peso: { P: 1, D: 1, C: 1.3, A: 0.9 },
+    riga: 'Porta, difesa e attacco tappati: metà dei crediti va a centrocampo.',
+    pesoMod: 1, peso: { P: 1, D: 1, C: 1.35, A: 0.9 },
+    tetto: { P: 0.08, D: 0.20, A: 0.24 },
   },
 };
 
@@ -340,6 +370,41 @@ function migliora(iniziale, perRuolo, bloccato, titolari, cfg, tab, strat, budge
   let punti = puntiRosa(sel, titolari, cfg, tab, strat);
   const passi = [];
 
+  /* Il tetto di reparto della strategia, tradotto in crediti. Un reparto che
+     lo sfora non puo' piu' crescere: e' cosi' che i crediti finiscono dove la
+     strategia li vuole invece che dove il modello li porterebbe da solo. */
+  const tetto = {};
+  for (const r of RUOLI) {
+    tetto[r] = strat.tetto?.[r] != null ? strat.tetto[r] * budget : Infinity;
+  }
+  const spesaDi = r => sel[r].reduce((s, p) => s + prezzoDi(p), 0);
+
+  /* Un seme puo' nascere gia' sopra il tetto di un reparto — quello "miglior
+     resa per credito" ci finisce spesso. La ricerca accetta solo scambi che
+     migliorano, quindi da sola non scenderebbe mai: qui il reparto si sgonfia
+     sostituendo i piu' cari col piu' economico rimasto, finche' non rientra. */
+  for (const r of RUOLI) {
+    let giri = 0;
+    while (spesaDi(r) > tetto[r] && giri++ < 60) {
+      let peggio = -1;
+      for (let i = 0; i < sel[r].length; i++) {
+        if (bloccato.has(asta.id(sel[r][i]))) continue;
+        if (peggio < 0 || prezzoDi(sel[r][i]) > prezzoDi(sel[r][peggio])) peggio = i;
+      }
+      if (peggio < 0) break;
+      const dentro = new Set(sel[r].map(p => asta.id(p)));
+      const rimpiazzo = perRuolo[r].filter(p => !dentro.has(asta.id(p)))
+        .sort((a, b) => prezzoDi(a) - prezzoDi(b) || b.val - a.val)[0];
+      if (!rimpiazzo || prezzoDi(rimpiazzo) >= prezzoDi(sel[r][peggio])) break;
+      sel[r][peggio] = rimpiazzo;
+    }
+  }
+
+  const speso = {};
+  for (const r of RUOLI) speso[r] = spesaDi(r);
+  costo = costoRosa(sel);
+  punti = puntiRosa(sel, titolari, cfg, tab, strat);
+
   for (let giro = 0; giro < 400; giro++) {
     let migliore = null;
 
@@ -354,6 +419,7 @@ function migliora(iniziale, perRuolo, bloccato, titolari, cfg, tab, strat, budge
         for (const entra of candidati) {
           const dCosto = prezzoDi(entra) - prezzoDi(esce);
           if (costo + dCosto > budget) continue;
+          if (speso[r] + dCosto > tetto[r]) continue;
 
           const prova = { ...sel, [r]: sel[r].map((p, k) => (k === i ? entra : p)) };
           const dPunti = puntiRosa(prova, titolari, cfg, tab, strat) - punti;
@@ -369,6 +435,7 @@ function migliora(iniziale, perRuolo, bloccato, titolari, cfg, tab, strat, budge
     if (!migliore) break;
     sel[migliore.r][migliore.i] = migliore.entra;
     costo += migliore.dCosto;
+    speso[migliore.r] += migliore.dCosto;
     punti += migliore.dPunti;
     passi.push(migliore);
   }
