@@ -1,7 +1,7 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=13';
-import { avvia, configurato, leggi, esc } from './db.js?v=13';
+import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=14';
+import { avvia, configurato, leggi, esc } from './db.js?v=14';
 
 const { players, lega } = await caricaDati();
 
@@ -41,6 +41,20 @@ try {
 let filtroRuolo = 'ALL', soloLiberi = false, cerca = '';
 
 const num = v => (v ?? v === 0) ? v : '';
+
+/* Fantacalcio.it pubblica il FVM su base 1000 crediti. La nostra lega ne ha
+   cfg.crediti (500 di default, ma si cambia nelle impostazioni del listone),
+   quindi lo riportiamo alla nostra scala: cosi' sta accanto alla colonna
+   Mercato e i due numeri si confrontano davvero. */
+const BASE_FVM = 1000;
+const fvmNostro = p => p.fvm != null ? Math.round(p.fvm * cfg.crediti / BASE_FVM) : null;
+
+{
+  const testo = `Fanta Valore di Mercato, riportato ai ${cfg.crediti} crediti della tua lega `
+    + `(Fantacalcio.it lo pubblica su base ${BASE_FVM})`;
+  document.getElementById('thFvm').title = testo;
+  document.getElementById('legFvm').innerHTML = `<b>FVM</b>${testo}`;
+}
 
 function statoDi(p) {
   const id = asta.id(p);
@@ -84,7 +98,7 @@ function disegna() {
       <td class="num">${num(p.amm)}</td>
       <td class="num">${num(p.esp)}</td>
       <td class="num mktc">${num(p.qi)}</td>
-      <td class="num mktc">${num(p.fvm)}</td>
+      <td class="num mktc"${p.fvm != null ? ` title="Su base ${BASE_FVM} crediti vale ${p.fvm}"` : ''}>${num(fvmNostro(p))}</td>
       <td><span class="pill ${st.pill}">${esc(st.testo)}</span></td>
       <td class="note">${p.nota ? `<span class="txt" title="${esc(p.nota)}">${esc(p.nota)}</span>` : ''}</td></tr>`;
   }).join('') || '<tr><td colspan="20" class="note" style="color:var(--ink3)">Nessun giocatore con questi filtri.</td></tr>';
