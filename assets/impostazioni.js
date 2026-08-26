@@ -1,9 +1,9 @@
 /* Pagina "Impostazioni": le regole della lega, condivise nel database. */
-import { caricaDati, caricaInfortuni, ricalcola, RUOLI, NOME_RUOLO } from './app.js?v=32';
-import { leggiCfg, salvaCfg, unisci } from './cfg.js?v=32';
-import { avvia, collegato, montaAccesso, esc, quando } from './db.js?v=32';
-import { toast, conferma as chiediConferma } from './ui.js?v=32';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=32';
+import { caricaDati, caricaInfortuni, ricalcola, RUOLI, NOME_RUOLO } from './app.js?v=33';
+import { leggiCfg, salvaCfg, salvaPiano, unisci } from './cfg.js?v=33';
+import { pronto, collegato, inLega, squadra, montaAccesso, esc, quando } from './db.js?v=33';
+import { toast, conferma as chiediConferma } from './ui.js?v=33';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=33';
 
 const { players, lega } = await caricaDati();
 
@@ -15,9 +15,10 @@ const MERCATI = {
   difesa: { P: 8, D: 20, C: 30, A: 42 },
 };
 
-let cfg, versione = 0, origine = 'lega', messaggio = '', statoBarra = '';
+let cfg, versione = 0, versionePiano = 0, origine = 'lega', originePiano = 'lega';
+let messaggio = '', statoBarra = '';
 
-await avvia();
+await pronto();
 montaAccesso(document.getElementById('accesso'), () => { carica(); });
 
 /* Ogni campo della pagina: id, da dove si legge, dove si scrive. */
@@ -40,7 +41,9 @@ const CAMPI = [
 
 async function carica() {
   const r = await leggiCfg(lega);
-  cfg = r.cfg; versione = r.versione; origine = r.origine;
+  cfg = r.cfg;
+  versione = r.versione; origine = r.origine;
+  versionePiano = r.versionePiano; originePiano = r.originePiano;
   statoBarra = '';
   messaggio = {
     database: `Impostazioni della lega${r.da ? `, ultimo cambio di ${esc(r.da)} ${quando(r.aggiornato)}` : ''}.`,
@@ -81,13 +84,23 @@ function disegnaBarra() {
   const b = document.getElementById('barra');
   b.className = 'savebar' + (statoBarra ? ' ' + statoBarra : '');
   b.innerHTML = `<span class="dot"></span><span class="msg">${esc(messaggio)}</span>`;
-  document.getElementById('salva').disabled = !collegato();
-  document.getElementById('salva').title = collegato() ? '' : 'Devi entrare col tuo account';
-  document.getElementById('origine').textContent = {
-    database: 'condivise nel database',
+  const puoiLega = collegato() && inLega();
+  const puoiPiano = puoiLega && Boolean(squadra());
+  const bl = document.getElementById('salva');
+  const bp = document.getElementById('salvaPiano');
+  bl.disabled = !puoiLega;
+  bl.title = puoiLega ? '' : 'Entra col tuo account e in una lega';
+  bp.disabled = !puoiPiano;
+  bp.title = puoiPiano ? '' : 'Serve una squadra: scegliela nella pagina «La mia lega»';
+
+  const parola = {
+    database: 'nel database',
     browser: 'solo in questo browser',
     lega: 'valori di partenza',
-  }[origine] || '';
+    'senza-squadra': 'nessuna squadra scelta',
+  };
+  document.getElementById('origine').textContent =
+    `regole: ${parola[origine] || '—'} · piano: ${parola[originePiano] || '—'}`;
 }
 
 /** Ricalcola prezzi e avvisi ogni volta che tocchi un campo. */
@@ -221,14 +234,30 @@ document.getElementById('calcolaPiano').onclick = async () => {
   }
 };
 
+/* Due salvataggi, perche' sono due cose diverse con due proprietari diversi:
+   le regole le vedono tutti quelli della lega, il piano solo la tua squadra.
+   Un pulsante solo avrebbe nascosto proprio la distinzione che conta. */
 document.getElementById('salva').onclick = async () => {
-  messaggio = 'Salvo…'; statoBarra = ''; disegnaBarra();
+  messaggio = 'Salvo le regole della lega…'; statoBarra = ''; disegnaBarra();
   try {
     versione = await salvaCfg(cfg, versione);
     origine = 'database';
-    messaggio = 'Salvate. Adesso valgono anche per Aurelio.';
-    statoBarra = '';
-    toast('Impostazioni condivise');
+    messaggio = 'Regole salvate: valgono per tutti quelli che giocano questa lega.';
+    toast('Regole della lega aggiornate');
+  } catch (e) {
+    statoBarra = 'errore';
+    messaggio = e.message;
+  }
+  disegnaBarra();
+};
+
+document.getElementById('salvaPiano').onclick = async () => {
+  messaggio = 'Salvo il tuo piano…'; statoBarra = ''; disegnaBarra();
+  try {
+    versionePiano = await salvaPiano(cfg, versionePiano);
+    originePiano = 'database';
+    messaggio = 'Piano salvato. Lo vede solo chi gestisce la tua squadra.';
+    toast('Piano di spesa salvato');
   } catch (e) {
     statoBarra = 'errore';
     messaggio = e.message;
@@ -245,7 +274,7 @@ document.getElementById('reset').onclick = async () => {
     ok: 'Sì, ripristina',
   });
   if (!si) return;
-  cfg = unisci(lega, null);
+  cfg = unisci(lega, null, null);
   riempi();
   statoBarra = 'sporca';
   messaggio = 'Valori di partenza ripristinati, non ancora salvati.';

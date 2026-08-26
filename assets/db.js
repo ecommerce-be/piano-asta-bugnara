@@ -25,7 +25,7 @@ let sessione = null;
 export async function avvia() {
   if (cfg) return cfg;
   try {
-    const r = await fetch('assets/data/supabase.json?v=32?t=' + Date.now());
+    const r = await fetch('assets/data/supabase.json?v=33?t=' + Date.now());
     cfg = await r.json();
   } catch {
     cfg = {};
@@ -120,6 +120,160 @@ export async function entra(email, password) {
 
 export function esci() { salvaSessione(null); }
 
+/* ═══════════ contesto: in quale lega sei, e quale squadra gestisci ═══════════
+ *
+ * Il proprietario dei dati non e' l'utente: e' la SQUADRA. Due account che
+ * gestiscono la stessa fantasquadra devono vedere le stesse cose, e nessun
+ * altro deve vederle. Quindi ogni lettura e scrittura passa da qui.
+ *
+ * La lega scelta resta nel browser: se sei in piu' leghe, il sito riapre
+ * l'ultima che stavi guardando invece di chiedertelo ogni volta.
+ */
+
+const CHIAVE_LEGA = 'pianoAsta:lega';
+
+let contesto = null;   // { lega, squadra, membri, squadre } oppure null
+
+export const inLega = () => Boolean(contesto?.lega);
+export const lega = () => contesto?.lega || null;
+export const squadra = () => contesto?.squadra || null;
+export const squadreDellaLega = () => contesto?.squadre || [];
+export const membriDellaLega = () => contesto?.membri || [];
+export const sonoAdmin = () => contesto?.lega?.ruolo === 'admin';
+
+function legaPreferita() {
+  try { return localStorage.getItem(CHIAVE_LEGA) || null; } catch { return null; }
+}
+function ricordaLega(id) {
+  try {
+    if (id) localStorage.setItem(CHIAVE_LEGA, id);
+    else localStorage.removeItem(CHIAVE_LEGA);
+  } catch { /* storage non disponibile */ }
+}
+
+async function chiedi(percorso) {
+  const r = await fetch(`${cfg.url}/rest/v1/${percorso}`, { headers: intestazioni() });
+  if (!r.ok) throw new Error(await messaggioErrore(r));
+  return r.json();
+}
+
+/** Chiama una funzione SQL. Le usiamo per entrare, creare e scegliere. */
+async function funzione(nome, argomenti) {
+  await rinnovaSeScaduta();
+  const r = await fetch(`${cfg.url}/rest/v1/rpc/${nome}`, {
+    method: 'POST', headers: intestazioni(), body: JSON.stringify(argomenti),
+  });
+  if (!r.ok) throw new Error(await messaggioErrore(r));
+  const t = await r.text();
+  try { return JSON.parse(t); } catch { return t; }
+}
+
+/** Tutte le leghe di cui faccio parte, con il mio ruolo e la mia squadra. */
+export async function mieLeghe() {
+  if (!collegato()) return [];
+  const righe = await chiedi('membri?select=ruolo,squadra_id,lega_id,leghe(id,nome,codice)');
+  return righe.filter(m => m.leghe).map(m => ({
+    id: m.leghe.id, nome: m.leghe.nome, codice: m.leghe.codice,
+    ruolo: m.ruolo, squadraId: m.squadra_id,
+  }));
+}
+
+/**
+ * Carica il contesto: quale lega, quale squadra, chi altro c'e'.
+ * Da chiamare dopo `avvia()` in ogni pagina che tocca il database.
+ */
+export async function caricaContesto(idLega = null) {
+  contesto = null;
+  if (!configurato() || !collegato()) return null;
+
+  const leghe = await mieLeghe();
+  if (!leghe.length) return null;
+
+  const scelto = idLega || legaPreferita();
+  const mia = leghe.find(l => l.id === scelto) || leghe[0];
+  ricordaLega(mia.id);
+
+  const [squadre, membri] = await Promise.all([
+    chiedi(`squadre?lega_id=eq.${mia.id}&select=id,nome,ordine&order=ordine,creata`),
+    chiedi(`membri?lega_id=eq.${mia.id}&select=utente_id,squadra_id,ruolo,nome`),
+  ]);
+
+  contesto = {
+    lega: mia,
+    squadra: squadre.find(s => s.id === mia.squadraId) || null,
+    squadre,
+    membri,
+    leghe,
+  };
+  return contesto;
+}
+
+export const leggiLeghe = () => contesto?.leghe || [];
+
+/**
+ * Quello che ogni pagina deve fare prima di leggere qualsiasi cosa: accendere
+ * la connessione e capire in che lega e in che squadra sei. Tenerlo in una
+ * funzione sola evita che una pagina se lo dimentichi e finisca a leggere
+ * documenti senza sapere di chi sono.
+ */
+let contestoCaricato = false;
+export async function pronto() {
+  await avvia();
+  if (!contestoCaricato && configurato() && collegato()) {
+    contestoCaricato = true;
+    try { await caricaContesto(); } catch { /* lo dira' la pagina */ }
+  }
+  return contesto;
+}
+
+export async function creaLega(nome, codice) {
+  const id = await funzione('crea_lega', {
+    nome_lega: nome, codice_lega: codice, nome_membro: utente()?.nome || null,
+  });
+  ricordaLega(id);
+  return caricaContesto(id);
+}
+
+export async function entraInLega(codice) {
+  const id = await funzione('entra_in_lega', {
+    codice_lega: codice, nome_membro: utente()?.nome || null,
+  });
+  ricordaLega(id);
+  return caricaContesto(id);
+}
+
+export async function scegliSquadra(idSquadra) {
+  if (!contesto?.lega) throw new Error('Prima devi entrare in una lega.');
+  await funzione('scegli_squadra', { l: contesto.lega.id, s: idSquadra });
+  return caricaContesto(contesto.lega.id);
+}
+
+export async function cambiaLega(id) { ricordaLega(id); return caricaContesto(id); }
+
+/** Aggiunge una squadra alla lega. Solo l'admin ci riesce: lo dice il database. */
+export async function creaSquadra(nome) {
+  if (!contesto?.lega) throw new Error('Prima devi entrare in una lega.');
+  const r = await fetch(`${cfg.url}/rest/v1/squadre`, {
+    method: 'POST',
+    headers: intestazioni({ Prefer: 'return=representation' }),
+    body: JSON.stringify({
+      lega_id: contesto.lega.id, nome,
+      ordine: (contesto.squadre.at(-1)?.ordine ?? contesto.squadre.length) + 1,
+    }),
+  });
+  if (!r.ok) throw new Error(await messaggioErrore(r));
+  await caricaContesto(contesto.lega.id);
+  return (await r.json())[0];
+}
+
+export async function rinominaSquadra(id, nome) {
+  const r = await fetch(`${cfg.url}/rest/v1/squadre?id=eq.${id}`, {
+    method: 'PATCH', headers: intestazioni(), body: JSON.stringify({ nome }),
+  });
+  if (!r.ok) throw new Error(await messaggioErrore(r));
+  return caricaContesto(contesto.lega.id);
+}
+
 /* ---------- documenti ---------- */
 
 /* Supabase ha due formati di chiave pubblica:
@@ -135,11 +289,39 @@ function intestazioni(extra = {}) {
   return h;
 }
 
+/**
+ * Dove sta un documento.
+ *
+ *   privato: false  → documento DI LEGA. Lo vedono tutti i membri. Sono le
+ *                     regole della lega e le aggiudicazioni dell'asta, che al
+ *                     tavolo sono comunque cosa pubblica.
+ *   privato: true   → documento DI SQUADRA. Lo vede solo chi gestisce quella
+ *                     squadra. Sono il piano di spesa e la bozza.
+ *
+ * Non e' solo una convenzione del client: le regole del database controllano
+ * la stessa cosa, quindi anche chi provasse a chiedere il documento di un
+ * altro riceverebbe zero righe.
+ */
+function ambito(privato) {
+  if (!contesto?.lega) throw new Error('Prima devi entrare in una lega.');
+  if (!privato) return { filtro: 'squadra_id=is.null', colonne: { squadra_id: null } };
+  if (!contesto.squadra) {
+    throw new Error('Prima devi scegliere quale squadra gestisci, dalla pagina «La mia lega».');
+  }
+  return {
+    filtro: `squadra_id=eq.${contesto.squadra.id}`,
+    colonne: { squadra_id: contesto.squadra.id },
+  };
+}
+
+const dove = (chiave, privato) =>
+  `lega_id=eq.${contesto.lega.id}&${ambito(privato).filtro}&chiave=eq.${encodeURIComponent(chiave)}`;
+
 /** Legge un documento. Restituisce { dati, versione } — versione 0 se non esiste. */
-export async function leggi(chiave, vuoto) {
+export async function leggi(chiave, vuoto, privato = false) {
   await rinnovaSeScaduta();
   const r = await fetch(
-    `${cfg.url}/rest/v1/documenti?chiave=eq.${encodeURIComponent(chiave)}&select=dati,versione,aggiornato,da`,
+    `${cfg.url}/rest/v1/documenti?${dove(chiave, privato)}&select=dati,versione,aggiornato,da`,
     { headers: intestazioni() });
   if (!r.ok) throw new Error(await messaggioErrore(r));
   const righe = await r.json();
@@ -151,7 +333,8 @@ async function messaggioErrore(r) {
   const t = await r.text();
   if (r.status === 401) return 'Sessione scaduta: rientra.';
   if (r.status === 403) return 'Non hai il permesso di scrivere. Hai fatto l\'accesso?';
-  if (r.status === 404) return 'La tabella "documenti" non esiste ancora: manca lo script SQL su Supabase.';
+  if (r.status === 404) return 'Le tabelle non ci sono ancora: incolla tools/supabase.sql nell\'SQL Editor di Supabase.';
+  if (r.status === 409) return 'Quel documento esiste gia\': ricarica la pagina.';
   return `Il database ha risposto ${r.status}. ${t.slice(0, 140)}`;
 }
 
@@ -160,24 +343,34 @@ async function messaggioErrore(r) {
  * Se nel frattempo l'ha cambiato qualcun altro, rilegge, chiama `fondi` per
  * mettere insieme le due versioni e riprova una volta.
  */
-export async function scrivi(chiave, dati, versione, fondi) {
+export async function scrivi(chiave, dati, versione, fondi, privato = false) {
   await rinnovaSeScaduta();
   if (!collegato()) throw new Error('Per salvare devi entrare col tuo account.');
   const chi = utente()?.nome || 'anonimo';
+  const { colonne } = ambito(privato);
 
   if (versione === 0) {
     const r = await fetch(`${cfg.url}/rest/v1/documenti`, {
       method: 'POST',
-      headers: intestazioni({ Prefer: 'resolution=merge-duplicates,return=representation' }),
-      body: JSON.stringify({ chiave, dati, versione: 1, da: chi, aggiornato: new Date().toISOString() }),
+      headers: intestazioni({ Prefer: 'return=representation' }),
+      body: JSON.stringify({
+        lega_id: contesto.lega.id, ...colonne, chiave, dati,
+        versione: 1, da: chi, aggiornato: new Date().toISOString(),
+      }),
     });
+    /* Se nel frattempo l'ha creato l'altro membro della squadra, il vincolo di
+       unicita' scatta: rileggiamo e riproviamo come aggiornamento. */
+    if (r.status === 409) {
+      const fresco = await leggi(chiave, null, privato);
+      return scrivi(chiave, fondi ? fondi(fresco.dati, dati) : dati, fresco.versione, fondi, privato);
+    }
     if (!r.ok) throw new Error(await messaggioErrore(r));
     const [riga] = await r.json();
     return { versione: riga.versione, dati: riga.dati };
   }
 
   const invia = async (corpo, v) => fetch(
-    `${cfg.url}/rest/v1/documenti?chiave=eq.${encodeURIComponent(chiave)}&versione=eq.${v}`,
+    `${cfg.url}/rest/v1/documenti?${dove(chiave, privato)}&versione=eq.${v}`,
     {
       method: 'PATCH',
       headers: intestazioni({ Prefer: 'return=representation' }),
@@ -190,7 +383,7 @@ export async function scrivi(chiave, dati, versione, fondi) {
 
   if (!righe.length) {
     // nessuna riga aggiornata: qualcun altro ha salvato prima di noi
-    const fresco = await leggi(chiave, null);
+    const fresco = await leggi(chiave, null, privato);
     const fuso = fondi ? fondi(fresco.dati, dati) : dati;
     r = await invia(fuso, fresco.versione);
     if (!r.ok) throw new Error(await messaggioErrore(r));
@@ -207,13 +400,13 @@ export async function scrivi(chiave, dati, versione, fondi) {
  * Niente websocket: per due persone un giro ogni dodici secondi è indistinguibile
  * dal tempo reale, e non si rompe mai.
  */
-export function osserva(chiave, versioneCorrente, alCambio, intervallo = 12000) {
+export function osserva(chiave, versioneCorrente, alCambio, intervallo = 12000, privato = false) {
   let vivo = true;
   const giro = async () => {
     if (!vivo) return;
-    if (document.visibilityState === 'visible' && configurato()) {
+    if (document.visibilityState === 'visible' && configurato() && inLega()) {
       try {
-        const r = await leggi(chiave, null);
+        const r = await leggi(chiave, null, privato);
         if (r.versione > versioneCorrente()) alCambio(r);
       } catch { /* riproviamo al prossimo giro */ }
     }
@@ -259,13 +452,20 @@ export function montaAccesso(contenitore, alCambio) {
 
     const u = utente();
     if (u) {
+      /* Dire sempre per conto di CHI stai lavorando. Con piu' persone e piu'
+         leghe, "collegato come Pierre" non basta: quello che vedi dipende
+         dalla squadra, non dall'account. */
+      const l = lega(), s = squadra();
       contenitore.innerHTML = `<div class="idbar">
         <span class="idlab">Collegato come</span>
         <strong class="idnome">${esc(u.nome)}</strong>
-        <span class="pill p-t">può salvare</span>
-        <span style="color:var(--ink3);font-size:.75rem">${esc(u.email)}</span>
+        ${l ? `<span class="pill p-g">${esc(l.nome)}</span>` : ''}
+        ${s ? `<span class="pill p-t">${esc(s.nome)}</span>`
+    : l ? '<span class="pill p-l">nessuna squadra</span>' : ''}
+        ${!l ? '<span style="color:var(--warn);font-size:.8rem">non sei in nessuna lega</span>' : ''}
+        <a class="chip" href="lega.html" style="text-decoration:none">la mia lega</a>
         <button class="chip" id="esci" style="margin-left:auto">esci</button></div>`;
-      contenitore.querySelector('#esci').onclick = () => { esci(); disegna(); alCambio?.(); };
+      contenitore.querySelector('#esci').onclick = () => { esci(); contesto = null; disegna(); alCambio?.(); };
       return;
     }
 
@@ -296,6 +496,10 @@ export function montaAccesso(contenitore, alCambio) {
         } else {
           await entra(email, pw);
         }
+        /* appena entrato, il sito deve sapere in che lega e in che squadra
+           sei: senza, la pagina proverebbe a leggere documenti senza sapere
+           di chi sono */
+        try { await caricaContesto(); } catch { /* lo dira' la pagina */ }
         disegna();
         alCambio?.();
       } catch (err) {

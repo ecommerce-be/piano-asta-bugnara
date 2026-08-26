@@ -1,12 +1,12 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=32';
+import { caricaDati, ricalcola, badgeRuolo, asta, RUOLI } from './app.js?v=33';
 import {
-  avvia, configurato, collegato, utente, leggi, scrivi, osserva,
-  montaAccesso, esc, quando,
-} from './db.js?v=32';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=32';
-import { leggiCfg } from './cfg.js?v=32';
+  pronto, configurato, collegato, inLega, squadra, squadreDellaLega, membriDellaLega,
+  utente, leggi, scrivi, osserva, montaAccesso, esc, quando,
+} from './db.js?v=33';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=33';
+import { leggiCfg } from './cfg.js?v=33';
 
 const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [] };
@@ -23,10 +23,9 @@ let dati = structuredClone(VUOTO);
 let versione = 0, sporca = false, messaggio = '', statoBarra = '';
 let apertaPerAggiunta = null;
 
-await avvia();
+await pronto();
 montaAccesso(document.getElementById('accesso'), () => { disegnaBarra(); carica(); });
 
-const nuovoId = () => 's' + Math.random().toString(36).slice(2, 9);
 
 /* ---------- allineamento con "La mia rosa" e col listone ----------
    La fantasquadra vive nel database ed e' condivisa; "La mia rosa" e il
@@ -37,10 +36,33 @@ const nuovoId = () => 's' + Math.random().toString(36).slice(2, 9);
 let stato = asta.leggi();
 let altrui = asta.leggiAltrui();
 
+/* Quale di queste squadre e' la mia. Prima si indovinava confrontando il nome
+   dell'allenatore con quello dell'account, ed era fragile: bastava scrivere
+   "Pierre e Aurelio" e non funzionava piu'. Adesso lo dice il database:
+   la squadra e' quella che hai scelto nella pagina "La mia lega". */
 const miaSquadra = () => {
-  const io = utente()?.nome || '';
-  return io ? dati.squadre.find(s => gestisce(s.proprietario, io)) : null;
+  const mia = squadra();
+  return mia ? dati.squadre.find(s => s.id === mia.id) : null;
 };
+
+/* I nomi delle squadre e chi le gestisce arrivano dalla lega, non da questo
+   documento: qui dentro restano solo le rose. Cosi' due pagine non possono
+   dire due nomi diversi per la stessa squadra. */
+function allineaAllaLega() {
+  const tabella = squadreDellaLega();
+  if (!tabella.length) return;
+  const membri = membriDellaLega();
+  const gestori = id => membri.filter(m => m.squadra_id === id)
+    .map(m => m.nome || 'senza nome').join(' e ');
+
+  const esistenti = new Map((dati.squadre || []).map(s => [s.id, s]));
+  dati.squadre = tabella.map(x => ({
+    ...(esistenti.get(x.id) || { id: x.id, rosa: [] }),
+    id: x.id,
+    nome: x.nome,
+    proprietario: gestori(x.id),
+  }));
+}
 
 function segnaPreso(idSquadra, gid, prezzo) {
   if (miaSquadra()?.id === idSquadra) { stato[gid] = prezzo; altrui.delete(gid); }
@@ -91,6 +113,7 @@ async function carica() {
     const r = await leggi(CHIAVE, structuredClone(VUOTO));
     dati = r.dati || structuredClone(VUOTO);
     dati.squadre ||= [];
+    allineaAllaLega();
     versione = r.versione;
     sporca = false;
     statoBarra = '';
@@ -152,22 +175,11 @@ function tocca(s) {
   auto.tocca();
 }
 
-async function nuovaSquadra() {
-  const r = await chiediCampi({
-    titolo: 'Nuova fantasquadra',
-    testo: 'Se è la tua, scrivi come allenatore lo stesso nome del tuo account: il sito la riconosce e la evidenzia. Puoi cambiare tutto anche dopo.',
-    ok: 'Crea',
-    campi: [
-      { id: 'nome', etichetta: 'Nome della squadra', obbligatorio: true, placeholder: 'es. Bugnara FC' },
-      { id: 'prop', etichetta: 'Allenatore (chi la gestisce)', valore: utente()?.nome || '', placeholder: 'es. Pierre' },
-    ],
-  });
-  if (!r) return;
-  const s = { id: nuovoId(), nome: r.nome, proprietario: r.prop, rosa: [] };
-  tocca(s);
-  dati.squadre.push(s);
-  disegnaBarra();
-  disegna();
+/* Le squadre si creano e si rinominano nella pagina "La mia lega": la' c'e'
+   la tabella vera, quella su cui il database decide chi vede cosa. Farlo in
+   due posti vorrebbe dire due elenchi che prima o poi divergono. */
+function nuovaSquadra() {
+  toast('Le squadre si aggiungono nella pagina «La mia lega».');
 }
 
 const speso = s => (s.rosa || []).reduce((a, g) => a + (Number(g.prezzo) || 0), 0);
@@ -189,7 +201,7 @@ function disegna() {
   griglia.innerHTML = dati.squadre.map(s => {
     const sp = speso(s);
     const residuo = cfg.crediti - sp;
-    const mia = gestisce(s.proprietario, mio);
+    const mia = s.id === squadra()?.id;
     const totSlot = RUOLI.reduce((a, r) => a + cfg.slot[r], 0);
 
     const meta = RUOLI.map(r => {
@@ -261,42 +273,13 @@ griglia.addEventListener('click', e => {
 
   const bMod = e.target.closest('button[data-modifica]');
   if (bMod) {
-    const s = trova(bMod.dataset.modifica);
-    chiediCampi({
-      titolo: 'Nome e allenatore',
-      testo: 'Se la squadra è tua, scrivi come allenatore lo stesso nome del tuo account: il sito la riconosce e la evidenzia.',
-      ok: 'Salva',
-      campi: [
-        { id: 'nome', etichetta: 'Nome della squadra', valore: s.nome, obbligatorio: true },
-        { id: 'prop', etichetta: 'Allenatore (chi la gestisce)', valore: s.proprietario || '', placeholder: 'es. Aurelio' },
-      ],
-    }).then(r => {
-      if (!r) return;
-      s.nome = r.nome;
-      s.proprietario = r.prop;
-      // se questa squadra e' appena diventata (o non e' piu') la tua,
-      // la sua rosa entra o esce da "La mia rosa"
-      for (const g of (s.rosa || [])) segnaPreso(s.id, g.id, g.prezzo);
-      tocca(s); disegnaBarra(); disegna();
-    });
+    toast('Nome e gestori della squadra si cambiano nella pagina «La mia lega».');
     return;
   }
 
   const bDel = e.target.closest('button[data-elimina]');
   if (bDel) {
-    const s = trova(bDel.dataset.elimina);
-    chiediConferma({
-      titolo: `Elimino "${s.nome}"?`,
-      testo: `Sparisce anche la sua rosa di ${(s.rosa || []).length} giocatori, che tornano liberi.`,
-      ok: 'Sì, elimina', pericolo: true,
-    }).then(si => {
-      if (!si) return;
-      for (const g of (s.rosa || [])) segnaLibero(g.id);
-      dati.squadre = dati.squadre.filter(x => x.id !== s.id);
-      (dati._rimosse ||= []).push(s.id);
-      sporca = true; auto.tocca();
-      disegnaBarra(); disegna();
-    });
+    toast('Le squadre si tolgono nella pagina «La mia lega».');
     return;
   }
 

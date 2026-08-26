@@ -6,12 +6,12 @@
    entrambi, e quando togli un giocatore lo togliamo da tutti e due. */
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, simulaModificatore, badgeRuolo,
-  gestisce, RUOLI, NOME_RUOLO,
-} from './app.js?v=32';
-import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=32';
-import { toast } from './ui.js?v=32';
-import { leggiCfg } from './cfg.js?v=32';
-import { valuta } from './consiglio.js?v=32';
+  RUOLI, NOME_RUOLO,
+} from './app.js?v=33';
+import { pronto, configurato, collegato, squadra, utente, leggi, scrivi, esc } from './db.js?v=33';
+import { toast } from './ui.js?v=33';
+import { leggiCfg } from './cfg.js?v=33';
+import { valuta } from './consiglio.js?v=33';
 
 const { players, lega } = await caricaDati();
 
@@ -47,7 +47,7 @@ ricalcolaMiei();
 
 let fsDati = { squadre: [] }, fsVer = 0;
 
-await avvia();
+await pronto();
 if (configurato()) {
   try {
     const r = await leggi('fantasquadre', { squadre: [] });
@@ -57,9 +57,11 @@ if (configurato()) {
   } catch { /* senza accesso restiamo con i soli dati locali */ }
 }
 
+/* Qual e' la mia fantasquadra: lo dice l'appartenenza salvata nel database,
+   non piu' il confronto fra il nome dell'allenatore e quello dell'account. */
 const miaSquadra = () => {
-  const io = utente()?.nome || '';
-  return io ? fsDati.squadre.find(s => gestisce(s.proprietario, io)) : null;
+  const mia = squadra();
+  return mia ? (fsDati.squadre || []).find(s => s.id === mia.id) : null;
 };
 
 /** Il giocatore risulta registrato nella mia fantasquadra? */

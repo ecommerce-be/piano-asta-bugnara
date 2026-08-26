@@ -17,7 +17,7 @@ import pw from '/tmp/node_modules/playwright/index.js';
 const BASE = process.argv[2] || 'http://localhost:8123/';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
-const PAGINE = ['index.html', 'listone.html', 'fasce.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
+const PAGINE = ['index.html', 'listone.html', 'fasce.html', 'lega.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
   'fantasquadre.html', 'squadre.html', 'infortunati.html', 'impostazioni.html'];
 
 /* rumore di fondo del banco di prova, non difetti del sito: in locale non c'e'
@@ -26,6 +26,29 @@ const RUMORE = /fonts\.(googleapis|gstatic)|:8766|ERR_TUNNEL|ERR_CONNECTION_REFU
 
 const problemi = [];
 const nota = t => problemi.push(t);
+
+/* ---------- 0. i moduli si leggono davvero ----------
+   `node --check nomefile.js` NON basta: tratta il file come CommonJS e lascia
+   passare errori che poi il browser trova. Vanno controllati come moduli, che
+   e' il modo in cui il sito li carica davvero. Una parentesi di troppo in un
+   file e la pagina resta bianca. */
+{
+  const { readdir, readFile } = await import('node:fs/promises');
+  const { execFile } = await import('node:child_process');
+  const dir = new URL('../assets/', import.meta.url);
+  const files = (await readdir(dir)).filter(n => n.endsWith('.js'));
+  console.log('— i moduli si leggono —');
+  for (const n of files) {
+    const testo = await readFile(new URL(n, dir), 'utf8');
+    const esito = await new Promise(ok => {
+      const p = execFile(process.execPath, ['--input-type=module', '--check'], (err, _o, stderr) =>
+        ok(err ? String(stderr).split('\n').find(r => r.includes('Error')) || 'errore' : null));
+      p.stdin.end(testo);
+    });
+    if (esito) nota(`[assets/${n}] non si legge come modulo: ${esito}`);
+  }
+  console.log(`  ${files.length} moduli controllati`);
+}
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 1100 } });

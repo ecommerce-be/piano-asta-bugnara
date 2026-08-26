@@ -2,15 +2,17 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=32';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=32';
-import { leggiCfg, salvaCfg } from './cfg.js?v=32';
-import { esc } from './db.js?v=32';
-import { toast } from './ui.js?v=32';
-import { avvia, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=32';
+} from './app.js?v=33';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=33';
+import { leggiCfg, salvaPiano } from './cfg.js?v=33';
+import { esc } from './db.js?v=33';
+import { toast } from './ui.js?v=33';
+import { pronto, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=33';
 
 const { players, lega } = await caricaDati();
-const { cfg, versione } = await leggiCfg(lega);
+const letto = await leggiCfg(lega);
+const cfg = letto.cfg;
+let versionePiano = letto.versionePiano;
 ricalcola(players, cfg, cfg.piano);
 
 const infortuni = await caricaInfortuni();
@@ -47,9 +49,11 @@ function ricorda() {
   cfg.strategia = strategia;
   /* salvaCfg aggiorna comunque la copia nel browser e poi, se sei entrato,
      scrive nel database. Senza accesso solleva: e' atteso, non un guasto. */
-  salvaCfg(cfg, versione)
-    .then(() => segnala('Modulo e strategia salvati per tutti: la guida li segue.'))
-    .catch(() => segnala('Scelta valida in questo browser. Entra col tuo account nelle impostazioni per condividerla con Aurelio.'));
+  /* Modulo e strategia sono parte del TUO piano: finiscono nel documento
+     della tua squadra, non in quello della lega. Gli avversari non li vedono. */
+  salvaPiano(cfg, versionePiano)
+    .then(v => { versionePiano = v; segnala('Salvato nel piano della tua squadra: la guida lo segue.'); })
+    .catch(e => segnala(e.message));
 }
 
 function segnala(t) {
@@ -280,7 +284,7 @@ document.getElementById('strategie').addEventListener('click', e => {
 
 document.getElementById('inBozza').onclick = async () => {
   const stato = document.getElementById('statoBozza');
-  await avvia();
+  await pronto();
   if (!collegato()) {
     stato.textContent = 'Per scrivere nella bozza devi entrare col tuo account, dalla pagina Bozza.';
     return;

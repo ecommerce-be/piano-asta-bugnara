@@ -10,11 +10,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/style.css?v=33">
 <script>
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="32">
+<meta name="versione" content="33">
 </head>
 <body>
 
@@ -31,6 +31,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
     <a href="squadre.html">Serie A</a>
     <a href="infortunati.html">Infortunati</a>
     <a href="impostazioni.html" aria-current="page">Impostazioni</a>
+    <a href="lega.html">La mia lega</a>
   </nav>
   <div id="tema"></div>
 </div></div>
@@ -40,7 +41,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <section style="padding-bottom:1.2rem">
     <p class="eyebrow">Impostazioni</p>
     <h2>Le regole della lega</h2>
-    <p class="lede" style="max-width:70ch">Questi numeri stanno alla base di tutto il sito: prezzi di mercato, tetti di spesa, rosa consigliata. Sono condivisi con Aurelio — se voi due ragionaste su budget diversi, ogni consiglio sarebbe sbagliato per uno dei due.</p>
+    <p class="lede" style="max-width:74ch">Questa pagina contiene due cose con due proprietari diversi. Le <strong>regole della lega</strong> — crediti, quante squadre, slot, carattere del mercato — valgono per tutti quelli che giocano quell'asta, altrimenti ognuno ragionerebbe su un budget diverso. Il <strong>tuo piano</strong> — come dividi i crediti, con che modulo e con che strategia — è della tua squadra, e nessun altro lo legge. I due pulsanti in fondo salvano le due cose separatamente.</p>
   </section>
 
   <div id="accesso" style="margin-bottom:16px"></div>
@@ -110,7 +111,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </div>
 
   <div class="controls panel" style="border-radius:4px;margin-bottom:22px">
-    <button class="btn" id="salva">Salva per tutti</button>
+    <button class="btn" id="salva">Salva le regole della lega</button>
+    <button class="btn" id="salvaPiano">Salva il mio piano</button>
     <button class="chip" id="ricarica">Ricarica</button>
     <button class="chip" id="reset">Torna ai valori di partenza</button>
     <span class="firma" id="origine" style="margin-left:auto;align-self:center"></span>
@@ -124,8 +126,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </footer>
 </div>
 
-<script type="module" src="assets/impostazioni.js?v=32"></script>
-<script type="module" src="assets/menu.js?v=32"></script>
-<script type="module" src="assets/theme.js?v=32"></script>
+<script type="module" src="assets/impostazioni.js?v=33"></script>
+<script type="module" src="assets/menu.js?v=33"></script>
+<script type="module" src="assets/theme.js?v=33"></script>
 </body>
 </html>

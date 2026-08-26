@@ -1,14 +1,18 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=32';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=33';
 import {
-  avvia, configurato, collegato, utente, leggi, scrivi, osserva,
+  pronto, configurato, collegato, inLega, squadra, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=32';
-import { autosalva, conferma as chiediConferma } from './ui.js?v=32';
-import { leggiCfg } from './cfg.js?v=32';
+} from './db.js?v=33';
+import { autosalva, conferma as chiediConferma } from './ui.js?v=33';
+import { leggiCfg } from './cfg.js?v=33';
 
+/* La bozza e' il TUO piano: sta nel documento di squadra, e il database la
+   mostra solo a chi gestisce quella squadra. Il `true` in fondo a leggi(),
+   scrivi() e osserva() e' quello che lo dice. */
 const CHIAVE = 'bozza';
+const PRIVATO = true;
 const VUOTA = { giocatori: [] };
 
 const { players, lega } = await caricaDati();
@@ -28,7 +32,7 @@ let statoBarra = '';
 /* come nelle fantasquadre: si salva da solo poco dopo l'ultima modifica */
 const auto = autosalva(() => salva(true));
 
-await avvia();
+await pronto();
 montaAccesso(document.getElementById('accesso'), () => { disegnaBarra(); carica(); });
 
 /* ---------- fusione, se due persone salvano insieme ---------- */
@@ -62,8 +66,20 @@ async function carica() {
     messaggio = 'Entra col tuo account qui sopra per vedere la bozza.';
     return (disegnaBarra(), disegna());
   }
+  /* La bozza appartiene a una squadra. Senza, non c'e' nessuna bozza da
+     mostrare: meglio dirlo che far vedere una pagina vuota. */
+  if (!inLega() || !squadra()) {
+    bozza = structuredClone(VUOTA);
+    versione = 0;
+    sporca = false;
+    statoBarra = 'sporca';
+    messaggio = inLega()
+      ? 'Scegli quale squadra gestisci nella pagina «La mia lega»: la bozza è sua, non tua.'
+      : 'Entra in una lega dalla pagina «La mia lega» per avere una bozza.';
+    return (disegnaBarra(), disegna());
+  }
   try {
-    const r = await leggi(CHIAVE, structuredClone(VUOTA));
+    const r = await leggi(CHIAVE, structuredClone(VUOTA), PRIVATO);
     bozza = r.dati || structuredClone(VUOTA);
     bozza.giocatori ||= [];
     versione = r.versione;
@@ -93,7 +109,7 @@ async function salva(automatico = false) {
   statoBarra = '';
   disegnaBarra();
   try {
-    const r = await scrivi(CHIAVE, bozza, versione, fondi);
+    const r = await scrivi(CHIAVE, bozza, versione, fondi, PRIVATO);
     versione = r.versione;
     if (r.fuso) { bozza = r.dati; messaggio = 'Salvato, e ho unito le modifiche arrivate nel frattempo.'; }
     else messaggio = 'Salvato ' + quando(new Date().toISOString()) + '.';
@@ -239,6 +255,6 @@ osserva(CHIAVE, () => versione, r => {
   messaggio = `Aggiornato: ${esc(r.da || 'qualcuno')} ha appena salvato.`;
   disegnaBarra();
   disegna();
-});
+}, 12000, PRIVATO);
 
 await carica();

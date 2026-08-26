@@ -2,14 +2,14 @@
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
-  toast, badgeRuolo, gestisce, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=32';
+  toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
+} from './app.js?v=33';
 import {
-  avvia, configurato, collegato, utente, leggi as leggiDb, scrivi as scriviDb,
+  pronto, configurato, collegato, squadra, utente, leggi as leggiDb, scrivi as scriviDb,
   montaAccesso, esc,
-} from './db.js?v=32';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=32';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=32';
+} from './db.js?v=33';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=33';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=33';
 
 const { players, lega } = await caricaDati();
 
@@ -224,9 +224,11 @@ function aggiorna() {
 
 /* ---------- assegnazione a una fantasquadra ---------- */
 
+/* La mia fantasquadra e' quella che ho scelto nella pagina "La mia lega": e'
+   il database a saperlo, non un confronto fra nomi. */
 const miaSquadra = () => {
-  const io = utente()?.nome || '';
-  return io ? fsDati.squadre.find(s => gestisce(s.proprietario, io)) : null;
+  const mia = squadra();
+  return mia ? (fsDati.squadre || []).find(s => s.id === mia.id) : null;
 };
 
 /** Chi possiede questo giocatore, secondo le fantasquadre. */
@@ -387,7 +389,7 @@ function statoSync(msg) {
 }
 
 async function avviaSync() {
-  await avvia();
+  await pronto();
   montaAccesso(document.getElementById('accesso'), avviaSync);
   if (!configurato() || !collegato()) {
     chiaveAsta = null;

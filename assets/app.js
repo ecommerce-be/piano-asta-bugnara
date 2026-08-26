@@ -212,18 +212,6 @@ function scriviJSON(chiave, valore) {
   try { localStorage.setItem(chiave, JSON.stringify(valore)); } catch { /* storage non disponibile */ }
 }
 
-/**
- * Questa fantasquadra la gestisco io?
- * Confronto tollerante: nel campo "allenatore" si scrive di tutto —
- * "Pierre", "pierre", "Pierre e Aurelio", "Pierre (capitano)". Basta che il
- * nome del mio account compaia come parola intera.
- */
-export function gestisce(proprietario, nome) {
-  const io = (nome || '').trim().toLowerCase();
-  if (!io) return false;
-  const parole = (proprietario || '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-  return parole.includes(io);
-}
 
 export const asta = {
   id(p) { return `${p.r}|${p.n}|${p.sq}`; },

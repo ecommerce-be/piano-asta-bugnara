@@ -567,3 +567,13 @@ details.fasciabox > summary::-webkit-details-marker{display:none}
 details.fasciabox > summary::after{content:"▸";margin-left:.5rem;color:var(--ink3);font-size:.8em}
 details.fasciabox[open] > summary::after{content:"▾"}
 details.fasciabox > summary:hover{background:var(--surface2)}
+
+/* ===== scelta della squadra ===== */
+.sqscelta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:.8rem 0}
+.sqbtn{text-align:left;padding:.6rem .75rem;border:1px solid var(--line2);border-radius:4px;
+  background:var(--surface);cursor:pointer;font-family:"Archivo",sans-serif;color:var(--ink)}
+.sqbtn b{display:block;font-size:.9rem;font-weight:700}
+.sqbtn span{font-size:.74rem;color:var(--ink3)}
+.sqbtn:hover{border-color:var(--acc)}
+.sqbtn[aria-pressed="true"]{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc);background:var(--acc-soft)}
+.sqbtn[aria-pressed="true"] b{color:var(--acc-ink)}
