@@ -1,7 +1,7 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=11';
-import { avvia, configurato, leggi, esc } from './db.js?v=11';
+import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=12';
+import { avvia, configurato, leggi, esc } from './db.js?v=12';
 
 const { players, lega } = await caricaDati();
 

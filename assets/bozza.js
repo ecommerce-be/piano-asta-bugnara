@@ -1,11 +1,11 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=11';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=12';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=11';
-import { autosalva, conferma as chiediConferma } from './ui.js?v=11';
+} from './db.js?v=12';
+import { autosalva, conferma as chiediConferma } from './ui.js?v=12';
 
 const CHIAVE = 'bozza';
 const VUOTA = { giocatori: [] };
@@ -52,6 +52,16 @@ async function carica() {
   if (!configurato()) {
     messaggio = 'Il database non è ancora configurato: vedi il README.';
     statoBarra = 'errore';
+    return (disegnaBarra(), disegna());
+  }
+  /* senza accesso il database restituisce zero righe, non un errore: senza
+     questo controllo la bozza sembrerebbe vuota invece che nascosta */
+  if (!collegato()) {
+    bozza = structuredClone(VUOTA);
+    versione = 0;
+    sporca = false;
+    statoBarra = 'sporca';
+    messaggio = 'Entra col tuo account qui sopra per vedere la bozza.';
     return (disegnaBarra(), disegna());
   }
   try {

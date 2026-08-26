@@ -1,11 +1,11 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=11';
+import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=12';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=11';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=11';
+} from './db.js?v=12';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=12';
 
 const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [] };
@@ -76,6 +76,17 @@ async function carica() {
   if (!configurato()) {
     messaggio = 'Il database non è ancora configurato: vedi il README.';
     statoBarra = 'errore';
+    return (disegnaBarra(), disegna());
+  }
+  /* Senza accesso il database non restituisce errore: restituisce zero righe.
+     Senza questo controllo sembrerebbe che le fantasquadre non esistano, mentre
+     sono li' e non le stiamo semplicemente vedendo. */
+  if (!collegato()) {
+    dati = structuredClone(VUOTO);
+    versione = 0;
+    sporca = false;
+    statoBarra = 'sporca';
+    messaggio = 'Entra col tuo account qui sopra per vedere le fantasquadre.';
     return (disegnaBarra(), disegna());
   }
   try {
@@ -171,7 +182,9 @@ function disegna() {
   const mio = utente()?.nome || '';
 
   if (!dati.squadre.length) {
-    griglia.innerHTML = '<div class="vuotafs">Nessuna fantasquadra. Premi <strong>Nuova squadra</strong> per aggiungere la prima: nome, allenatore, e poi la rosa man mano che l\'asta procede.</div>';
+    griglia.innerHTML = collegato()
+      ? '<div class="vuotafs">Nessuna fantasquadra. Premi <strong>Nuova squadra</strong> per aggiungere la prima: nome, allenatore, e poi la rosa man mano che l\'asta procede.</div>'
+      : '<div class="vuotafs">Le fantasquadre stanno nel database condiviso, non in questo browser: sono le stesse che vedi da qualsiasi computer, tue e di Aurelio. Per vederle <strong>entra col tuo account</strong> nel riquadro qui sopra — è lo stesso indirizzo email che hai usato la prima volta.</div>';
     return disegnaRiepilogo();
   }
 
