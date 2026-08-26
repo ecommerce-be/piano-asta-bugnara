@@ -251,11 +251,17 @@ def verifica_mappa(mappa: dict[str, int], corpo: list[list[str]]) -> dict[str, i
         if migliore is not None and punti >= quorum:
             mappa = {**mappa, "nome": migliore}
 
-    # i campi numerici: se in quella colonna non ci sono numeri, meglio niente
-    # che un valore sbagliato messo nel listone
+    # i campi numerici: se in quella colonna c'e' del testo invece che numeri,
+    # meglio niente che un valore sbagliato nel listone. Le celle VUOTE pero'
+    # non contano: colonne come "rigori segnati" o "autogol" sono legittimamente
+    # vuote per quasi tutti a inizio stagione, e scartarle per questo vorrebbe
+    # dire perdersi il dato appena qualcuno segna il primo rigore.
     for campo in [c for c in mappa if c not in ("nome", "sq", "r")]:
         i = mappa[campo]
-        if sum(numero(cella(r, i)) is not None for r in corpo) < quorum:
+        piene = [r for r in corpo if cella(r, i).strip()]
+        if not piene:
+            continue
+        if sum(numero(cella(r, i)) is not None for r in piene) < max(1, int(len(piene) * 0.7)):
             mappa = {k: v for k, v in mappa.items() if k != campo}
 
     return mappa
@@ -499,6 +505,9 @@ def main() -> int:
             anatomia(html)
 
         campi = [c for c in ATTESI[pagina] if any(c in r for r in righe)]
+        mancanti = [c for c in ATTESI[pagina] if c not in campi]
+        if mancanti:
+            print(f"    campi attesi che non ho trovato: {', '.join(mancanti)}")
         if not campi:
             problemi.append(f"{pagina}: tabella trovata ma nessuna colonna utile "
                             f"(riconosciute: {diagnosi.get('colonne_riconosciute')})")
