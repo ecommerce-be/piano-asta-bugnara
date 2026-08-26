@@ -1,7 +1,7 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=8';
-import { avvia, configurato, leggi, esc } from './db.js?v=8';
+import { caricaDati, ricalcola, asta, badgeRuolo, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=9';
+import { avvia, configurato, leggi, esc } from './db.js?v=9';
 
 const { players, lega } = await caricaDati();
 
@@ -76,11 +76,18 @@ function disegna() {
       <td class="num">${p.fm != null ? p.fm.toFixed(2) : ''}</td>
       <td class="num">${num(p.gol)}</td>
       <td class="num">${num(p.assist)}</td>
+      <td class="num pcol">${num(p.gs)}</td>
+      <td class="num pcol">${num(p.rp)}</td>
+      <td class="num">${num(p.rseg)}</td>
+      <td class="num">${num(p.rsba)}</td>
+      <td class="num">${num(p.au)}</td>
       <td class="num">${num(p.amm)}</td>
       <td class="num">${num(p.esp)}</td>
+      <td class="num mktc">${num(p.qi)}</td>
+      <td class="num mktc">${num(p.fvm)}</td>
       <td><span class="pill ${st.pill}">${esc(st.testo)}</span></td>
       <td class="note">${esc(p.nota || '')}</td></tr>`;
-  }).join('') || '<tr><td colspan="13" class="note" style="color:var(--ink3)">Nessun giocatore con questi filtri.</td></tr>';
+  }).join('') || '<tr><td colspan="20" class="note" style="color:var(--ink3)">Nessun giocatore con questi filtri.</td></tr>';
 
   /* riepilogo della squadra scelta */
   const box = document.getElementById('riepilogo');

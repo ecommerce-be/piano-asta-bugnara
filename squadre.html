@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=8">
+<link rel="stylesheet" href="assets/style.css?v=9">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="8">
+<meta name="versione" content="9">
 </head>
 <body>
 
@@ -62,10 +62,17 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
     <th class="num" title="Presenze con voto">Pres.</th>
     <th class="num" title="Media voto">MV</th>
     <th class="num" title="Fantamedia">FM</th>
-    <th class="num" title="Gol">G</th>
+    <th class="num" title="Gol fatti">G</th>
     <th class="num" title="Assist">A</th>
+    <th class="num pcol" title="Gol subiti (portieri)">GS</th>
+    <th class="num pcol" title="Rigori parati (portieri)">RP</th>
+    <th class="num" title="Rigori segnati">R+</th>
+    <th class="num" title="Rigori sbagliati">R−</th>
+    <th class="num" title="Autogol">AU</th>
     <th class="num" title="Ammonizioni">🟨</th>
     <th class="num" title="Espulsioni">🟥</th>
+    <th class="num" title="Quotazione iniziale">QI</th>
+    <th class="num" title="Fanta Valore di Mercato, su base 1000 crediti">FVM</th>
     <th>Stato</th>
     <th>Note</th>
   </tr></thead><tbody></tbody></table></div>
@@ -75,12 +82,12 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <div id="griglia" class="sqgrid" style="margin-top:2rem"></div>
 
   <footer>
-    <p>Presenze, media voto e fantamedia arrivano dallo stesso export del listone: si aggiornano riesportandolo e rilanciando <code>tools/build_prices.py</code>. Gol, assist e cartellini compaiono quando aggiungi <code>data/statistiche.json</code>.</p>
+    <p>Tutte le statistiche arrivano da Fantacalcio.it e si aggiornano da sole ogni mattina. <strong>GS</strong> e <strong>RP</strong> riguardano solo i portieri: gol subiti e rigori parati, i due numeri che contano per il modificatore di difesa. <strong>FVM</strong> è il Fanta Valore di Mercato su base 1000 crediti — noi ne abbiamo 500, quindi dimezzalo per confrontarlo con la colonna Mercato.</p>
     <p>Verde = l'hai comprato tu. Barrato = se l'è preso un avversario.</p>
   </footer>
 </div>
 
-<script type="module" src="assets/squadre.js?v=8"></script>
-<script type="module" src="assets/theme.js?v=8"></script>
+<script type="module" src="assets/squadre.js?v=9"></script>
+<script type="module" src="assets/theme.js?v=9"></script>
 </body>
 </html>

@@ -100,27 +100,34 @@ SQUADRE = {
 # Il confronto e' su testo normalizzato (niente accenti, punti, spazi).
 COLONNE = {
     "nome": ["nome", "giocatore", "calciatore"],
-    "sq": ["squadra", "sq", "team"],
+    "sq": ["squadra", "sq", "sq.", "team"],
     "r": ["r", "ruolo"],
-    "q": ["qta", "qa", "quotazione", "quotazioneattuale", "qtattuale", "quot"],
-    "qi": ["qti", "qi", "quotazioneiniziale", "qtiniziale"],
-    "fvm": ["fvm", "fantavalorediMercato".lower(), "fantavaloremercato"],
+    "q": ["qa", "qta", "quotazione", "quotazioneattuale", "qtattuale", "quot"],
+    "qi": ["qi", "qti", "quotazioneiniziale", "qtiniziale"],
+    "fvm": ["fvm", "fvm1000", "fvmm", "fantavaloredimercato", "fantavaloremercato"],
     "pg": ["pv", "presenze", "pg", "presenzeconvoto", "partitegiocate"],
     "mv": ["mv", "mediavoto", "media"],
     "fm": ["fm", "fantamedia", "fmedia"],
     "gol": ["gf", "gol", "goal", "golfatti", "reti"],
+    "gs": ["gs", "golsubiti", "subiti"],
+    "rp": ["rp", "rigoriparati", "parati"],
+    "rseg": ["r+", "rigorisegnati", "rigoriseg"],
+    "rsba": ["r-", "rigorisbagliati", "rigorisbag"],
+    "au": ["au", "autogol", "autoreti"],
     "assist": ["ass", "assist", "asst"],
     "amm": ["amm", "ammonizioni", "gialli", "cartellinigialli"],
     "esp": ["esp", "espulsioni", "rossi", "cartellinirossi"],
 }
 
-# quali campi ci aspettiamo da quale pagina
+# quali campi ci aspettiamo da quale pagina: prendiamo tutto quello che c'e'
 ATTESI = {
-    "statistiche": ["pg", "mv", "fm", "gol", "assist", "amm", "esp"],
-    "quotazioni": ["q"],
+    "statistiche": ["pg", "mv", "fm", "gol", "gs", "rp", "rseg", "rsba", "au",
+                    "assist", "amm", "esp"],
+    "quotazioni": ["q", "qi", "fvm"],
 }
 
-INTERI = {"q", "qi", "fvm", "gol", "assist", "amm", "esp"}
+INTERI = {"q", "qi", "fvm", "gol", "gs", "rp", "rseg", "rsba", "au",
+          "assist", "amm", "esp"}
 
 
 # ---------------------------------------------------------------- utilita'
@@ -138,7 +145,20 @@ def chiave_nome(s: str) -> str:
 
 
 def chiave_intestazione(s: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", senza_accenti(s).lower())
+    # + e - restano: servono a distinguere "R+" (rigori segnati) da "R" (ruolo)
+    return re.sub(r"[^a-z0-9+-]+", "", senza_accenti(s).lower())
+
+
+def sembra_nome(s: str) -> bool:
+    """Questa cella contiene il nome di un giocatore, o e' un numero / una sigla?"""
+    s = str(s).strip()
+    if len(s) < 3:
+        return False
+    if re.fullmatch(r"[\d.,+\-%/ ]+", s):
+        return False
+    if re.fullmatch(r"[A-Z]{3}", s):       # ROM, INT, JUV: e' la squadra
+        return False
+    return True
 
 
 def squadra_nostra(s: str) -> str | None:
@@ -186,6 +206,61 @@ def mappa_colonne(celle: list[str]) -> dict[str, int]:
     return mappa
 
 
+def allarga_colspan(riga) -> list[str]:
+    """Le intestazioni usano spesso colspan: 'Calciatore' che copre quattro
+    colonne. Le ripetiamo, cosi' gli indici tornano a corrispondere alle celle
+    delle righe sotto."""
+    out = []
+    for c in riga.find_all(["td", "th"]):
+        testo = " ".join(c.get_text(" ", strip=True).split())
+        try:
+            n = max(1, int(c.get("colspan", 1)))
+        except (TypeError, ValueError):
+            n = 1
+        out.extend([testo] * n)
+    return out
+
+
+def verifica_mappa(mappa: dict[str, int], corpo: list[list[str]]) -> dict[str, int]:
+    """Controlla la mappa sulle righe vere e la corregge.
+
+    Il caso che capita davvero: l'intestazione dice 'Calciatore' in prima
+    colonna ma il nome, nelle righe, sta tre celle piu' in la'. Fidarsi solo
+    dell'intestazione vuol dire leggere celle vuote e buttare via tutto.
+    Qui guardiamo cosa c'e' scritto davvero e, se una colonna non regge, la
+    cerchiamo altrove o la lasciamo perdere.
+    """
+    if not corpo:
+        return mappa
+    quorum = max(1, int(len(corpo) * 0.7))
+    cella = lambda r, i: r[i] if i < len(r) else ""
+
+    # il nome: deve sembrare un nome nella maggioranza delle righe
+    i = mappa.get("nome")
+    buono = i is not None and sum(sembra_nome(cella(r, i)) for r in corpo) >= quorum
+    if not buono:
+        occupate = {v for k, v in mappa.items() if k != "nome"}
+        larghezza = max(len(r) for r in corpo)
+        migliore, punti = None, 0
+        for j in range(larghezza):
+            if j in occupate:
+                continue
+            p = sum(sembra_nome(cella(r, j)) for r in corpo)
+            if p > punti:
+                migliore, punti = j, p
+        if migliore is not None and punti >= quorum:
+            mappa = {**mappa, "nome": migliore}
+
+    # i campi numerici: se in quella colonna non ci sono numeri, meglio niente
+    # che un valore sbagliato messo nel listone
+    for campo in [c for c in mappa if c not in ("nome", "sq", "r")]:
+        i = mappa[campo]
+        if sum(numero(cella(r, i)) is not None for r in corpo) < quorum:
+            mappa = {k: v for k, v in mappa.items() if k != campo}
+
+    return mappa
+
+
 def testo_celle(riga) -> list[str]:
     out = []
     for c in riga.find_all(["td", "th"]):
@@ -204,14 +279,29 @@ def leggi_tabelle(html: str, campi_attesi: list[str]) -> tuple[list[dict], dict]
         righe = tab.find_all("tr")
         if len(righe) < 10:
             continue
-        # l'intestazione e' la prima riga che mappa almeno il nome
+
+        # l'intestazione e' la prima riga che riconosce almeno il nome
         mappa, inizio = {}, 0
         for i, r in enumerate(righe[:5]):
-            m = mappa_colonne(testo_celle(r))
+            celle = testo_celle(r)
+            larga = allarga_colspan(r)
+            # se il colspan riallinea l'intestazione alla larghezza delle righe
+            # sotto, usiamo quella versione
+            sotto = [len(testo_celle(x)) for x in righe[i + 1:i + 6]]
+            tipica = max(set(sotto), key=sotto.count) if sotto else len(celle)
+            if len(celle) != tipica and len(larga) == tipica:
+                celle = larga
+            m = mappa_colonne(celle)
             if "nome" in m and len(m) > len(mappa):
                 mappa, inizio = m, i + 1
         if "nome" not in mappa:
             continue
+
+        corpo = [testo_celle(r) for r in righe[inizio:inizio + 40]]
+        mappa = verifica_mappa(mappa, corpo)
+        if "nome" not in mappa:
+            continue
+
         utili = [c for c in campi_attesi if c in mappa]
         candidate.append((len(utili), len(righe), tab, mappa, inizio))
 
