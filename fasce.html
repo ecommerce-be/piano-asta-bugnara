@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fasce — Piano d'Asta Bugnara</title>
+<meta name="description" content="Tutti i giocatori di Serie A divisi per ruolo e per fascia, con il motivo per cui stanno dove stanno.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<script>
+/* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
+try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
+</script>
+<meta name="versione" content="32">
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
+  <nav class="nav">
+    <a href="./">La guida</a>
+    <a href="listone.html">Listone e asta live</a>
+    <a href="fasce.html" aria-current="page">Fasce</a>
+    <a href="rosaideale.html">Rosa ideale</a>
+    <a href="bozza.html">Bozza</a>
+    <a href="rosa.html">La mia rosa</a>
+    <a href="fantasquadre.html">Fantasquadre</a>
+    <a href="squadre.html">Serie A</a>
+    <a href="infortunati.html">Infortunati</a>
+    <a href="impostazioni.html">Impostazioni</a>
+  </nav>
+  <div id="tema"></div>
+</div></div>
+
+<div class="wide">
+
+  <section style="padding-bottom:1.2rem">
+    <p class="eyebrow">Fasce</p>
+    <h2>Chi vale cosa, reparto per reparto</h2>
+    <p class="lede" style="max-width:74ch">All'asta a chiamata random non decidi tu quando esce il tuo obiettivo: quando il nome arriva, hai otto secondi. Questa pagina è fatta per quel momento — apri il ruolo, trovi il giocatore e leggi in una riga perché sta dove sta e fino a quanto puoi spingerti.</p>
+  </section>
+
+  <div class="controls panel" style="border-radius:4px;margin-bottom:20px">
+    <button class="chip" data-r="P" aria-pressed="false">Portieri</button>
+    <button class="chip" data-r="D" aria-pressed="true">Difensori</button>
+    <button class="chip" data-r="C" aria-pressed="false">Centrocampisti</button>
+    <button class="chip" data-r="A" aria-pressed="false">Attaccanti</button>
+    <input type="search" id="q" placeholder="Cerca un giocatore o una squadra…" aria-label="Cerca giocatore o squadra" style="flex:1 1 200px">
+    <button class="chip" id="soloLiberi" aria-pressed="false">Solo chi è ancora libero</button>
+  </div>
+
+  <div id="totali" class="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:8px"></div>
+  <p class="spiega" style="padding:0 0 1.2rem" id="quanti"></p>
+
+  <div id="elenco"></div>
+
+  <section>
+    <p class="eyebrow">Come nascono</p>
+    <h2>Perché uno sta in prima fascia e un altro no</h2>
+    <div id="comeNascono" style="max-width:78ch"></div>
+  </section>
+
+  <footer>
+    <p>Le fasce si ricalcolano da sole quando cambiano le <a href="impostazioni.html">impostazioni</a> o quando l'aggiornamento del mattino porta nuovi dati: non sono una lista congelata a inizio stagione. <strong>Tuo max</strong> è il tetto oltre il quale non rilanci, <strong>mercato</strong> è quanto dovrebbe costare agli altri. Chi è già andato a un avversario resta in elenco, sbiadito, così sai cosa è rimasto.</p>
+  </footer>
+</div>
+
+<script type="module" src="assets/fasce.js?v=32"></script>
+<script type="module" src="assets/menu.js?v=32"></script>
+<script type="module" src="assets/theme.js?v=32"></script>
+</body>
+</html>

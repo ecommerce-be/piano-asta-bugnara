@@ -558,3 +558,12 @@ td .gioc .sq{white-space:nowrap}
 
 .brand .ver{font-family:"Archivo",sans-serif;font-size:.62rem;font-weight:600;color:var(--ink3);
   letter-spacing:.04em;margin-left:.15rem;align-self:flex-start;padding-top:.1rem}
+
+/* ===== fasce ===== */
+/* La prima e la seconda restano aperte, le altre si aprono a richiesta:
+   con centotrenta riempitivi la pagina diventava impraticabile. */
+details.fasciabox > summary{cursor:pointer;list-style:none;user-select:none}
+details.fasciabox > summary::-webkit-details-marker{display:none}
+details.fasciabox > summary::after{content:"▸";margin-left:.5rem;color:var(--ink3);font-size:.8em}
+details.fasciabox[open] > summary::after{content:"▾"}
+details.fasciabox > summary:hover{background:var(--surface2)}

@@ -17,7 +17,7 @@ import pw from '/tmp/node_modules/playwright/index.js';
 const BASE = process.argv[2] || 'http://localhost:8123/';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
-const PAGINE = ['index.html', 'listone.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
+const PAGINE = ['index.html', 'listone.html', 'fasce.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
   'fantasquadre.html', 'squadre.html', 'infortunati.html', 'impostazioni.html'];
 
 /* rumore di fondo del banco di prova, non difetti del sito: in locale non c'e'

@@ -4,9 +4,9 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo,
   giorniAlRientro, gravita, classeGravita, RUOLI,
-} from './app.js?v=31';
-import { esc } from './db.js?v=31';
-import { leggiCfg } from './cfg.js?v=31';
+} from './app.js?v=32';
+import { esc } from './db.js?v=32';
+import { leggiCfg } from './cfg.js?v=32';
 
 const { players, lega } = await caricaDati();
 
