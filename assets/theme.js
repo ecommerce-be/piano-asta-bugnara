@@ -42,3 +42,15 @@ export function montaInterruttore(contenitore) {
 
 /* Monta l'interruttore ovunque ci sia il segnaposto. */
 montaInterruttore(document.getElementById('tema'));
+
+/* Mostra la versione accanto al logo: se il browser sta servendo un file vecchio,
+   il numero non corrisponde e te ne accorgi subito. */
+const v = document.querySelector('meta[name="versione"]')?.content;
+const marchio = document.querySelector('.brand');
+if (v && marchio && !marchio.querySelector('.ver')) {
+  const s = document.createElement('span');
+  s.className = 'ver';
+  s.textContent = 'v' + v;
+  s.title = 'Versione del sito caricata dal browser';
+  marchio.appendChild(s);
+}

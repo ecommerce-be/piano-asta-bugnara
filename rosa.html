@@ -10,11 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=7">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
+<meta name="versione" content="7">
 </head>
 <body>
 
@@ -36,7 +37,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <section style="padding-bottom:1.4rem">
     <p class="eyebrow">La mia rosa</p>
     <h2>Quello che hai comprato</h2>
-    <p class="lede" style="max-width:70ch">Si aggiorna da sola man mano che segni gli acquisti nel <a href="listone.html">listone</a>.</p>
+    <p class="lede" style="max-width:70ch">Si aggiorna da sola man mano che segni gli acquisti nel <a href="listone.html">listone</a> o li assegni dalle <a href="fantasquadre.html">fantasquadre</a>. La ✕ accanto a un giocatore lo toglie da qui e anche dalla tua fantasquadra condivisa.</p>
   </section>
 
   <div class="ledger" id="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:24px"></div>
@@ -74,11 +75,11 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </section>
 
   <footer>
-    <p>La rosa vive nel browser, insieme allo stato dell'asta. Se cambi computer, esportala dal <a href="listone.html">listone</a> e reimportala di là.</p>
+    <p>La rosa vive nel browser, insieme allo stato dell'asta; la fantasquadra invece sta nel database e la vede anche Aurelio. Se un giocatore risulta tuo qui ma non è registrato nella tua fantasquadra, te lo segnalo con <span class="orfano">non registrato</span>. Se cambi computer, esporta l'asta dal <a href="listone.html">listone</a> e reimportala di là.</p>
   </footer>
 </div>
 
-<script type="module" src="assets/rosa-page.js"></script>
-<script type="module" src="assets/theme.js"></script>
+<script type="module" src="assets/rosa-page.js?v=7"></script>
+<script type="module" src="assets/theme.js?v=7"></script>
 </body>
 </html>

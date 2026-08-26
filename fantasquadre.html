@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fantasquadre — Piano d'Asta Bugnara</title>
-<meta name="description" content="Le squadre della lega con proprietario, rosa e crediti residui, condivise via GitHub.">
+<meta name="description" content="Le squadre della lega con allenatore, rosa e crediti residui, condivise fra noi due.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=7">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
+<meta name="versione" content="7">
 </head>
 <body>
 
@@ -48,11 +49,11 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <div class="fsgrid" id="griglia"></div>
 
   <footer>
-    <p>La squadra col bordo verde è la tua: viene riconosciuta confrontando il proprietario col nome del tuo account. Un ruolo diventa verde quando quella squadra ha riempito tutti i suoi slot — da lì in poi su quel reparto non può più rilanciare.</p>
+    <p>Per cambiare nome o allenatore basta premere la pastiglia <strong>👤</strong> in testata, oppure <strong>nome e allenatore</strong> in fondo alla scheda: si apre una finestra del sito e ogni modifica si salva da sola. La squadra col bordo verde è la tua: viene riconosciuta confrontando l'allenatore col nome del tuo account. Un ruolo diventa verde quando quella squadra ha riempito tutti i suoi slot — da lì in poi su quel reparto non può più rilanciare.</p>
   </footer>
 </div>
 
-<script type="module" src="assets/fantasquadre.js"></script>
-<script type="module" src="assets/theme.js"></script>
+<script type="module" src="assets/fantasquadre.js?v=7"></script>
+<script type="module" src="assets/theme.js?v=7"></script>
 </body>
 </html>

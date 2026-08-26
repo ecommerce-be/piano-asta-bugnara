@@ -40,12 +40,22 @@ def leggi_listone(path: Path) -> list[dict]:
         d = dict(zip(intestazione, riga))
         if not d.get("Nome"):
             continue
-        giocatori.append({
+        g = {
             "n": d["Nome"],
             "sq": d["Sq."],
             "r": d["R."],
             "q": int(d["QUOT."] or 1),
-        })
+        }
+        # Statistiche gia' presenti nell'export del listone: presenze con voto,
+        # media voto, fantamedia. Si aggiornano riesportando lo stesso file.
+        for chiave, colonna in (("pg", "PGv"), ("mv", "MV"), ("fm", "FM")):
+            v = d.get(colonna)
+            if v not in (None, "", 0):
+                try:
+                    g[chiave] = round(float(v), 2)
+                except (TypeError, ValueError):
+                    pass
+        giocatori.append(g)
     return giocatori
 
 
@@ -73,6 +83,18 @@ def main() -> int:
     for g in giocatori:
         g.setdefault("mult", 1.0)
         g.setdefault("nota", "")
+
+    # gol, assist e cartellini arrivano da un secondo file, se c'e'
+    extra = RADICE / "data" / "statistiche.json"
+    if extra.exists():
+        stats = json.loads(extra.read_text(encoding="utf-8"))
+        agganciati = 0
+        for g in giocatori:
+            s = stats.get(normalizza(g["n"]))
+            if s:
+                g.update(s)
+                agganciati += 1
+        print(f"{agganciati} giocatori arricchiti da data/statistiche.json")
 
     ordine = {"P": 0, "D": 1, "C": 2, "A": 3}
     giocatori.sort(key=lambda g: (ordine.get(g["r"], 9), -g["q"] * g["mult"], g["n"]))

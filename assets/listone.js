@@ -2,12 +2,13 @@
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
-  toast, badgeRuolo, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js';
+  toast, badgeRuolo, gestisce, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
+} from './app.js?v=7';
 import {
   avvia, configurato, collegato, utente, leggi as leggiDb, scrivi as scriviDb,
   montaAccesso, esc,
-} from './db.js';
+} from './db.js?v=7';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=7';
 
 const { players, lega } = await caricaDati();
 
@@ -84,6 +85,10 @@ for (const [id, , scrivi] of CAMPI) {
 
 let stato = asta.leggi();
 let altrui = asta.leggiAltrui();
+
+/* fantasquadre condivise: servono per assegnare un giocatore a chi se l'e' preso */
+let fsDati = { squadre: [] }, fsVer = 0, fsPronte = false;
+let assegnando = null;   // id del giocatore per cui e' aperto il campo prezzo
 let filtroRuolo = 'ALL', soloMia = false, nascondiPresi = false, cerca = '';
 let ordina = { k: 'max', dir: 'desc' };
 
@@ -177,14 +182,14 @@ function disegnaTabella() {
     const via = altrui.has(id);
     const cls = via ? 'altrui' : pagato ? (pagato > p.max ? 'over' : 'taken') : '';
     return `<tr class="${cls}">
-      <td>${badgeRuolo(p.r)}<span class="nm">${p.n}</span> <span class="sq">${p.sq}</span></td>
+      <td><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}</span>
+        <span class="sq">${esc(p.sq)}</span></span></span></td>
       <td class="num mktc">${p.q}</td>
       <td class="num mktc">${Math.round(p.mkt)}</td>
       <td class="num maxc">${p.max}</td>
       <td class="num"><input type="number" min="0" max="${cfg.crediti}" value="${pagato}"
            data-id="${id}" aria-label="Prezzo pagato per ${p.n}"${via ? ' disabled' : ''}></td>
-      <td><button class="bx" data-via="${id}" aria-pressed="${via}"
-           title="Segna che se l'è preso un avversario">${via ? 'venduto' : 'ad altri'}</button></td>
+      <td>${cellaFuori(p, id, via)}</td>
       <td><span class="pill ${CLASSE_VERDETTO[p.v] || 'p-g'}">${p.v}</span></td>
       <td class="note">${p.nota || ''}</td></tr>`;
   }).join('');
@@ -201,6 +206,156 @@ function aggiorna() {
   disegnaLedger();
   disegnaFasce();
   disegnaTabella();
+}
+
+/* ---------- assegnazione a una fantasquadra ---------- */
+
+const miaSquadra = () => {
+  const io = utente()?.nome || '';
+  return io ? fsDati.squadre.find(s => gestisce(s.proprietario, io)) : null;
+};
+
+/** Chi possiede questo giocatore, secondo le fantasquadre. */
+function possessore(id) {
+  for (const s of fsDati.squadre) {
+    const g = (s.rosa || []).find(x => x.id === id);
+    if (g) return { squadra: s, prezzo: g.prezzo };
+  }
+  return null;
+}
+
+function cellaFuori(p, id, via) {
+  const q = possessore(id);
+  if (q) {
+    return `<span class="assbox"><span class="propr">${esc(q.squadra.nome)} · ${q.prezzo} cr</span>
+      <button class="bx" data-libera="${id}" title="Rimetti sul mercato">✕</button></span>`;
+  }
+  if (via) {
+    return `<span class="assbox"><span class="propr">fuori mercato</span>
+      <button class="bx" data-libera="${id}" title="Rimetti sul mercato">✕</button></span>`;
+  }
+  return `<span class="assbox">
+    <button class="bx" data-assegna="${id}" title="Assegna a una fantasquadra, con il prezzo">Aggiungi a squadra</button>
+  </span>`;
+}
+
+/** Apre la finestra di assegnazione e registra l'acquisto. */
+async function apriAssegnazione(id) {
+  const p = players.find(x => asta.id(x) === id);
+  if (!p) return;
+
+  if (!fsDati.squadre.length) {
+    return avvisa({
+      titolo: 'Non ci sono ancora fantasquadre',
+      testo: 'Per assegnare i giocatori devi prima creare le squadre della lega, con nome e proprietario, nella pagina Fantasquadre.',
+      ok: 'Vado a crearle',
+    }).then(() => { location.href = 'fantasquadre.html'; });
+  }
+
+  const opzioni = fsDati.squadre.map(sq => {
+    const speso = (sq.rosa || []).reduce((a, g) => a + (Number(g.prezzo) || 0), 0);
+    return { v: sq.id, t: `${sq.nome} — ${cfg.crediti - speso} cr disponibili` };
+  });
+  opzioni.push({ v: '__fuori', t: 'Fuori mercato (non registro a chi)' });
+
+  const r = await chiediCampi({
+    titolo: `${p.n} · ${p.sq}`,
+    testo: `Il tuo tetto è ${p.max} crediti, il mercato lo stima intorno a ${Math.round(p.mkt)}.`,
+    ok: 'Assegna',
+    campi: [
+      { id: 'squadra', etichetta: 'A quale fantasquadra', tipo: 'scelta', opzioni },
+      { id: 'prezzo', etichetta: 'Prezzo pagato', tipo: 'numero', valore: p.max, min: 0, max: cfg.crediti,
+        aiuto: 'Quanto è costato all\'asta, non il tuo tetto.' },
+    ],
+  });
+  if (!r) return;
+
+  if (r.squadra === '__fuori') {
+    altrui.add(id);
+    delete stato[id];
+    asta.scrivi(stato); asta.scriviAltrui(altrui);
+    programmaSync(); aggiorna();
+    return;
+  }
+  await assegna(id, r.squadra, Math.max(0, r.prezzo));
+}
+
+async function caricaFantasquadre() {
+  if (!configurato()) return;
+  try {
+    const r = await leggiDb('fantasquadre', { squadre: [] });
+    fsDati = r.dati || { squadre: [] };
+    fsDati.squadre ||= [];
+    fsVer = r.versione;
+    fsPronte = true;
+    disegnaTabella();
+  } catch { /* senza accesso si usa solo "ad altri" */ }
+}
+
+function fondiFs(remoto, locale) {
+  const uniti = new Map();
+  for (const s of (remoto?.squadre || [])) uniti.set(s.id, s);
+  for (const s of locale.squadre) {
+    const e = uniti.get(s.id);
+    if (!e || (s.quando || '') >= (e.quando || '')) uniti.set(s.id, s);
+  }
+  return { ...locale, squadre: [...uniti.values()] };
+}
+
+async function salvaFantasquadre() {
+  if (!collegato()) { statoSync('Per assegnare devi entrare col tuo account.'); return; }
+  try {
+    const r = await scriviDb('fantasquadre', fsDati, fsVer, fondiFs);
+    fsVer = r.versione;
+    if (r.fuso) fsDati = r.dati;
+    statoSync('Assegnazione salvata.');
+  } catch (e) {
+    statoSync('Non ho potuto salvare: ' + e.message);
+  }
+  disegnaTabella();
+}
+
+async function assegna(id, idSquadra, prezzo) {
+  const p = players.find(x => asta.id(x) === id);
+  const s = fsDati.squadre.find(x => x.id === idSquadra);
+  if (!p || !s) return;
+  (s.rosa ||= []).push({ id, n: p.n, sq: p.sq, r: p.r, prezzo });
+  s.quando = new Date().toISOString();
+  s.chi = utente()?.nome || 'anonimo';
+
+  // se e' la mia squadra il giocatore entra nella mia rosa, altrimenti esce dal mercato
+  if (miaSquadra()?.id === idSquadra) {
+    stato[id] = prezzo;
+    altrui.delete(id);
+  } else {
+    altrui.add(id);
+    delete stato[id];
+  }
+  asta.scrivi(stato);
+  asta.scriviAltrui(altrui);
+  programmaSync();
+  assegnando = null;
+  aggiorna();
+  await salvaFantasquadre();
+}
+
+async function libera(id) {
+  const eraAssegnato = Boolean(possessore(id));
+  for (const s of fsDati.squadre) {
+    const prima = (s.rosa || []).length;
+    s.rosa = (s.rosa || []).filter(g => g.id !== id);
+    if ((s.rosa || []).length !== prima) {
+      s.quando = new Date().toISOString();
+      s.chi = utente()?.nome || 'anonimo';
+    }
+  }
+  altrui.delete(id);
+  delete stato[id];
+  asta.scrivi(stato);
+  asta.scriviAltrui(altrui);
+  programmaSync();
+  aggiorna();
+  if (eraAssegnato) await salvaFantasquadre();
 }
 
 /* ---------- sincronizzazione con il database ---------- */
@@ -227,6 +382,7 @@ async function avviaSync() {
       : 'Database non configurato: quello che segni resta solo su questo dispositivo.');
   }
   chiaveAsta = 'asta:' + utente().id;
+  caricaFantasquadre();
   let verLocale = 0;
   try { verLocale = Number(localStorage.getItem(CHIAVE_VER) || 0); } catch { /* ignora */ }
   try {
@@ -267,7 +423,9 @@ function programmaSync() {
 
 corpo.addEventListener('change', e => {
   const el = e.target;
-  if (el.tagName !== 'INPUT') return;
+  // solo il campo "preso a": il prezzo dell'assegnazione ha un suo pulsante,
+  // e ridisegnare la tabella qui gli cancellerebbe il valore sotto le dita
+  if (el.tagName !== 'INPUT' || !el.dataset.id) return;
   const v = parseInt(el.value, 10);
   if (!v || v <= 0) delete stato[el.dataset.id]; else stato[el.dataset.id] = v;
   asta.scrivi(stato);
@@ -278,19 +436,11 @@ corpo.addEventListener('change', e => {
 });
 
 corpo.addEventListener('click', e => {
-  const b = e.target.closest('button[data-via]');
-  if (!b) return;
-  const id = b.dataset.via;
-  if (altrui.has(id)) {
-    altrui.delete(id);
-  } else {
-    altrui.add(id);
-    delete stato[id];        // se lo prende un altro, non è più mio
-    asta.scrivi(stato);
-  }
-  asta.scriviAltrui(altrui);
-  programmaSync();
-  aggiorna();
+  const apri = e.target.closest('button[data-assegna]');
+  if (apri) { apriAssegnazione(apri.dataset.assegna); return; }
+
+  const lib = e.target.closest('button[data-libera]');
+  if (lib) { libera(lib.dataset.libera); return; }
 });
 
 document.getElementById('q').addEventListener('input', e => { cerca = e.target.value; disegnaTabella(); });
@@ -330,12 +480,15 @@ document.getElementById('esporta').onclick = async () => {
     await navigator.clipboard.writeText(testo);
     toast('Stato copiato negli appunti');
   } catch {
-    window.prompt('Copia questo testo e mandalo al tuo socio:', testo);
+    await chiediCampi({ titolo: 'Copia questo testo', testo: 'Mandalo al tuo socio: lo incollerà con "Incolla uno stato".',
+      ok: 'Fatto', campi: [{ id: 'x', etichetta: 'Stato dell\'asta', valore: testo }] });
   }
 };
 
-document.getElementById('importa').onclick = () => {
-  const testo = window.prompt('Incolla qui lo stato ricevuto:');
+document.getElementById('importa').onclick = async () => {
+  const r = await chiediCampi({ titolo: 'Incolla uno stato ricevuto', ok: 'Importa',
+    campi: [{ id: 'testo', etichetta: 'Testo ricevuto', obbligatorio: true }] });
+  const testo = r?.testo;
   if (!testo) return;
   try {
     const dati = importaStato(testo);
@@ -351,19 +504,13 @@ document.getElementById('importa').onclick = () => {
   }
 };
 
-const btnReset = document.getElementById('reset');
-let armato = false, timer;
-btnReset.onclick = () => {
-  if (!armato) {
-    armato = true;
-    btnReset.textContent = 'Sicuro? Clicca ancora';
-    clearTimeout(timer);
-    timer = setTimeout(() => { armato = false; btnReset.textContent = 'Azzera'; }, 3500);
-    return;
-  }
-  armato = false;
-  clearTimeout(timer);
-  btnReset.textContent = 'Azzera';
+document.getElementById('reset').onclick = async () => {
+  const si = await chiediConferma({
+    titolo: 'Azzero tutta l\'asta?',
+    testo: 'Sparisce quello che hai segnato come comprato e chi è uscito dal mercato. Le fantasquadre e la bozza non vengono toccate.',
+    ok: 'Sì, azzera', pericolo: true,
+  });
+  if (!si) return;
   stato = {};
   altrui = new Set();
   asta.scrivi(stato);
@@ -372,6 +519,12 @@ btnReset.onclick = () => {
   aggiorna();
   toast('Asta azzerata');
 };
+
+corpo.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.dataset.prezzo) return;
+  e.preventDefault();
+  corpo.querySelector(`button[data-conferma="${CSS.escape(e.target.dataset.prezzo)}"]`)?.click();
+});
 
 /* scorciatoia: "/" mette il cursore nella ricerca */
 document.addEventListener('keydown', e => {

@@ -1,10 +1,11 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=7';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js';
+} from './db.js?v=7';
+import { autosalva, conferma as chiediConferma } from './ui.js?v=7';
 
 const CHIAVE = 'bozza';
 const VUOTA = { giocatori: [] };
@@ -25,6 +26,9 @@ let versione = 0;
 let sporca = false;
 let messaggio = '';
 let statoBarra = '';
+
+/* come nelle fantasquadre: si salva da solo poco dopo l'ultima modifica */
+const auto = autosalva(() => salva(true));
 
 await avvia();
 montaAccesso(document.getElementById('accesso'), () => { disegnaBarra(); carica(); });
@@ -70,7 +74,8 @@ async function carica() {
 
 /* ---------- salva ---------- */
 
-async function salva() {
+async function salva(automatico = false) {
+  if (automatico && !sporca) return;
   if (!collegato()) {
     statoBarra = 'errore';
     messaggio = 'Per salvare devi entrare col tuo account qui sopra.';
@@ -98,10 +103,10 @@ function disegnaBarra() {
   const b = document.getElementById('barra');
   b.className = 'savebar' + (statoBarra ? ' ' + statoBarra : sporca ? ' sporca' : '');
   b.innerHTML = `<span class="dot"></span>
-    <span class="msg">${sporca ? 'Modifiche non ancora salvate. ' : ''}${esc(messaggio)}</span>
-    <button class="btn" id="salva"${collegato() ? '' : ' disabled title="Devi entrare"'}>Salva</button>
+    <span class="msg">${sporca ? 'Salvo fra un istante… ' : ''}${esc(messaggio)}</span>
+    <button class="chip" id="salva"${collegato() ? '' : ' disabled title="Devi entrare"'}>Salva ora</button>
     <button class="chip" id="ricarica">Ricarica</button>`;
-  b.querySelector('#salva').onclick = salva;
+  b.querySelector('#salva').onclick = () => auto.subito();
   b.querySelector('#ricarica').onclick = carica;
 }
 
@@ -121,8 +126,8 @@ function disegna() {
       const p = perId[g.id];
       const sforato = p && Number(g.prezzo) > p.max;
       return `<div class="repitem${sforato ? ' sforato' : ''}">
-        ${badgeRuolo(g.r)}<span>${esc(g.n)}</span>
-        <span class="sq" style="color:var(--ink3)">${esc(g.sq)}</span>
+        <span class="gioc">${badgeRuolo(g.r)}<span class="testo"><span class="nm">${esc(g.n)}</span>
+          <span class="sq" style="color:var(--ink3)">${esc(g.sq)}</span></span></span>
         ${p ? `<span class="firma" title="Il tuo tetto">max ${p.max}</span>` : ''}
         <span class="firma">${esc(g.chi || '')}${g.quando ? ' · ' + quando(g.quando) : ''}</span>
         <input class="pz" type="number" min="0" max="${cfg.crediti}" value="${Number(g.prezzo) || 0}"
@@ -175,6 +180,7 @@ sugg.addEventListener('click', e => {
     chi: utente()?.nome || 'anonimo', quando: new Date().toISOString(),
   });
   sporca = true;
+  auto.tocca();
   campo.value = '';
   sugg.innerHTML = '';
   disegnaBarra();
@@ -195,6 +201,7 @@ reparti.addEventListener('change', e => {
   g.chi = utente()?.nome || 'anonimo';
   g.quando = new Date().toISOString();
   sporca = true;
+  auto.tocca();
   disegnaBarra();
   disegna();
 });
@@ -205,6 +212,7 @@ reparti.addEventListener('click', e => {
   bozza.giocatori = bozza.giocatori.filter(g => g.id !== b.dataset.rimuovi);
   (bozza._rimossi ||= []).push(b.dataset.rimuovi);
   sporca = true;
+  auto.tocca();
   disegnaBarra();
   disegna();
 });

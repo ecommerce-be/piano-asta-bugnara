@@ -1,10 +1,11 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js';
+import { caricaDati, ricalcola, badgeRuolo, asta, gestisce, RUOLI } from './app.js?v=7';
 import {
   avvia, configurato, collegato, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js';
+} from './db.js?v=7';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=7';
 
 const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [] };
@@ -28,6 +29,35 @@ await avvia();
 montaAccesso(document.getElementById('accesso'), () => { disegnaBarra(); carica(); });
 
 const nuovoId = () => 's' + Math.random().toString(36).slice(2, 9);
+
+/* ---------- allineamento con "La mia rosa" e col listone ----------
+   La fantasquadra vive nel database ed e' condivisa; "La mia rosa" e il
+   listone leggono invece lo stato locale di questo browser. Ogni volta che
+   qui dentro cambia una rosa, aggiorniamo anche quello: altrimenti togli un
+   giocatore da qui e te lo ritrovi ancora fra i tuoi acquisti. */
+
+let stato = asta.leggi();
+let altrui = asta.leggiAltrui();
+
+const miaSquadra = () => {
+  const io = utente()?.nome || '';
+  return io ? dati.squadre.find(s => gestisce(s.proprietario, io)) : null;
+};
+
+function segnaPreso(idSquadra, gid, prezzo) {
+  if (miaSquadra()?.id === idSquadra) { stato[gid] = prezzo; altrui.delete(gid); }
+  else { altrui.add(gid); delete stato[gid]; }
+  asta.scrivi(stato); asta.scriviAltrui(altrui);
+}
+
+function segnaLibero(gid) {
+  delete stato[gid];
+  altrui.delete(gid);
+  asta.scrivi(stato); asta.scriviAltrui(altrui);
+}
+
+/* Ogni modifica si salva da sola dopo un attimo di pausa: niente da ricordarsi. */
+const auto = autosalva(() => salva(true));
 
 function fondi(remoto, locale) {
   const uniti = new Map();
@@ -66,12 +96,13 @@ async function carica() {
   disegna();
 }
 
-async function salva() {
+async function salva(automatico = false) {
   if (!collegato()) {
     statoBarra = 'errore';
     messaggio = 'Per salvare devi entrare col tuo account qui sopra.';
     return disegnaBarra();
   }
+  if (automatico && !sporca) return;
   messaggio = 'Salvo…';
   statoBarra = '';
   disegnaBarra();
@@ -94,11 +125,11 @@ function disegnaBarra() {
   const b = document.getElementById('barra');
   b.className = 'savebar' + (statoBarra ? ' ' + statoBarra : sporca ? ' sporca' : '');
   b.innerHTML = `<span class="dot"></span>
-    <span class="msg">${sporca ? 'Modifiche non ancora salvate. ' : ''}${esc(messaggio)}</span>
+    <span class="msg">${sporca ? 'Salvo fra un istante… ' : ''}${esc(messaggio)}</span>
     <button class="btn" id="nuova">Nuova squadra</button>
-    <button class="btn" id="salva"${collegato() ? '' : ' disabled title="Devi entrare"'}>Salva</button>
+    <button class="chip" id="salva"${collegato() ? '' : ' disabled title="Devi entrare"'}>Salva ora</button>
     <button class="chip" id="ricarica">Ricarica</button>`;
-  b.querySelector('#salva').onclick = salva;
+  b.querySelector('#salva').onclick = () => auto.subito();
   b.querySelector('#ricarica').onclick = carica;
   b.querySelector('#nuova').onclick = nuovaSquadra;
 }
@@ -109,13 +140,21 @@ function tocca(s) {
   s.quando = new Date().toISOString();
   s.chi = utente()?.nome || 'anonimo';
   sporca = true;
+  auto.tocca();
 }
 
-function nuovaSquadra() {
-  const nome = window.prompt('Nome della fantasquadra');
-  if (!nome || !nome.trim()) return;
-  const prop = window.prompt('Chi la gestisce?', '') || '';
-  const s = { id: nuovoId(), nome: nome.trim(), proprietario: prop.trim(), rosa: [] };
+async function nuovaSquadra() {
+  const r = await chiediCampi({
+    titolo: 'Nuova fantasquadra',
+    testo: 'Se è la tua, scrivi come allenatore lo stesso nome del tuo account: il sito la riconosce e la evidenzia. Puoi cambiare tutto anche dopo.',
+    ok: 'Crea',
+    campi: [
+      { id: 'nome', etichetta: 'Nome della squadra', obbligatorio: true, placeholder: 'es. Bugnara FC' },
+      { id: 'prop', etichetta: 'Allenatore (chi la gestisce)', valore: utente()?.nome || '', placeholder: 'es. Pierre' },
+    ],
+  });
+  if (!r) return;
+  const s = { id: nuovoId(), nome: r.nome, proprietario: r.prop, rosa: [] };
   tocca(s);
   dati.squadre.push(s);
   disegnaBarra();
@@ -129,17 +168,17 @@ const contaRuolo = (s, r) => (s.rosa || []).filter(g => g.r === r).length;
 
 function disegna() {
   const griglia = document.getElementById('griglia');
-  const mio = (utente()?.nome || '').toLowerCase();
+  const mio = utente()?.nome || '';
 
   if (!dati.squadre.length) {
-    griglia.innerHTML = '<div class="vuotafs">Nessuna fantasquadra. Premi <strong>Nuova squadra</strong> per aggiungere la prima: nome, proprietario, e poi la rosa man mano che l\'asta procede.</div>';
+    griglia.innerHTML = '<div class="vuotafs">Nessuna fantasquadra. Premi <strong>Nuova squadra</strong> per aggiungere la prima: nome, allenatore, e poi la rosa man mano che l\'asta procede.</div>';
     return disegnaRiepilogo();
   }
 
   griglia.innerHTML = dati.squadre.map(s => {
     const sp = speso(s);
     const residuo = cfg.crediti - sp;
-    const mia = mio && (s.proprietario || '').toLowerCase() === mio;
+    const mia = gestisce(s.proprietario, mio);
     const totSlot = RUOLI.reduce((a, r) => a + cfg.slot[r], 0);
 
     const meta = RUOLI.map(r => {
@@ -153,7 +192,7 @@ function disegna() {
         .map(g => `<div class="fsrow">${badgeRuolo(g.r)}<span>${esc(g.n)}</span>
           <span style="color:var(--ink3);font-weight:400">${esc(g.sq)}</span>
           <span class="pz">${Number(g.prezzo) || 0}</span>
-          <button class="rimuovi" data-tolgi="${esc(s.id)}|${esc(g.id)}" title="Togli dalla rosa" aria-label="Togli ${esc(g.n)}">✕</button></div>`).join('')
+          <button class="rimuovi" data-tolgi="${esc(g.id)}" data-da="${esc(s.id)}" title="Togli ${esc(g.n)} dalla rosa" aria-label="Togli ${esc(g.n)} dalla rosa">✕</button></div>`).join('')
       : '<div class="vuotafs">Rosa ancora vuota.</div>';
 
     const ricerca = apertaPerAggiunta === s.id
@@ -165,14 +204,17 @@ function disegna() {
     return `<div class="fscard${mia ? ' mia' : ''}">
       <div class="fshead">
         <span class="nome">${esc(s.nome)}</span>
-        <span class="prop">${s.proprietario ? esc(s.proprietario) : 'senza proprietario'}</span>
+        <button type="button" class="prop" data-modifica="${esc(s.id)}"
+          title="Cambia nome e allenatore">${s.proprietario
+            ? '👤 ' + esc(s.proprietario)
+            : '👤 aggiungi allenatore'}</button>
         <span class="cr">${residuo}<small> di ${cfg.crediti} cr</small></span>
       </div>
       <div class="fsmeta">${meta}<span style="margin-left:auto">${(s.rosa || []).length}/${totSlot} slot</span></div>
       ${rosa}${ricerca}
       <div class="fsazioni">
         <button class="chip" data-aggiungi="${esc(s.id)}">${apertaPerAggiunta === s.id ? 'chiudi' : 'aggiungi giocatore'}</button>
-        <button class="chip" data-modifica="${esc(s.id)}">rinomina</button>
+        <button class="chip" data-modifica="${esc(s.id)}">nome e allenatore</button>
         <button class="chip" data-elimina="${esc(s.id)}">elimina</button>
         ${s.chi ? `<span class="firma" style="margin-left:auto;align-self:center">ultimo tocco: ${esc(s.chi)}${s.quando ? ' · ' + quando(s.quando) : ''}</span>` : ''}
       </div></div>`;
@@ -209,30 +251,57 @@ griglia.addEventListener('click', e => {
   const bMod = e.target.closest('button[data-modifica]');
   if (bMod) {
     const s = trova(bMod.dataset.modifica);
-    const nome = window.prompt('Nome della fantasquadra', s.nome);
-    if (nome === null) return;
-    const prop = window.prompt('Chi la gestisce?', s.proprietario || '');
-    if (prop === null) return;
-    s.nome = nome.trim() || s.nome;
-    s.proprietario = prop.trim();
-    tocca(s); disegnaBarra(); return disegna();
+    chiediCampi({
+      titolo: 'Nome e allenatore',
+      testo: 'Se la squadra è tua, scrivi come allenatore lo stesso nome del tuo account: il sito la riconosce e la evidenzia.',
+      ok: 'Salva',
+      campi: [
+        { id: 'nome', etichetta: 'Nome della squadra', valore: s.nome, obbligatorio: true },
+        { id: 'prop', etichetta: 'Allenatore (chi la gestisce)', valore: s.proprietario || '', placeholder: 'es. Aurelio' },
+      ],
+    }).then(r => {
+      if (!r) return;
+      s.nome = r.nome;
+      s.proprietario = r.prop;
+      // se questa squadra e' appena diventata (o non e' piu') la tua,
+      // la sua rosa entra o esce da "La mia rosa"
+      for (const g of (s.rosa || [])) segnaPreso(s.id, g.id, g.prezzo);
+      tocca(s); disegnaBarra(); disegna();
+    });
+    return;
   }
 
   const bDel = e.target.closest('button[data-elimina]');
   if (bDel) {
     const s = trova(bDel.dataset.elimina);
-    if (!window.confirm(`Elimino "${s.nome}"? Sparisce anche la sua rosa.`)) return;
-    dati.squadre = dati.squadre.filter(x => x.id !== s.id);
-    (dati._rimosse ||= []).push(s.id);
-    sporca = true; disegnaBarra(); return disegna();
+    chiediConferma({
+      titolo: `Elimino "${s.nome}"?`,
+      testo: `Sparisce anche la sua rosa di ${(s.rosa || []).length} giocatori, che tornano liberi.`,
+      ok: 'Sì, elimina', pericolo: true,
+    }).then(si => {
+      if (!si) return;
+      for (const g of (s.rosa || [])) segnaLibero(g.id);
+      dati.squadre = dati.squadre.filter(x => x.id !== s.id);
+      (dati._rimosse ||= []).push(s.id);
+      sporca = true; auto.tocca();
+      disegnaBarra(); disegna();
+    });
+    return;
   }
 
   const bTolgi = e.target.closest('button[data-tolgi]');
   if (bTolgi) {
-    const [sid, gid] = bTolgi.dataset.tolgi.split('|');
-    const s = trova(sid);
+    /* attenzione: l'id del giocatore contiene già delle barrette (A|Malen|Roma),
+       quindi squadra e giocatore viaggiano in due attributi separati. */
+    const gid = bTolgi.dataset.tolgi;
+    const s = trova(bTolgi.dataset.da);
+    if (!s) return;
+    const via = (s.rosa || []).find(g => g.id === gid);
     s.rosa = (s.rosa || []).filter(g => g.id !== gid);
-    tocca(s); disegnaBarra(); return disegna();
+    segnaLibero(gid);
+    tocca(s); disegnaBarra(); disegna();
+    if (via) toast(`${via.n} tolto da ${s.nome}: torna libero all'asta.`);
+    return;
   }
 
   const bScegli = e.target.closest('button[data-scegli]');
@@ -241,12 +310,21 @@ griglia.addEventListener('click', e => {
     const s = trova(sid);
     const p = perId[gid];
     if (!p) return;
-    const prezzo = window.prompt(`A quanto è andato ${p.n}?`, String(p.max));
-    if (prezzo === null) return;
-    (s.rosa ||= []).push({ id: gid, n: p.n, sq: p.sq, r: p.r, prezzo: Math.max(0, parseInt(prezzo, 10) || 0) });
-    tocca(s);
-    apertaPerAggiunta = null;
-    disegnaBarra(); return disegna();
+    chiediCampi({
+      titolo: `${p.n} · ${p.sq}`,
+      testo: `Va a ${s.nome}. Il tetto consigliato è ${p.max} crediti.`,
+      ok: 'Aggiungi',
+      campi: [{ id: 'prezzo', etichetta: 'Prezzo pagato', tipo: 'numero', valore: p.max, min: 0, max: cfg.crediti }],
+    }).then(r => {
+      if (!r) return;
+      const prezzo = Math.max(0, r.prezzo);
+      (s.rosa ||= []).push({ id: gid, n: p.n, sq: p.sq, r: p.r, prezzo });
+      segnaPreso(s.id, gid, prezzo);
+      tocca(s);
+      apertaPerAggiunta = null;
+      disegnaBarra(); disegna();
+    });
+    return;
   }
 });
 

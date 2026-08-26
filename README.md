@@ -12,14 +12,16 @@ C blu, A rosso).
 | `index.html` | La guida: perché in questa lega si vince in difesa, il piano di spesa, la rosa target in 4-5-1, le regole per l'asta a chiamata random, le shortlist per reparto |
 | `listone.html` | Lo strumento d'asta: 540 giocatori filtrabili e ordinabili, tracker dei crediti, scorte per fascia, parametri di lega modificabili |
 | `rosa.html` | La rosa che stai costruendo, l'undici titolare per modulo e il simulatore del modificatore di difesa |
-| `squadre.html` | Le venti squadre di Serie A giocatore per giocatore, con lo stato di ciascuno |
+| `squadre.html` | Le venti squadre di Serie A: si sceglie un club dal menù e si vede la rosa completa con le statistiche |
 | `bozza.html` | La rosa ideale costruita in due, **condivisa** |
 | `fantasquadre.html` | Le squadre della lega con proprietario, rosa e crediti residui, **condivise** |
 
 ### Durante l'asta
 
-Ogni riga del listone ha due comandi: **preso a**, dove scrivi quanto hai pagato
-tu, e **ad altri**, che segna il giocatore come finito a un avversario. Il secondo
+Ogni riga del listone ha tre comandi: **preso a**, dove scrivi quanto hai pagato
+tu; **a chi?**, che assegna il giocatore a una fantasquadra con il prezzo, e
+scala i crediti a quella squadra; e **ad altri**, la scorciatoia per quando sai
+che è uscito dal mercato ma non ti interessa registrare a chi è andato. Il secondo
 è quello che si usa di più: senza, dopo mezz'ora non sai più chi sia ancora
 libero. I giocatori venduti si sbiadiscono, e il pulsante *Nascondi chi è già
 andato* li toglie del tutto.
@@ -82,6 +84,7 @@ assets/
   rosa-page.js          rosa per reparto, undici titolare, simulatore
   squadre.js            vista per squadra
   db.js                 accesso, lettura e scrittura dei documenti condivisi su Supabase
+  ui.js                 finestre di dialogo del sito e salvataggio automatico
   bozza.js              bozza condivisa
   fantasquadre.js       squadre della lega, rose e crediti
   data/supabase.json    indirizzo del progetto e chiave anon (da compilare)
@@ -96,7 +99,45 @@ tools/
   build_prices.py       rigenera assets/data/players.json da listone + overrides
   simulate_modifier.py  quanto rende il modificatore, per assetto e qualità del reparto
   supabase.sql          tabella e regole di sicurezza del database condiviso
+  versione.py           marca i file con ?v=N così il browser non serve la cache
 ```
+
+## Le statistiche dei giocatori
+
+Presenze con voto, media voto e fantamedia stanno già nell'export del listone di
+LegheFantacalcio, nelle colonne `PGv`, `MV` e `FM`. Per aggiornarle basta
+riesportare quel file sopra `data/listone-classic-2026-27.xlsx` e rilanciare
+`python3 tools/build_prices.py`: un'operazione da mezzo minuto a settimana.
+
+Gol, assist e cartellini stanno invece in un export diverso. Se metti un file
+`data/statistiche.json` fatto così, lo script lo aggancia da solo:
+
+```json
+{
+  "orsolini": { "gol": 10, "assist": 6, "amm": 4, "esp": 0 },
+  "calhanoglu": { "gol": 9, "assist": 4, "amm": 6, "esp": 0 }
+}
+```
+
+La chiave è il cognome come appare nel listone, senza accenti e in minuscolo.
+Finché il file non c'è, quelle colonne restano vuote e il resto funziona uguale.
+
+## Dopo ogni modifica al codice: la versione
+
+I browser tengono in cache i moduli JavaScript con parecchia insistenza, e dopo
+una modifica continueresti a vedere la versione vecchia. Per questo ogni file è
+marcato con `?v=N` e il numero compare accanto al logo, in alto a sinistra.
+
+Dopo aver toccato un file in `assets/`, prima del commit:
+
+```bash
+python3 tools/versione.py
+```
+
+Incrementa il numero ovunque — script, foglio di stile, import fra moduli, file di
+dati. Chi apre il sito scarica tutto di nuovo senza dover fare niente. Se il
+numero accanto al logo non è quello che ti aspetti, il browser sta ancora
+servendo roba vecchia.
 
 ## Modificare i dati
 

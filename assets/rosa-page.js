@@ -1,9 +1,15 @@
 /* Pagina "La mia rosa": cosa hai comprato, l'undici titolare e il simulatore
-   del modificatore di difesa sui difensori che possiedi davvero. */
+   del modificatore di difesa sui difensori che possiedi davvero.
+
+   Due archivi da tenere allineati: lo stato dell'asta vive in questo browser,
+   la fantasquadra vive nel database ed e' condivisa con Aurelio. Qui leggiamo
+   entrambi, e quando togli un giocatore lo togliamo da tutti e due. */
 import {
   caricaDati, ricalcola, asta, simulaModificatore, badgeRuolo, mvStimata,
-  RUOLI, NOME_RUOLO,
-} from './app.js';
+  gestisce, RUOLI, NOME_RUOLO,
+} from './app.js?v=7';
+import { avvia, configurato, collegato, utente, leggi, scrivi, esc } from './db.js?v=7';
+import { toast } from './ui.js?v=7';
 
 const { players, lega } = await caricaDati();
 
@@ -16,38 +22,134 @@ try {
 ricalcola(players, cfg, cfg.piano);
 
 const stato = asta.leggi();
+const altrui = asta.leggiAltrui();
 const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
-const miei = Object.keys(stato)
-  .map(id => perId[id] && { ...perId[id], pagato: stato[id] })
-  .filter(Boolean)
-  .sort((a, b) => b.pagato - a.pagato);
 
-const mieiPerRuolo = Object.fromEntries(RUOLI.map(r => [r, miei.filter(p => p.r === r)]));
+let miei = [], mieiPerRuolo = {};
+
+function ricalcolaMiei() {
+  miei = Object.keys(stato)
+    .map(id => perId[id] && { ...perId[id], pagato: stato[id] })
+    .filter(Boolean)
+    .sort((a, b) => b.pagato - a.pagato);
+  mieiPerRuolo = Object.fromEntries(RUOLI.map(r => [r, miei.filter(p => p.r === r)]));
+}
+ricalcolaMiei();
+
+/* ---------- fantasquadra condivisa ---------- */
+
+let fsDati = { squadre: [] }, fsVer = 0;
+
+await avvia();
+if (configurato()) {
+  try {
+    const r = await leggi('fantasquadre', { squadre: [] });
+    fsDati = r.dati || { squadre: [] };
+    fsDati.squadre ||= [];
+    fsVer = r.versione;
+  } catch { /* senza accesso restiamo con i soli dati locali */ }
+}
+
+const miaSquadra = () => {
+  const io = utente()?.nome || '';
+  return io ? fsDati.squadre.find(s => gestisce(s.proprietario, io)) : null;
+};
+
+/** Il giocatore risulta registrato nella mia fantasquadra? */
+const registrato = id => (miaSquadra()?.rosa || []).some(g => g.id === id);
+
+function fondiFs(remoto, locale) {
+  const uniti = new Map();
+  for (const s of (remoto?.squadre || [])) uniti.set(s.id, s);
+  for (const s of locale.squadre) {
+    const e = uniti.get(s.id);
+    if (!e || (s.quando || '') >= (e.quando || '')) uniti.set(s.id, s);
+  }
+  return { ...locale, squadre: [...uniti.values()] };
+}
 
 /* ---------- riepilogo ---------- */
 
-const r = asta.riepilogo(players, stato, cfg, cfg.piano);
-document.getElementById('ledger').innerHTML =
-  RUOLI.map(x => `<div class="lcell${r.reparti[x].residuo < 0 ? ' over' : ''}" data-r="${x}">
-    <div class="k">${NOME_RUOLO[x]} ${r.reparti[x].presi}/${r.reparti[x].slot}</div>
-    <div class="n">${r.reparti[x].speso}<small> di ${cfg.piano[x]} cr</small></div></div>`).join('')
-  + `<div class="lcell"><div class="k">Speso</div><div class="n">${r.spesoTot}<small> / ${cfg.crediti}</small></div></div>`
-  + `<div class="lcell"><div class="k">Tesoretto</div><div class="n">${r.residuoTot}</div></div>`;
+function disegnaLedger() {
+  const r = asta.riepilogo(players, stato, cfg, cfg.piano);
+  document.getElementById('ledger').innerHTML =
+    RUOLI.map(x => `<div class="lcell${r.reparti[x].residuo < 0 ? ' over' : ''}" data-r="${x}">
+      <div class="k">${NOME_RUOLO[x]} ${r.reparti[x].presi}/${r.reparti[x].slot}</div>
+      <div class="n">${r.reparti[x].speso}<small> di ${cfg.piano[x]} cr</small></div></div>`).join('')
+    + `<div class="lcell"><div class="k">Speso</div><div class="n">${r.spesoTot}<small> / ${cfg.crediti}</small></div></div>`
+    + `<div class="lcell"><div class="k">Tesoretto</div><div class="n">${r.residuoTot}</div></div>`;
+}
 
 /* ---------- rosa per reparto ---------- */
 
-document.getElementById('reparti').innerHTML = RUOLI.map(x => {
-  const lista = mieiPerRuolo[x];
-  const speso = lista.reduce((a, p) => a + p.pagato, 0);
-  const righe = lista.length
-    ? lista.map(p => `<div class="repitem">${badgeRuolo(p.r)}<span>${p.n}</span>
-        <span class="sq" style="color:var(--ink3)">${p.sq}</span>
-        <span class="pz${p.pagato > p.max ? ' maxc' : ''}" ${p.pagato > p.max ? 'style="color:var(--warn)"' : ''}>${p.pagato}</span></div>`).join('')
-    : '<div class="vuoto">Ancora nessuno. Segna gli acquisti nel listone.</div>';
-  return `<div class="repbox"><div class="rephead" data-r="${x}">${badgeRuolo(x)}${NOME_RUOLO[x]}
-    <span class="sp">${lista.length}/${cfg.slot[x]} · ${speso} cr</span></div>
-    <div class="replist">${righe}</div></div>`;
-}).join('');
+function disegnaReparti() {
+  const conFs = Boolean(miaSquadra());
+  document.getElementById('reparti').innerHTML = RUOLI.map(x => {
+    const lista = mieiPerRuolo[x];
+    const speso = lista.reduce((a, p) => a + p.pagato, 0);
+    const righe = lista.length
+      ? lista.map(p => {
+        const id = asta.id(p);
+        const orfano = conFs && !registrato(id);
+        return `<div class="repitem">${badgeRuolo(p.r)}<span>${esc(p.n)}</span>
+          <span class="sq" style="color:var(--ink3)">${esc(p.sq)}</span>
+          ${orfano ? '<span class="orfano" title="Risulta tuo qui ma non è nella fantasquadra condivisa">non registrato</span>' : ''}
+          <span class="pz${p.pagato > p.max ? ' maxc' : ''}"${p.pagato > p.max ? ' style="color:var(--warn)"' : ''}>${p.pagato}</span>
+          <button class="rimuovi" data-togli="${esc(id)}" title="Togli ${esc(p.n)} dalla rosa"
+            aria-label="Togli ${esc(p.n)} dalla rosa">✕</button></div>`;
+      }).join('')
+      : '<div class="vuoto">Ancora nessuno. Segna gli acquisti nel listone.</div>';
+    return `<div class="repbox"><div class="rephead" data-r="${x}">${badgeRuolo(x)}${NOME_RUOLO[x]}
+      <span class="sp">${lista.length}/${cfg.slot[x]} · ${speso} cr</span></div>
+      <div class="replist">${righe}</div></div>`;
+  }).join('');
+}
+
+/* ---------- togliere un giocatore, da qui e dalla fantasquadra ---------- */
+
+async function togli(id) {
+  const p = perId[id];
+  if (!p) return;
+  const s = miaSquadra();
+  const eraRegistrato = registrato(id);
+
+  delete stato[id];
+  altrui.delete(id);
+  asta.scrivi(stato);
+  asta.scriviAltrui(altrui);
+
+  // se lo stavo usando nel simulatore, esce anche da li'
+  if (sceltiSim.P === id) sceltiSim.P = null;
+  sceltiSim.D = sceltiSim.D.filter(x => x !== id);
+
+  ricalcolaMiei();
+  disegnaLedger(); disegnaReparti(); disegnaCampo();
+  disegnaScelte(); disegnaCursori(); simula();
+
+  if (!eraRegistrato) { toast(`${p.n} tolto dalla tua rosa.`); return; }
+
+  s.rosa = (s.rosa || []).filter(g => g.id !== id);
+  s.quando = new Date().toISOString();
+  s.chi = utente()?.nome || 'anonimo';
+  if (!collegato()) {
+    toast(`${p.n} tolto da qui. Entra col tuo account per aggiornare anche ${s.nome}.`);
+    return;
+  }
+  try {
+    const r = await scrivi('fantasquadre', fsDati, fsVer, fondiFs);
+    fsVer = r.versione;
+    if (r.fuso) fsDati = r.dati;
+    disegnaReparti();
+    toast(`${p.n} tolto anche da ${s.nome}: torna libero all'asta.`);
+  } catch (e) {
+    toast('Tolto qui, ma la fantasquadra non si è aggiornata: ' + e.message);
+  }
+}
+
+document.getElementById('reparti').addEventListener('click', e => {
+  const b = e.target.closest('button[data-togli]');
+  if (b) togli(b.dataset.togli);
+});
 
 /* ---------- undici titolare ---------- */
 
@@ -66,7 +168,7 @@ function disegnaCampo() {
     C: mieiPerRuolo.C.slice(0, nC), A: mieiPerRuolo.A.slice(0, nA),
   };
   const riga = lista => `<div class="prow">${lista.map(p =>
-    `<div class="pp">${p.n}</div>`).join('') || '<div class="pp" style="opacity:.45">—</div>'}</div>`;
+    `<div class="pp">${esc(p.n)}</div>`).join('') || '<div class="pp" style="opacity:.45">—</div>'}</div>`;
 
   document.getElementById('campo').innerHTML =
     `<div class="pitch">${riga(scelti.P)}${riga(scelti.D)}${riga(scelti.C)}${riga(scelti.A)}</div>`;
@@ -80,7 +182,6 @@ function disegnaCampo() {
   document.getElementById('avvisoCampo').textContent = avvisi.join(' ');
 }
 selModulo.addEventListener('change', disegnaCampo);
-disegnaCampo();
 
 /* ---------- simulatore del modificatore ---------- */
 
@@ -102,7 +203,7 @@ function disegnaScelte() {
     box.innerHTML = candidati(ruolo).map(p => {
       const id = asta.id(p);
       const on = ruolo === 'P' ? sceltiSim.P === id : sceltiSim.D.includes(id);
-      return `<button type="button" data-id="${id}" data-ruolo="${ruolo}" aria-pressed="${on}">${p.n}</button>`;
+      return `<button type="button" data-id="${esc(id)}" data-ruolo="${ruolo}" aria-pressed="${on}">${esc(p.n)}</button>`;
     }).join('');
   }
   document.getElementById('contaD').textContent =
@@ -113,11 +214,12 @@ function disegnaCursori() {
   const ids = [sceltiSim.P, ...sceltiSim.D].filter(Boolean);
   document.getElementById('cursori').innerHTML = ids.map(id => {
     const p = perId[id];
+    if (!p) return '';
     return `<div class="simrow">
-      <span class="blab">${badgeRuolo(p.r)}${p.n}</span>
-      <input type="range" min="5.6" max="7" step="0.05" value="${mv[id]}" data-mv="${id}"
-             aria-label="Media voto attesa di ${p.n}">
-      <span class="simout" data-out="${id}">${mv[id].toFixed(2)}</span></div>`;
+      <span class="blab">${badgeRuolo(p.r)}${esc(p.n)}</span>
+      <input type="range" min="5.6" max="7" step="0.05" value="${mv[id]}" data-mv="${esc(id)}"
+             aria-label="Media voto attesa di ${esc(p.n)}">
+      <span class="simout" data-out="${esc(id)}">${mv[id].toFixed(2)}</span></div>`;
   }).join('');
 }
 
@@ -158,7 +260,7 @@ document.getElementById('cursori').addEventListener('input', e => {
   const el = e.target;
   if (!el.dataset.mv) return;
   mv[el.dataset.mv] = parseFloat(el.value);
-  document.querySelector(`[data-out="${el.dataset.mv}"]`).textContent = mv[el.dataset.mv].toFixed(2);
+  document.querySelector(`[data-out="${CSS.escape(el.dataset.mv)}"]`).textContent = mv[el.dataset.mv].toFixed(2);
   simula();
 });
 
@@ -170,5 +272,8 @@ for (const p of candidati('D').slice(0, 4)) {
   sceltiSim.D.push(id);
   mv[id] = mvStimata(p);
 }
-// i candidati "di riserva" non sono in perId? lo sono: perId copre tutto il listone
+
+disegnaLedger();
+disegnaReparti();
+disegnaCampo();
 disegnaScelte(); disegnaCursori(); simula();

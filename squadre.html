@@ -10,11 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=7">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
+<meta name="versione" content="7">
 </head>
 <body>
 
@@ -33,31 +34,53 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 
 <div class="wide">
 
-  <section style="padding-bottom:1.4rem">
-    <p class="eyebrow">Squadre</p>
-    <h2>Le venti di Serie A, giocatore per giocatore</h2>
-    <p class="lede" style="max-width:70ch">Utile per due cose: capire in fretta chi resta di una squadra quando ne esce un giocatore, e accorgerti se stai concentrando troppa rosa su un solo club.</p>
+  <section style="padding-bottom:1.2rem">
+    <p class="eyebrow">Serie A</p>
+    <h2>Le venti squadre, rosa per rosa</h2>
+    <p class="lede" style="max-width:72ch">Scegli una squadra e vedi tutti i suoi giocatori a listone, statistiche comprese. Utile per capire chi resta quando ne esce uno, e per accorgerti se stai concentrando troppa rosa su un solo club.</p>
   </section>
 
   <div class="controls panel" style="border-radius:4px;margin-bottom:20px">
-    <input type="search" id="q" placeholder="Cerca squadra o giocatore…" aria-label="Cerca squadra o giocatore">
+    <label for="squadra" class="idlab" style="align-self:center">Squadra</label>
+    <select id="squadra" style="flex:0 1 220px"></select>
+    <input type="search" id="q" placeholder="Cerca un giocatore…" aria-label="Cerca giocatore" style="flex:1 1 180px">
     <button class="chip" data-r="ALL" aria-pressed="true">Tutti i ruoli</button>
     <button class="chip" data-r="P" aria-pressed="false">P</button>
     <button class="chip" data-r="D" aria-pressed="false">D</button>
     <button class="chip" data-r="C" aria-pressed="false">C</button>
     <button class="chip" data-r="A" aria-pressed="false">A</button>
     <button class="chip" id="soloLiberi" aria-pressed="false">Solo chi è ancora libero</button>
-    <button class="chip" id="soloUtili" aria-pressed="true">Nascondi i giocatori da 1 credito</button>
   </div>
 
-  <div class="sqgrid" id="griglia"></div>
+  <div id="riepilogo" class="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:20px"></div>
+
+  <div class="tblwrap"><table id="rosa"><thead><tr>
+    <th>Giocatore</th>
+    <th class="num" title="Quotazione ufficiale">Quot.</th>
+    <th class="num" title="Quanto costerà agli altri">Mercato</th>
+    <th class="num" title="Il tuo tetto">Max</th>
+    <th class="num" title="Presenze con voto">Pres.</th>
+    <th class="num" title="Media voto">MV</th>
+    <th class="num" title="Fantamedia">FM</th>
+    <th class="num" title="Gol">G</th>
+    <th class="num" title="Assist">A</th>
+    <th class="num" title="Ammonizioni">🟨</th>
+    <th class="num" title="Espulsioni">🟥</th>
+    <th>Stato</th>
+    <th>Note</th>
+  </tr></thead><tbody></tbody></table></div>
+
+  <p id="avvisoStat" style="font-family:'Archivo',sans-serif;font-size:.85rem;color:var(--ink3);margin-top:1rem"></p>
+
+  <div id="griglia" class="sqgrid" style="margin-top:2rem"></div>
 
   <footer>
-    <p>Verde = l'hai comprato tu. Barrato e sbiadito = se l'è preso un avversario. Il numero a destra è il tuo tetto, o il prezzo che hai pagato se il giocatore è tuo.</p>
+    <p>Presenze, media voto e fantamedia arrivano dallo stesso export del listone: si aggiornano riesportandolo e rilanciando <code>tools/build_prices.py</code>. Gol, assist e cartellini compaiono quando aggiungi <code>data/statistiche.json</code>.</p>
+    <p>Verde = l'hai comprato tu. Barrato = se l'è preso un avversario.</p>
   </footer>
 </div>
 
-<script type="module" src="assets/squadre.js"></script>
-<script type="module" src="assets/theme.js"></script>
+<script type="module" src="assets/squadre.js?v=7"></script>
+<script type="module" src="assets/theme.js?v=7"></script>
 </body>
 </html>

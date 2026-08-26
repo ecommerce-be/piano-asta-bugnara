@@ -10,11 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=7">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
+<meta name="versione" content="7">
 </head>
 <body>
 
@@ -36,7 +37,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <section style="padding-bottom:1.6rem">
     <p class="eyebrow">Strumento</p>
     <h2>Listone e asta live</h2>
-    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato, e premi <em>ad altri</em> quando un giocatore finisce a un avversario. Crediti, slot e scorte per fascia si aggiornano da soli. Tutto resta salvato in questo browser, ed è esportabile per passarlo a qualcun altro.</p>
+    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato tu, e premi <em>Aggiungi a squadra</em> per registrare a chi è andato un giocatore e a che prezzo. Crediti, slot e scorte per fascia si aggiornano da soli. Tutto resta salvato in questo browser, ed è esportabile per passarlo a qualcun altro.</p>
   </section>
 
   <div id="accesso" style="margin-bottom:16px"></div>
@@ -101,7 +102,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
         <th class="num sortable" data-k="mkt">Mercato</th>
         <th class="num sortable" data-k="max" data-dir="desc">Mio max</th>
         <th class="num">Preso a</th>
-        <th>Fuori</th>
+        <th>Assegna</th>
         <th class="sortable" data-k="v">Verdetto</th>
         <th>Note</th>
       </tr></thead><tbody></tbody></table>
@@ -110,6 +111,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
     <div class="hint" id="hint"></div>
 
     <div class="controls" style="border-top:1px solid var(--line);border-bottom:none">
+      <span style="font-family:'Archivo',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);align-self:center">Stato dell'asta</span>
       <button class="btn ghost" id="esporta">Copia lo stato dell'asta</button>
       <button class="btn ghost" id="importa">Incolla uno stato</button>
       <button class="btn ghost" id="reset">Azzera</button>
@@ -124,7 +126,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </footer>
 </div>
 
-<script type="module" src="assets/listone.js"></script>
-<script type="module" src="assets/theme.js"></script>
+<script type="module" src="assets/listone.js?v=7"></script>
+<script type="module" src="assets/theme.js?v=7"></script>
 </body>
 </html>
