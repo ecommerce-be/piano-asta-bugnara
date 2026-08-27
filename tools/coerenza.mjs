@@ -12,10 +12,10 @@
  * Esce con codice 1 se qualcosa non torna, cosi' si puo' incatenare a un
  * commit o a una GitHub Action.
  */
-import pw from '/tmp/node_modules/playwright/index.js';
+import { fileURLToPath } from 'node:url';
+import { playwright, chromium, spiegazione } from './playwright.mjs';
 
 const BASE = process.argv[2] || 'http://localhost:8123/';
-const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 const PAGINE = ['index.html', 'listone.html', 'fasce.html', 'lega.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
   'fantasquadre.html', 'squadre.html', 'infortunati.html', 'impostazioni.html'];
@@ -50,7 +50,118 @@ const nota = t => problemi.push(t);
   console.log(`  ${files.length} moduli controllati`);
 }
 
-const browser = await pw.chromium.launch({ executablePath: CHROME });
+/* ---------- 0-bis. e' tutto aggiornato e allineato? ----------
+   Tre cose che non si vedono aprendo il sito, ma che si pagano care:
+   l'asta scritta in due archivi diversi, i file marcati con versioni diverse
+   (mezzo sito vecchio in cache) e i dati del listone piu' vecchi
+   dell'impronta che dovrebbe farli riscaricare. */
+{
+  const { readdir, readFile } = await import('node:fs/promises');
+  const { execFile } = await import('node:child_process');
+  const { createHash } = await import('node:crypto');
+  const radice = new URL('../', import.meta.url);
+
+  console.log('\n— un archivio solo per l\'asta —');
+  const VECCHIE = ['pianoAsta:v1', 'pianoAsta:altrui:v1', 'pianoAsta:astaVer', 'asta.leggi(', 'asta.scrivi('];
+  const moduli = (await readdir(new URL('assets/', radice))).filter(n => n.endsWith('.js'));
+  let sospetti = 0;
+  for (const n of moduli) {
+    if (n === 'astaLega.js') continue;   // e' lui che recupera il vecchio archivio, di proposito
+    const t = await readFile(new URL('assets/' + n, radice), 'utf8');
+    for (const v of VECCHIE) {
+      if (t.includes(v)) { nota(`[assets/${n}] legge ancora l'asta da «${v}»: due archivi tornano a divergere`); sospetti++; }
+    }
+  }
+  if (!sospetti) console.log('  nessun modulo tiene una copia sua dell\'asta');
+
+  /* Le regole dell'unione non si controllano a occhio: c'e' un banco di prova
+     apposta, e qui lo lanciamo insieme al resto. */
+  const provaAsta = await new Promise(ok => {
+    execFile(process.execPath, [fileURLToPath(new URL('prova-asta.mjs', import.meta.url))],
+      (err, out) => ok({ ko: Boolean(err), out: String(out) }));
+  });
+  const conta = provaAsta.out.match(/(\d+) prove su (\d+)/);
+  if (provaAsta.ko) nota(`le prove dell'asta condivisa non passano — lancia: node tools/prova-asta.mjs`);
+  else console.log(`  prove dell'asta condivisa: ${conta ? conta[1] + '/' + conta[2] : 'passate'}`);
+
+  /* ---------- moduli che non usa piu' nessuno ----------
+     Un file sostituito da un altro non fa rumore: resta lì, nessuno lo
+     importa, e la prossima persona che apre la cartella (o tu fra sei mesi)
+     non sa se è vivo o morto. È così che è sopravvissuto `sync.js`, la
+     sincronizzazione via token GitHub di prima di Supabase — con dentro
+     istruzioni su come farsi un token, in un repository pubblico. */
+  console.log('\n— niente moduli abbandonati —');
+  {
+    const pagine = await Promise.all(PAGINE.map(n => readFile(new URL(n, radice), 'utf8')));
+    const sorgenti = await Promise.all(moduli.map(n => readFile(new URL('assets/' + n, radice), 'utf8')));
+    const tutto = [...pagine, ...sorgenti].join('\n');
+    const orfani = moduli.filter(n => {
+      /* citato da una pagina come <script src>, o importato da un altro modulo */
+      const usato = new RegExp(`(src="assets/${n.replace('.', '\\.')}|from\\s*'\\./${n.replace('.', '\\.')})`);
+      return !usato.test(tutto);
+    });
+    if (orfani.length) {
+      nota(`moduli che non importa nessuno: ${orfani.map(n => 'assets/' + n).join(', ')} — `
+         + 'se sono davvero morti vanno tolti (git rm), se no manca un import');
+    } else {
+      console.log(`  tutti e ${moduli.length} i moduli sono raggiunti da qualcuno`);
+    }
+  }
+
+  console.log('\n— tutti i file alla stessa versione —');
+  const pagine = PAGINE;
+  const versioni = new Map();
+  for (const n of [...pagine, ...moduli.map(m => 'assets/' + m)]) {
+    const t = await readFile(new URL(n, radice), 'utf8');
+    for (const m of t.matchAll(/\?v=(\d+)/g)) {
+      if (!versioni.has(m[1])) versioni.set(m[1], []);
+      if (!versioni.get(m[1]).includes(n)) versioni.get(m[1]).push(n);
+    }
+    const meta = t.match(/<meta name="versione" content="(\d+)">/);
+    if (meta && !t.includes(`?v=${meta[1]}`)) {
+      nota(`[${n}] dichiara versione ${meta[1]} ma carica file di un'altra versione`);
+    }
+  }
+  if (versioni.size === 1) {
+    console.log(`  tutti a v=${[...versioni.keys()][0]}`);
+  } else {
+    const dettaglio = [...versioni.entries()]
+      .map(([v, dove]) => `v=${v} (${dove.length} file: ${dove.slice(0, 3).join(', ')}${dove.length > 3 ? '…' : ''})`);
+    nota(`versioni diverse fra i file: ${dettaglio.join(' · ')} — lancia python3 tools/versione.py`);
+  }
+
+  console.log('\n— i dati del listone —');
+  const app = await readFile(new URL('assets/app.js', radice), 'utf8');
+  const testoPlayers = await readFile(new URL('assets/data/players.json', radice), 'utf8');
+  const impronta = createHash('sha1').update(testoPlayers, 'utf8').digest('hex').slice(0, 10);
+  const dichiarata = app.match(/VERSIONE_DATI = '([^']*)'/)?.[1];
+  const quando = app.match(/AGGIORNATO_IL = '([^']*)'/)?.[1];
+  if (dichiarata !== impronta) {
+    nota(`l'impronta dei dati in app.js è ${dichiarata} ma players.json vale ${impronta}: `
+       + 'chi ha già aperto il sito continuerebbe a vedere il listone vecchio — lancia python3 tools/aggiorna_dati.py');
+  }
+  const giorni = Math.floor((Date.now() - new Date(quando)) / 86400000);
+  const inf = JSON.parse(await readFile(new URL('assets/data/infortuni.json', radice), 'utf8'));
+  const eta = giorni === 0 ? 'oggi' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
+  console.log(`  listone: ${JSON.parse(testoPlayers).length} giocatori, aggiornato il ${quando} (${eta})`);
+  console.log(`  infermeria: ${inf.voci?.length ?? 0} fermi, aggiornata il ${inf.aggiornato || '—'}`);
+  if (giorni > 7) nota(`il listone non si aggiorna da ${giorni} giorni: lancia python3 tools/aggiorna_dati.py`);
+  if (!inf.voci?.length) nota('l\'infermeria è vuota: la pagina Infortunati non mostrerà niente');
+}
+
+/* ═══════════ da qui in poi serve un browser vero ═══════════
+   Le pagine non si controllano leggendo i file: un refuso non e' un errore di
+   JavaScript, il sito funziona benissimo mentre la guida dice una cosa e le
+   impostazioni un'altra. L'unico modo di trovarli e' aprirle davvero. */
+
+const pw = await playwright();
+
+if (!pw) {
+  console.log('\n— i controlli sulle pagine —');
+  console.log(spiegazione('Saltati'));
+} else {
+
+const browser = await pw.chromium.launch({ executablePath: chromium() });
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 1100 } });
 
 async function apri(pagina) {
@@ -60,7 +171,20 @@ async function apri(pagina) {
     if (m.type() === 'error' && !RUMORE.test(m.text())) nota(`[${pagina}] console: ${m.text()}`);
   });
   p.on('requestfailed', r => { if (!RUMORE.test(r.url())) nota(`[${pagina}] richiesta fallita: ${r.url()}`); });
-  await p.goto(BASE + pagina, { waitUntil: 'domcontentloaded' });
+  try {
+    await p.goto(BASE + pagina, { waitUntil: 'domcontentloaded' });
+  } catch (e) {
+    /* Quasi sempre e' una cosa sola: il server non e' acceso. Dirlo, invece di
+       vomitare lo stack di Playwright, che sembra un guasto del sito. */
+    await browser.close();
+    console.log(`\n  Non riesco ad aprire ${BASE}${pagina}.`);
+    console.log('  Quasi certamente manca il server: aprine un\'altra finestra e lancia');
+    console.log('      python3 -m http.server 8123        (su Windows: python -m http.server 8123)');
+    console.log('  poi rilancia questo controllo. Se il sito sta altrove, passalo come argomento:');
+    console.log('      node tools/coerenza.mjs http://localhost:5500/');
+    console.log(`\n  (dettaglio: ${String(e.message).split('\n')[0]})`);
+    process.exit(2);
+  }
   await p.waitForTimeout(2600);
   return p;
 }
@@ -254,9 +378,35 @@ for (const m of MODULI_DA_PROVARE) {
   }
 }
 
-/* ---------- esito ---------- */
+/* ---------- 6. l'asta condivisa, provata da dentro il browser ---------- */
+
+/* Le prove qui sopra girano da sconnessi: vedono le pagine, non l'asta. Questa
+   entra con un finto account su un finto Supabase e verifica il giro completo —
+   segno un acquisto nel listone, lo ritrovo in «La mia rosa», in
+   «Fantasquadre» e in «Serie A» senza fare altro. */
+
+console.log('\n— l\'asta condivisa, da dentro il browser —');
+{
+  const { execFile } = await import('node:child_process');
+  const esito = await new Promise(ok => {
+    execFile(process.execPath, [fileURLToPath(new URL('prova-asta-browser.mjs', import.meta.url)), BASE],
+      { timeout: 240000 }, (err, out) => ok({ ko: Boolean(err), out: String(out) }));
+  });
+  const conta = esito.out.match(/(\d+) prove su (\d+)/);
+  if (esito.ko) {
+    nota('il giro completo dell\'asta non passa — lancia: node tools/prova-asta-browser.mjs');
+    for (const r of esito.out.split('\n').filter(r => r.includes('FALLITO'))) console.log('  ' + r.trim());
+  } else {
+    console.log(`  giro completo: ${conta ? conta[1] + '/' + conta[2] : 'passato'}`);
+  }
+}
 
 await browser.close();
+
+}   /* fine dei controlli che aprono il browser */
+
+/* ---------- esito ---------- */
+
 
 console.log(`\n${'='.repeat(52)}`);
 if (!problemi.length) {

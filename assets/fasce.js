@@ -8,10 +8,11 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=34';
-import { valuta, titolariDi } from './consiglio.js?v=34';
-import { leggiCfg } from './cfg.js?v=34';
-import { esc } from './db.js?v=34';
+} from './app.js?v=36';
+import { valuta, titolariDi } from './consiglio.js?v=36';
+import { leggiCfg } from './cfg.js?v=36';
+import { esc } from './db.js?v=36';
+import { caricaAsta, statoAsta } from './astaLega.js?v=36';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -20,8 +21,11 @@ ricalcola(players, cfg, cfg.piano);
 const infortuni = await caricaInfortuni();
 valuta(players, infortuni.per);
 
-const stato = asta.leggi();
-const altrui = asta.leggiAltrui();
+/* Chi e' gia' andato lo dice l'asta della lega. Senza account, o prima di
+   entrare in una lega, l'asta e' vuota: la pagina funziona lo stesso, mostra
+   tutti liberi. */
+let stato = {}, altrui = new Set();
+try { await caricaAsta(); ({ mia: stato, altrui } = statoAsta()); } catch { /* tutti liberi */ }
 const preso = id => stato[id] > 0 || altrui.has(id);
 
 const prezzo = p => Math.max(1, Math.round(p.mkt));

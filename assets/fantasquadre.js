@@ -1,15 +1,16 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, asta, RUOLI } from './app.js?v=34';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=36';
 import {
-  pronto, configurato, collegato, inLega, squadra, squadreDellaLega, membriDellaLega,
-  utente, leggi, scrivi, osserva, montaAccesso, esc, quando,
-} from './db.js?v=34';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=34';
-import { leggiCfg } from './cfg.js?v=34';
-
-const CHIAVE = 'fantasquadre';
-const VUOTO = { squadre: [] };
+  pronto, configurato, collegato, squadra, squadreDellaLega, membriDellaLega,
+  montaAccesso, esc, quando,
+} from './db.js?v=36';
+import {
+  caricaAsta, salvaAsta, accetta, osservaAsta, documento, metaAsta,
+  allineaAllaLega, assegna as aggiudica, libera as rimetti,
+} from './astaLega.js?v=36';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=36';
+import { leggiCfg } from './cfg.js?v=36';
 
 const { players, lega } = await caricaDati();
 
@@ -19,22 +20,15 @@ ricalcola(players, cfg, cfg.piano);
 
 const perId = Object.fromEntries(players.map(p => [`${p.r}|${p.n}|${p.sq}`, p]));
 
-let dati = structuredClone(VUOTO);
-let versione = 0, sporca = false, messaggio = '', statoBarra = '';
+/* Le rose stanno in `astaLega.js`, insieme al resto dell'asta: questa pagina
+   e il listone sono due modi di guardare lo stesso documento, non due
+   archivi. Qui si tiene solo com'e' disegnata la pagina. */
+let dati = documento();
+let sporca = false, messaggio = '', statoBarra = '';
 let apertaPerAggiunta = null;
 
 await pronto();
 montaAccesso(document.getElementById('accesso'), () => { disegnaBarra(); carica(); });
-
-
-/* ---------- allineamento con "La mia rosa" e col listone ----------
-   La fantasquadra vive nel database ed e' condivisa; "La mia rosa" e il
-   listone leggono invece lo stato locale di questo browser. Ogni volta che
-   qui dentro cambia una rosa, aggiorniamo anche quello: altrimenti togli un
-   giocatore da qui e te lo ritrovi ancora fra i tuoi acquisti. */
-
-let stato = asta.leggi();
-let altrui = asta.leggiAltrui();
 
 /* Quale di queste squadre e' la mia. Prima si indovinava confrontando il nome
    dell'allenatore con quello dell'account, ed era fragile: bastava scrivere
@@ -45,50 +39,8 @@ const miaSquadra = () => {
   return mia ? dati.squadre.find(s => s.id === mia.id) : null;
 };
 
-/* I nomi delle squadre e chi le gestisce arrivano dalla lega, non da questo
-   documento: qui dentro restano solo le rose. Cosi' due pagine non possono
-   dire due nomi diversi per la stessa squadra. */
-function allineaAllaLega() {
-  const tabella = squadreDellaLega();
-  if (!tabella.length) return;
-  const membri = membriDellaLega();
-  const gestori = id => membri.filter(m => m.squadra_id === id)
-    .map(m => m.nome || 'senza nome').join(' e ');
-
-  const esistenti = new Map((dati.squadre || []).map(s => [s.id, s]));
-  dati.squadre = tabella.map(x => ({
-    ...(esistenti.get(x.id) || { id: x.id, rosa: [] }),
-    id: x.id,
-    nome: x.nome,
-    proprietario: gestori(x.id),
-  }));
-}
-
-function segnaPreso(idSquadra, gid, prezzo) {
-  if (miaSquadra()?.id === idSquadra) { stato[gid] = prezzo; altrui.delete(gid); }
-  else { altrui.add(gid); delete stato[gid]; }
-  asta.scrivi(stato); asta.scriviAltrui(altrui);
-}
-
-function segnaLibero(gid) {
-  delete stato[gid];
-  altrui.delete(gid);
-  asta.scrivi(stato); asta.scriviAltrui(altrui);
-}
-
 /* Ogni modifica si salva da sola dopo un attimo di pausa: niente da ricordarsi. */
 const auto = autosalva(() => salva(true));
-
-function fondi(remoto, locale) {
-  const uniti = new Map();
-  for (const s of (remoto?.squadre || [])) uniti.set(s.id, s);
-  for (const s of locale.squadre) {
-    const e = uniti.get(s.id);
-    if (!e || (s.quando || '') >= (e.quando || '')) uniti.set(s.id, s);
-  }
-  for (const id of (locale._rimosse || [])) uniti.delete(id);
-  return { ...locale, squadre: [...uniti.values()] };
-}
 
 /* ---------- carica e salva ---------- */
 
@@ -101,25 +53,21 @@ async function carica() {
   /* Senza accesso il database non restituisce errore: restituisce zero righe.
      Senza questo controllo sembrerebbe che le fantasquadre non esistano, mentre
      sono li' e non le stiamo semplicemente vedendo. */
-  if (!collegato()) {
-    dati = structuredClone(VUOTO);
-    versione = 0;
-    sporca = false;
-    statoBarra = 'sporca';
-    messaggio = 'Entra col tuo account qui sopra per vedere le fantasquadre.';
-    return (disegnaBarra(), disegna());
-  }
   try {
-    const r = await leggi(CHIAVE, structuredClone(VUOTO));
-    dati = r.dati || structuredClone(VUOTO);
-    dati.squadre ||= [];
-    allineaAllaLega();
-    versione = r.versione;
+    await caricaAsta();
+    dati = documento();
+    allineaAllaLega(squadreDellaLega(), membriDellaLega());
     sporca = false;
-    statoBarra = '';
-    messaggio = r.nuovo
-      ? 'Nessuna squadra ancora. Aggiungi la prima.'
-      : `Ultimo salvataggio di ${esc(r.da || 'qualcuno')}, ${quando(r.aggiornato)}.`;
+    const m = metaAsta();
+    if (m.assente) {
+      statoBarra = 'sporca';
+      messaggio = 'Entra col tuo account qui sopra per vedere le fantasquadre.';
+    } else {
+      statoBarra = '';
+      messaggio = m.nuovo
+        ? 'Nessun acquisto ancora. Le squadre arrivano dalla pagina «La mia lega».'
+        : `Ultimo salvataggio di ${esc(m.da || 'qualcuno')}, ${quando(m.aggiornato)}.`;
+    }
   } catch (e) {
     statoBarra = 'errore';
     messaggio = e.message;
@@ -139,12 +87,12 @@ async function salva(automatico = false) {
   statoBarra = '';
   disegnaBarra();
   try {
-    const r = await scrivi(CHIAVE, dati, versione, fondi);
-    versione = r.versione;
-    if (r.fuso) { dati = r.dati; messaggio = 'Salvato, e ho unito le modifiche arrivate nel frattempo.'; }
-    else messaggio = 'Salvato ' + quando(new Date().toISOString()) + '.';
+    const r = await salvaAsta();
+    dati = documento();
+    messaggio = r.fuso
+      ? 'Salvato, e ho unito le modifiche arrivate nel frattempo.'
+      : 'Salvato ' + quando(new Date().toISOString()) + '.';
     sporca = false;
-    delete dati._rimosse;
   } catch (e) {
     statoBarra = 'errore';
     messaggio = e.message;
@@ -168,9 +116,9 @@ function disegnaBarra() {
 
 /* ---------- operazioni ---------- */
 
-function tocca(s) {
-  s.quando = new Date().toISOString();
-  s.chi = utente()?.nome || 'anonimo';
+/* `astaLega` firma gia' la squadra con chi e quando: qui resta solo il
+   promemoria che c'e' qualcosa da salvare. */
+function tocca() {
   sporca = true;
   auto.tocca();
 }
@@ -189,7 +137,6 @@ const contaRuolo = (s, r) => (s.rosa || []).filter(g => g.r === r).length;
 
 function disegna() {
   const griglia = document.getElementById('griglia');
-  const mio = utente()?.nome || '';
 
   if (!dati.squadre.length) {
     griglia.innerHTML = collegato()
@@ -291,9 +238,8 @@ griglia.addEventListener('click', e => {
     const s = trova(bTolgi.dataset.da);
     if (!s) return;
     const via = (s.rosa || []).find(g => g.id === gid);
-    s.rosa = (s.rosa || []).filter(g => g.id !== gid);
-    segnaLibero(gid);
-    tocca(s); disegnaBarra(); disegna();
+    rimetti(gid);
+    tocca(); disegnaBarra(); disegna();
     if (via) toast(`${via.n} tolto da ${s.nome}: torna libero all'asta.`);
     return;
   }
@@ -311,10 +257,8 @@ griglia.addEventListener('click', e => {
       campi: [{ id: 'prezzo', etichetta: 'Prezzo pagato', tipo: 'numero', valore: p.max, min: 0, max: cfg.crediti }],
     }).then(r => {
       if (!r) return;
-      const prezzo = Math.max(0, r.prezzo);
-      (s.rosa ||= []).push({ id: gid, n: p.n, sq: p.sq, r: p.r, prezzo });
-      segnaPreso(s.id, gid, prezzo);
-      tocca(s);
+      aggiudica(gid, s.id, Math.max(0, r.prezzo), p);
+      tocca();
       apertaPerAggiunta = null;
       disegnaBarra(); disegna();
     });
@@ -344,15 +288,15 @@ griglia.addEventListener('input', e => {
   }).join('') || '<div style="padding:.7rem .8rem;color:var(--ink3);font-size:.85rem">Nessuno con questo nome.</div>';
 });
 
-osserva(CHIAVE, () => versione, r => {
+osservaAsta(r => {
   if (sporca) {
     statoBarra = 'sporca';
     messaggio = `${esc(r.da || 'Qualcuno')} ha salvato una versione più recente. Salvando, le due si uniscono.`;
     return disegnaBarra();
   }
-  dati = r.dati || structuredClone(VUOTO);
-  dati.squadre ||= [];
-  versione = r.versione;
+  accetta(r);
+  dati = documento();
+  allineaAllaLega(squadreDellaLega(), membriDellaLega());
   messaggio = `Aggiornato: ${esc(r.da || 'qualcuno')} ha appena salvato.`;
   disegnaBarra();
   disegna();

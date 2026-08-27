@@ -1,17 +1,19 @@
 /* Pagina "La mia rosa": cosa hai comprato, l'undici titolare e il simulatore
    del modificatore di difesa sui difensori che possiedi davvero.
 
-   Due archivi da tenere allineati: lo stato dell'asta vive in questo browser,
-   la fantasquadra vive nel database ed e' condivisa con Aurelio. Qui leggiamo
-   entrambi, e quando togli un giocatore lo togliamo da tutti e due. */
+   Un archivio solo: la rosa e' quella della squadra che gestisci dentro
+   l'asta della lega. Prima ce n'erano due — lo stato in questo browser e la
+   fantasquadra nel database — e quando divergevano compariva il badge "non
+   registrato". Adesso non possono piu' divergere: sono la stessa cosa. */
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, simulaModificatore, badgeRuolo,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=34';
-import { pronto, configurato, collegato, squadra, utente, leggi, scrivi, esc } from './db.js?v=34';
-import { toast } from './ui.js?v=34';
-import { leggiCfg } from './cfg.js?v=34';
-import { valuta } from './consiglio.js?v=34';
+} from './app.js?v=36';
+import { pronto, collegato, esc } from './db.js?v=36';
+import { caricaAsta, salvaAsta, statoAsta, miaSquadra, libera as rimetti } from './astaLega.js?v=36';
+import { toast } from './ui.js?v=36';
+import { leggiCfg } from './cfg.js?v=36';
+import { valuta } from './consiglio.js?v=36';
 
 const { players, lega } = await caricaDati();
 
@@ -28,9 +30,11 @@ ricalcola(players, cfg, cfg.piano);
 const infortuni = await caricaInfortuni();
 const info = valuta(players, infortuni.per);
 
-const stato = asta.leggi();
-const altrui = asta.leggiAltrui();
 const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
+
+await pronto();
+try { await caricaAsta(); } catch { /* lo dice la pagina piu' sotto */ }
+let { mia: stato } = statoAsta();
 
 let miei = [], mieiPerRuolo = {};
 
@@ -42,40 +46,6 @@ function ricalcolaMiei() {
   mieiPerRuolo = Object.fromEntries(RUOLI.map(r => [r, miei.filter(p => p.r === r)]));
 }
 ricalcolaMiei();
-
-/* ---------- fantasquadra condivisa ---------- */
-
-let fsDati = { squadre: [] }, fsVer = 0;
-
-await pronto();
-if (configurato()) {
-  try {
-    const r = await leggi('fantasquadre', { squadre: [] });
-    fsDati = r.dati || { squadre: [] };
-    fsDati.squadre ||= [];
-    fsVer = r.versione;
-  } catch { /* senza accesso restiamo con i soli dati locali */ }
-}
-
-/* Qual e' la mia fantasquadra: lo dice l'appartenenza salvata nel database,
-   non piu' il confronto fra il nome dell'allenatore e quello dell'account. */
-const miaSquadra = () => {
-  const mia = squadra();
-  return mia ? (fsDati.squadre || []).find(s => s.id === mia.id) : null;
-};
-
-/** Il giocatore risulta registrato nella mia fantasquadra? */
-const registrato = id => (miaSquadra()?.rosa || []).some(g => g.id === id);
-
-function fondiFs(remoto, locale) {
-  const uniti = new Map();
-  for (const s of (remoto?.squadre || [])) uniti.set(s.id, s);
-  for (const s of locale.squadre) {
-    const e = uniti.get(s.id);
-    if (!e || (s.quando || '') >= (e.quando || '')) uniti.set(s.id, s);
-  }
-  return { ...locale, squadre: [...uniti.values()] };
-}
 
 /* ---------- riepilogo ---------- */
 
@@ -92,17 +62,14 @@ function disegnaLedger() {
 /* ---------- rosa per reparto ---------- */
 
 function disegnaReparti() {
-  const conFs = Boolean(miaSquadra());
   document.getElementById('reparti').innerHTML = RUOLI.map(x => {
     const lista = mieiPerRuolo[x];
     const speso = lista.reduce((a, p) => a + p.pagato, 0);
     const righe = lista.length
       ? lista.map(p => {
         const id = asta.id(p);
-        const orfano = conFs && !registrato(id);
         return `<div class="repitem">${badgeRuolo(p.r)}<span>${esc(p.n)}</span>
           <span class="sq" style="color:var(--ink3)">${esc(p.sq)}</span>
-          ${orfano ? '<span class="orfano" title="Risulta tuo qui ma non è nella fantasquadra condivisa">non registrato</span>' : ''}
           <span class="pz${p.pagato > p.max ? ' maxc' : ''}"${p.pagato > p.max ? ' style="color:var(--warn)"' : ''}>${p.pagato}</span>
           <button class="rimuovi" data-togli="${esc(id)}" title="Togli ${esc(p.n)} dalla rosa"
             aria-label="Togli ${esc(p.n)} dalla rosa">✕</button></div>`;
@@ -114,45 +81,41 @@ function disegnaReparti() {
   }).join('');
 }
 
-/* ---------- togliere un giocatore, da qui e dalla fantasquadra ---------- */
+/* ---------- togliere un giocatore ----------
+   Toglierlo dalla rosa vuol dire rimetterlo all'asta, per tutta la lega:
+   c'e' un archivio solo, quindi non esiste piu' il caso "tolto qui ma non
+   di la'". */
 
 async function togli(id) {
   const p = perId[id];
   if (!p) return;
   const s = miaSquadra();
-  const eraRegistrato = registrato(id);
+  if (!s) return toast('Scegli prima quale squadra gestisci, dalla pagina «La mia lega».');
+  if (!collegato()) return toast('Entra col tuo account per cambiare la rosa.');
 
-  delete stato[id];
-  altrui.delete(id);
-  asta.scrivi(stato);
-  asta.scriviAltrui(altrui);
+  rimetti(id);
+  ridisegnaTutto(id);
 
+  try {
+    await salvaAsta();
+    ridisegnaTutto();
+    toast(`${p.n} torna libero all'asta.`);
+  } catch (e) {
+    toast('Non ho potuto salvare: ' + e.message);
+  }
+}
+
+/** Rilegge la rosa dall'asta e ridisegna la pagina intera. */
+function ridisegnaTutto(uscito = null) {
+  stato = statoAsta().mia;
   // se lo stavo usando nel simulatore, esce anche da li'
-  if (sceltiSim.P === id) sceltiSim.P = null;
-  sceltiSim.D = sceltiSim.D.filter(x => x !== id);
-
+  if (uscito) {
+    if (sceltiSim.P === uscito) sceltiSim.P = null;
+    sceltiSim.D = sceltiSim.D.filter(x => x !== uscito);
+  }
   ricalcolaMiei();
   disegnaLedger(); disegnaReparti(); disegnaCampo();
   disegnaScelte(); disegnaCursori(); simula();
-
-  if (!eraRegistrato) { toast(`${p.n} tolto dalla tua rosa.`); return; }
-
-  s.rosa = (s.rosa || []).filter(g => g.id !== id);
-  s.quando = new Date().toISOString();
-  s.chi = utente()?.nome || 'anonimo';
-  if (!collegato()) {
-    toast(`${p.n} tolto da qui. Entra col tuo account per aggiornare anche ${s.nome}.`);
-    return;
-  }
-  try {
-    const r = await scrivi('fantasquadre', fsDati, fsVer, fondiFs);
-    fsVer = r.versione;
-    if (r.fuso) fsDati = r.dati;
-    disegnaReparti();
-    toast(`${p.n} tolto anche da ${s.nome}: torna libero all'asta.`);
-  } catch (e) {
-    toast('Tolto qui, ma la fantasquadra non si è aggiornata: ' + e.message);
-  }
 }
 
 document.getElementById('reparti').addEventListener('click', e => {

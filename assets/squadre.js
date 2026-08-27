@@ -1,17 +1,15 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=34';
-import { pronto, configurato, leggi, esc } from './db.js?v=34';
-import { leggiCfg } from './cfg.js?v=34';
+import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=36';
+import { pronto, esc } from './db.js?v=36';
+import { leggiCfg } from './cfg.js?v=36';
+import { caricaAsta, statoAsta, squadreAsta } from './astaLega.js?v=36';
 
 const { players, lega } = await caricaDati();
 
 /* Le regole della lega arrivano dal database condiviso: vedi assets/cfg.js */
 const { cfg } = await leggiCfg(lega);
 ricalcola(players, cfg, cfg.piano);
-
-const stato = asta.leggi();
-const altrui = asta.leggiAltrui();
 
 /* la stessa pastiglia del listone: chi e' fermo si vede senza cambiare pagina */
 const infortuni = await caricaInfortuni();
@@ -23,17 +21,18 @@ const segnale = p => {
   return `<span class="ko ${classeGravita(v)}" title="${esc(dettaglio)}">${sigla}</span>`;
 };
 
-/* Chi ha preso chi, secondo le fantasquadre condivise. */
-let proprietario = {};   // idGiocatore -> { squadra, prezzo }
+/* Chi ha preso chi: dall'asta della lega, che e' l'unico posto dove sta
+   scritto. Senza account resta tutto libero e la pagina funziona lo stesso. */
+let stato = {}, altrui = new Set();
+const proprietario = {};   // idGiocatore -> { squadra, prezzo }
 await pronto();
-if (configurato()) {
-  try {
-    const r = await leggi('fantasquadre', null);
-    for (const s of (r.dati?.squadre || [])) {
-      for (const g of (s.rosa || [])) proprietario[g.id] = { squadra: s.nome, prezzo: g.prezzo };
-    }
-  } catch { /* senza accesso restiamo con i soli dati locali */ }
-}
+try {
+  await caricaAsta();
+  ({ mia: stato, altrui } = statoAsta());
+  for (const s of squadreAsta()) {
+    for (const g of s.rosa) proprietario[g.id] = { squadra: s.nome, prezzo: g.prezzo };
+  }
+} catch { /* senza accesso resta tutto libero */ }
 
 const ORDINE = { P: 0, D: 1, C: 2, A: 3 };
 const squadre = [...new Set(players.map(p => p.sq))].sort((a, b) => a.localeCompare(b, 'it'));

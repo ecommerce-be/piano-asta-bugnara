@@ -1,15 +1,20 @@
 /* Pagina "Listone e asta live": parametri di lega, filtri, tracker crediti,
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
-  caricaDati, ricalcola, asta, esportaStato, importaStato,
+  caricaDati, ricalcola, asta,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=34';
+} from './app.js?v=36';
 import {
-  pronto, configurato, collegato, squadra, utente, leggi as leggiDb, scrivi as scriviDb,
-  montaAccesso, esc,
-} from './db.js?v=34';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=34';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=34';
+  pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
+  montaAccesso, esc, quando,
+} from './db.js?v=36';
+import {
+  caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
+  miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
+  segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
+} from './astaLega.js?v=36';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=36';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=36';
 
 const { players, lega } = await caricaDati();
 
@@ -84,10 +89,20 @@ for (const [id, , scrivi] of CAMPI) {
   });
 }
 
-/* ---------- stato ---------- */
+/* ---------- stato ----------
+ *
+ * `stato` e `altrui` non sono piu' archivi: sono la fotografia dell'asta della
+ * lega, ricalcolata da `statoAsta()` a ogni cambiamento. Non c'e' niente da
+ * tenere allineato perche' non c'e' un secondo posto dove la stessa cosa
+ * possa essere scritta diversamente. */
 
-let stato = asta.leggi();
-let altrui = asta.leggiAltrui();
+let stato = {}, altrui = new Set();
+
+function rileggiStato() {
+  const s = statoAsta();
+  stato = s.mia;
+  altrui = s.altrui;
+}
 
 /* Chi e' fermo: la pastiglia accanto al nome serve proprio qui, durante la
    chiamata, quando hai due secondi per decidere se rilanciare. */
@@ -100,9 +115,8 @@ const segnale = p => {
   return `<span class="ko ${classeGravita(v)}" title="${esc(dettaglio)}">${sigla}</span>`;
 };
 
-/* fantasquadre condivise: servono per assegnare un giocatore a chi se l'e' preso */
-let fsDati = { squadre: [] }, fsVer = 0, fsPronte = false;
-let assegnando = null;   // id del giocatore per cui e' aperto il campo prezzo
+const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
+
 let filtroRuolo = 'ALL', soloMia = false, nascondiPresi = false, cerca = '';
 let ordina = { k: 'max', dir: 'desc' };
 
@@ -224,22 +238,6 @@ function aggiorna() {
 
 /* ---------- assegnazione a una fantasquadra ---------- */
 
-/* La mia fantasquadra e' quella che ho scelto nella pagina "La mia lega": e'
-   il database a saperlo, non un confronto fra nomi. */
-const miaSquadra = () => {
-  const mia = squadra();
-  return mia ? (fsDati.squadre || []).find(s => s.id === mia.id) : null;
-};
-
-/** Chi possiede questo giocatore, secondo le fantasquadre. */
-function possessore(id) {
-  for (const s of fsDati.squadre) {
-    const g = (s.rosa || []).find(x => x.id === id);
-    if (g) return { squadra: s, prezzo: g.prezzo };
-  }
-  return null;
-}
-
 function cellaFuori(p, id, via) {
   const q = possessore(id);
   if (q) {
@@ -259,196 +257,134 @@ function cellaFuori(p, id, via) {
 async function apriAssegnazione(id) {
   const p = players.find(x => asta.id(x) === id);
   if (!p) return;
+  if (!pronta()) return;
 
-  if (!fsDati.squadre.length) {
-    return avvisa({
-      titolo: 'Non ci sono ancora fantasquadre',
-      testo: 'Per assegnare i giocatori devi prima creare le squadre della lega, con nome e proprietario, nella pagina Fantasquadre.',
-      ok: 'Vado a crearle',
-    }).then(() => { location.href = 'fantasquadre.html'; });
-  }
-
-  const opzioni = fsDati.squadre.map(sq => {
-    const speso = (sq.rosa || []).reduce((a, g) => a + (Number(g.prezzo) || 0), 0);
+  const opzioni = squadreAsta().map(sq => {
+    const speso = sq.rosa.reduce((a, g) => a + (Number(g.prezzo) || 0), 0);
     return { v: sq.id, t: `${sq.nome} — ${cfg.crediti - speso} cr disponibili` };
   });
   opzioni.push({ v: '__fuori', t: 'Fuori mercato (non registro a chi)' });
 
+  const mia = miaSquadra();
   const r = await chiediCampi({
     titolo: `${p.n} · ${p.sq}`,
     testo: `Il tuo tetto è ${p.max} crediti, il mercato lo stima intorno a ${Math.round(p.mkt)}.`,
     ok: 'Assegna',
     campi: [
-      { id: 'squadra', etichetta: 'A quale fantasquadra', tipo: 'scelta', opzioni },
+      { id: 'squadra', etichetta: 'A quale fantasquadra', tipo: 'scelta', opzioni, valore: mia?.id },
       { id: 'prezzo', etichetta: 'Prezzo pagato', tipo: 'numero', valore: p.max, min: 0, max: cfg.crediti,
         aiuto: 'Quanto è costato all\'asta, non il tuo tetto.' },
     ],
   });
   if (!r) return;
 
-  if (r.squadra === '__fuori') {
-    altrui.add(id);
-    delete stato[id];
-    asta.scrivi(stato); asta.scriviAltrui(altrui);
-    programmaSync(); aggiorna();
-    return;
-  }
-  await assegna(id, r.squadra, Math.max(0, r.prezzo));
-}
-
-async function caricaFantasquadre() {
-  if (!configurato()) return;
-  try {
-    const r = await leggiDb('fantasquadre', { squadre: [] });
-    fsDati = r.dati || { squadre: [] };
-    fsDati.squadre ||= [];
-    fsVer = r.versione;
-    fsPronte = true;
-    disegnaTabella();
-  } catch { /* senza accesso si usa solo "ad altri" */ }
-}
-
-function fondiFs(remoto, locale) {
-  const uniti = new Map();
-  for (const s of (remoto?.squadre || [])) uniti.set(s.id, s);
-  for (const s of locale.squadre) {
-    const e = uniti.get(s.id);
-    if (!e || (s.quando || '') >= (e.quando || '')) uniti.set(s.id, s);
-  }
-  return { ...locale, squadre: [...uniti.values()] };
-}
-
-async function salvaFantasquadre() {
-  if (!collegato()) { statoSync('Per assegnare devi entrare col tuo account.'); return; }
-  try {
-    const r = await scriviDb('fantasquadre', fsDati, fsVer, fondiFs);
-    fsVer = r.versione;
-    if (r.fuso) fsDati = r.dati;
-    statoSync('Assegnazione salvata.');
-  } catch (e) {
-    statoSync('Non ho potuto salvare: ' + e.message);
-  }
-  disegnaTabella();
-}
-
-async function assegna(id, idSquadra, prezzo) {
-  const p = players.find(x => asta.id(x) === id);
-  const s = fsDati.squadre.find(x => x.id === idSquadra);
-  if (!p || !s) return;
-  (s.rosa ||= []).push({ id, n: p.n, sq: p.sq, r: p.r, prezzo });
-  s.quando = new Date().toISOString();
-  s.chi = utente()?.nome || 'anonimo';
-
-  // se e' la mia squadra il giocatore entra nella mia rosa, altrimenti esce dal mercato
-  if (miaSquadra()?.id === idSquadra) {
-    stato[id] = prezzo;
-    altrui.delete(id);
-  } else {
-    altrui.add(id);
-    delete stato[id];
-  }
-  asta.scrivi(stato);
-  asta.scriviAltrui(altrui);
-  programmaSync();
-  assegnando = null;
-  aggiorna();
-  await salvaFantasquadre();
+  if (r.squadra === '__fuori') segnaFuori(id);
+  else aggiudica(id, r.squadra, Math.max(0, r.prezzo), p);
+  await salva();
 }
 
 async function libera(id) {
-  const eraAssegnato = Boolean(possessore(id));
-  for (const s of fsDati.squadre) {
-    const prima = (s.rosa || []).length;
-    s.rosa = (s.rosa || []).filter(g => g.id !== id);
-    if ((s.rosa || []).length !== prima) {
-      s.quando = new Date().toISOString();
-      s.chi = utente()?.nome || 'anonimo';
-    }
-  }
-  altrui.delete(id);
-  delete stato[id];
-  asta.scrivi(stato);
-  asta.scriviAltrui(altrui);
-  programmaSync();
-  aggiorna();
-  if (eraAssegnato) await salvaFantasquadre();
+  if (!pronta()) return;
+  const q = rimetti(id);
+  await salva();
+  if (q) toast(`${id.split('|')[1]} torna libero: era di ${q.squadra.nome}.`);
 }
 
-/* ---------- sincronizzazione con il database ---------- */
-/* L'asta resta locale-first: ogni clic aggiorna subito lo schermo, e il
-   salvataggio parte tre secondi dopo l'ultima modifica. Cosi' durante la
-   chiamata random non aspetti mai la rete, ma ritrovi tutto sull'altro
-   dispositivo. Ognuno ha il proprio documento: questo non e' condiviso. */
-
-const CHIAVE_VER = 'pianoAsta:astaVer';
-let chiaveAsta = null, verAsta = 0, timerSync = null;
+/* ---------- l'asta condivisa ----------
+ *
+ * Un archivio solo, nel database della lega. Ogni gesto aggiorna subito lo
+ * schermo e parte il salvataggio: se nel frattempo ha salvato l'altro, le due
+ * versioni si uniscono giocatore per giocatore invece di sovrascriversi.
+ * Ogni otto secondi si controlla se e' cambiato qualcosa, cosi' durante la
+ * chiamata vedete gli acquisti dell'altro comparire da soli. */
 
 function statoSync(msg) {
   const el = document.getElementById('sync');
   if (el) el.textContent = msg;
 }
 
-async function avviaSync() {
-  await pronto();
-  montaAccesso(document.getElementById('accesso'), avviaSync);
-  if (!configurato() || !collegato()) {
-    chiaveAsta = null;
-    return statoSync(configurato()
-      ? 'Non collegato: quello che segni resta solo su questo dispositivo.'
-      : 'Database non configurato: quello che segni resta solo su questo dispositivo.');
+/** Si puo' toccare l'asta? Se no, lo dice e basta: niente clic a vuoto. */
+function pronta() {
+  if (!configurato()) { statoSync('Database non configurato: l\'asta non si può registrare.'); return false; }
+  if (!collegato()) { statoSync('Entra col tuo account qui sopra per segnare gli acquisti.'); return false; }
+  if (!inLega()) {
+    avvisa({
+      titolo: 'Non sei in nessuna lega',
+      testo: 'L\'asta appartiene alla lega. Entra nella tua dalla pagina «La mia lega», poi torna qui.',
+      ok: 'Vado',
+    }).then(() => { location.href = 'lega.html'; });
+    return false;
   }
-  chiaveAsta = 'asta:' + utente().id;
-  caricaFantasquadre();
-  let verLocale = 0;
-  try { verLocale = Number(localStorage.getItem(CHIAVE_VER) || 0); } catch { /* ignora */ }
+  if (!squadreAsta().length) {
+    avvisa({
+      titolo: 'Questa lega non ha ancora squadre',
+      testo: 'Le squadre si creano nella pagina «La mia lega»: senza, non c\'è a chi assegnare i giocatori.',
+      ok: 'Vado',
+    }).then(() => { location.href = 'lega.html'; });
+    return false;
+  }
+  return true;
+}
+
+async function salva() {
+  aggiorna();
+  statoSync('Salvo…');
   try {
-    const r = await leggiDb(chiaveAsta, null);
-    verAsta = r.versione;
-    if (r.dati && r.versione > verLocale) {
-      stato = r.dati.mia || {};
-      altrui = new Set(r.dati.altrui || []);
-      asta.scrivi(stato);
-      asta.scriviAltrui(altrui);
-      try { localStorage.setItem(CHIAVE_VER, String(verAsta)); } catch { /* ignora */ }
-      statoSync('Ripreso da dove avevi lasciato su un altro dispositivo.');
-      aggiorna();
-    } else {
-      statoSync('Collegato: si salva da solo.');
-    }
+    const r = await salvaAsta();
+    rileggiStato();
+    aggiorna();
+    statoSync(r.fuso ? 'Salvato, e ho unito quello che aveva segnato l\'altro.' : 'Salvato.');
   } catch (e) {
-    statoSync('Non riesco a sincronizzare: ' + e.message);
+    statoSync('Non ho potuto salvare: ' + e.message);
   }
 }
 
-function programmaSync() {
-  if (!chiaveAsta) return;
-  clearTimeout(timerSync);
-  timerSync = setTimeout(async () => {
-    try {
-      const r = await scriviDb(chiaveAsta, { mia: stato, altrui: [...altrui] }, verAsta);
-      verAsta = r.versione;
-      try { localStorage.setItem(CHIAVE_VER, String(verAsta)); } catch { /* ignora */ }
-      statoSync('Salvato.');
-    } catch (e) {
-      statoSync('Salvataggio non riuscito: ' + e.message);
-    }
-  }, 3000);
+async function caricaTutto() {
+  await pronto();
+  try {
+    await caricaAsta();
+  } catch (e) {
+    return statoSync('Non riesco a leggere l\'asta: ' + e.message);
+  }
+  if (allineaAllaLega(squadreDellaLega(), membriDellaLega())) { /* nomi dalla lega */ }
+  rileggiStato();
+  aggiorna();
+  const m = metaAsta();
+  statoSync(m.assente
+    ? 'Non collegato: entra col tuo account per vedere e segnare l\'asta della lega.'
+    : m.nuovo ? 'Asta ancora vuota: il primo acquisto che segni la apre.'
+      : `Ultimo movimento di ${m.da || 'qualcuno'}, ${quando(m.aggiornato)}.`);
+  await proponiRecupero();
 }
 
 /* ---------- interazioni ---------- */
 
-corpo.addEventListener('change', e => {
+/* La colonna "preso a" e' la scorciatoia per i tuoi acquisti: scrivere un
+   prezzo li' vuol dire «l'ho preso io a tanto», ed e' esattamente
+   un'aggiudicazione alla tua squadra. Prima invece scriveva in un archivio
+   suo, ed era da li' che nascevano le divergenze. */
+corpo.addEventListener('change', async e => {
   const el = e.target;
   // solo il campo "preso a": il prezzo dell'assegnazione ha un suo pulsante,
   // e ridisegnare la tabella qui gli cancellerebbe il valore sotto le dita
   if (el.tagName !== 'INPUT' || !el.dataset.id) return;
+  const id = el.dataset.id;
   const v = parseInt(el.value, 10);
-  if (!v || v <= 0) delete stato[el.dataset.id]; else stato[el.dataset.id] = v;
-  asta.scrivi(stato);
-  programmaSync();
-  disegnaLedger();
-  disegnaFasce();
-  disegnaTabella();
+
+  if (!pronta()) { disegnaTabella(); return; }
+  const mia = miaSquadra();
+  if (!mia) {
+    disegnaTabella();
+    return avvisa({
+      titolo: 'Non hai ancora scelto la tua squadra',
+      testo: 'La colonna «preso a» registra l\'acquisto nella squadra che gestisci. Scegli quale, dalla pagina «La mia lega».',
+      ok: 'Vado',
+    }).then(() => { location.href = 'lega.html'; });
+  }
+
+  if (!v || v <= 0) rimetti(id);
+  else aggiudica(id, mia.id, v, players.find(x => asta.id(x) === id));
+  await salva();
 });
 
 corpo.addEventListener('click', e => {
@@ -490,51 +426,59 @@ document.querySelectorAll('th.sortable').forEach(th => th.onclick = () => {
   disegnaTabella();
 });
 
-document.getElementById('esporta').onclick = async () => {
-  const testo = esportaStato(stato, altrui);
-  try {
-    await navigator.clipboard.writeText(testo);
-    toast('Stato copiato negli appunti');
-  } catch {
-    await chiediCampi({ titolo: 'Copia questo testo', testo: 'Mandalo al tuo socio: lo incollerà con "Incolla uno stato".',
-      ok: 'Fatto', campi: [{ id: 'x', etichetta: 'Stato dell\'asta', valore: testo }] });
-  }
-};
+document.getElementById('ricarica').onclick = caricaTutto;
 
-document.getElementById('importa').onclick = async () => {
-  const r = await chiediCampi({ titolo: 'Incolla uno stato ricevuto', ok: 'Importa',
-    campi: [{ id: 'testo', etichetta: 'Testo ricevuto', obbligatorio: true }] });
-  const testo = r?.testo;
-  if (!testo) return;
-  try {
-    const dati = importaStato(testo);
-    stato = dati.mia;
-    altrui = dati.altrui;
-    asta.scrivi(stato);
-    asta.scriviAltrui(altrui);
-    programmaSync();
-    aggiorna();
-    toast('Stato importato');
-  } catch {
-    toast('Non sono riuscito a leggere quel testo');
-  }
-};
-
+/* Non c'e' piu' un "azzera tutto": l'asta e' di tutta la lega, e un pulsante
+   che cancella anche il lavoro degli altri e' un incidente che aspetta di
+   succedere. Si svuota solo la propria rosa, e i giocatori tornano liberi. */
 document.getElementById('reset').onclick = async () => {
+  if (!pronta()) return;
+  const mia = miaSquadra();
+  if (!mia) return toast('Prima scegli la tua squadra, dalla pagina «La mia lega».');
   const si = await chiediConferma({
-    titolo: 'Azzero tutta l\'asta?',
-    testo: 'Sparisce quello che hai segnato come comprato e chi è uscito dal mercato. Le fantasquadre e la bozza non vengono toccate.',
-    ok: 'Sì, azzera', pericolo: true,
+    titolo: `Svuoto la rosa di ${mia.nome}?`,
+    testo: `I ${mia.rosa.length} giocatori che hai preso tornano liberi all'asta, per tutti. Le altre squadre e la bozza non si toccano.`,
+    ok: 'Sì, svuota', pericolo: true,
   });
   if (!si) return;
-  stato = {};
-  altrui = new Set();
-  asta.scrivi(stato);
-  asta.scriviAltrui(altrui);
-  programmaSync();
-  aggiorna();
-  toast('Asta azzerata');
+  const quanti = svuota(mia.id);
+  await salva();
+  toast(`${quanti} giocatori rimessi sul mercato.`);
 };
+
+/* ---------- quello che c'era prima ---------- */
+
+async function proponiRecupero() {
+  const box = document.getElementById('recupero');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!collegato() || !inLega()) return;
+
+  let r = null;
+  try { r = await daRecuperare(); } catch { return; }
+  if (!r) return;
+
+  const quanti = r.acquisti.length + r.fuori.length;
+  box.innerHTML = `<div class="idbar" style="border-color:var(--warn);margin-bottom:16px">
+    <span class="idlab" style="color:var(--warn)">Da prima</span>
+    <span style="flex:1 1 300px">Su questo browser ci sono <strong>${quanti}</strong>
+      segn${quanti === 1 ? 'o' : 'i'} d'asta di quando l'asta non era ancora condivisa
+      (${r.acquisti.length} tu${r.acquisti.length === 1 ? 'oi' : 'oi'}, ${r.fuori.length} fuori mercato).
+      Li porto nell'asta della lega?</span>
+    <button class="btn" id="recuperaSi">Portali dentro</button>
+    <button class="chip" id="recuperaNo">Scartali</button></div>`;
+
+  box.querySelector('#recuperaSi').onclick = async () => {
+    try {
+      const n = recupera(r, perId);
+      await salva();
+      scordaVecchi();
+      box.innerHTML = '';
+      toast(`${n} segni portati nell'asta della lega.`);
+    } catch (e) { toast(e.message); }
+  };
+  box.querySelector('#recuperaNo').onclick = () => { scordaVecchi(); box.innerHTML = ''; };
+}
 
 corpo.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.dataset.prezzo) return;
@@ -550,6 +494,16 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* Ogni otto secondi: se l'altro ha segnato qualcosa, compare qui da solo. */
+osservaAsta(r => {
+  accetta(r);
+  allineaAllaLega(squadreDellaLega(), membriDellaLega());
+  rileggiStato();
+  aggiorna();
+  statoSync(`${r.da || 'Qualcuno'} ha appena segnato un movimento.`);
+});
+
 riempiForm();
 aggiorna();
-avviaSync();
+montaAccesso(document.getElementById('accesso'), caricaTutto);
+await caricaTutto();

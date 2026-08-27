@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=34">
+<link rel="stylesheet" href="assets/style.css?v=36">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="34">
+<meta name="versione" content="36">
 </head>
 <body>
 
@@ -42,10 +42,11 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <section style="padding-bottom:1.6rem">
     <p class="eyebrow">Strumento</p>
     <h2>Listone e asta live</h2>
-    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato tu, e premi <em>Aggiungi a squadra</em> per registrare a chi è andato un giocatore e a che prezzo. Crediti, slot e scorte per fascia si aggiornano da soli. Tutto resta salvato in questo browser, ed è esportabile per passarlo a qualcun altro.</p>
+    <p class="lede" style="max-width:70ch">Scrivi nella colonna <em>preso a</em> quanto hai pagato tu, e premi <em>Aggiungi a squadra</em> per registrare a chi è andato un giocatore e a che prezzo. Crediti, slot e scorte per fascia si aggiornano da soli. L'asta sta nel database della lega, non in questo browser: la vedete tutti aggiornata mentre succede, e la ritrovi da qualsiasi computer.</p>
   </section>
 
   <div id="accesso" style="margin-bottom:16px"></div>
+  <div id="recupero"></div>
 
   <p class="spiega" style="padding:0 0 1.2rem">Crediti, squadre, slot e carattere del mercato si cambiano nelle
     <a href="impostazioni.html">impostazioni</a>, e valgono per tutti e due. <span id="avvisoQuote"></span></p>
@@ -92,9 +93,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 
     <div class="controls" style="border-top:1px solid var(--line);border-bottom:none">
       <span style="font-family:'Archivo',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);align-self:center">Stato dell'asta</span>
-      <button class="btn ghost" id="esporta">Copia lo stato dell'asta</button>
-      <button class="btn ghost" id="importa">Incolla uno stato</button>
-      <button class="btn ghost" id="reset">Azzera</button>
+      <button class="btn ghost" id="ricarica">Ricarica dall'asta</button>
+      <button class="btn ghost" id="reset">Svuota la mia rosa</button>
       <span id="sync" style="font-family:'Archivo',sans-serif;font-size:.8rem;color:var(--ink3);flex:1 1 240px"></span>
       <span style="font-family:'Archivo',sans-serif;font-size:.8rem;color:var(--ink3)">Premi <kbd>/</kbd> per la ricerca.</span>
     </div>
@@ -106,8 +106,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </footer>
 </div>
 
-<script type="module" src="assets/listone.js?v=34"></script>
-<script type="module" src="assets/menu.js?v=34"></script>
-<script type="module" src="assets/theme.js?v=34"></script>
+<script type="module" src="assets/listone.js?v=36"></script>
+<script type="module" src="assets/menu.js?v=36"></script>
+<script type="module" src="assets/theme.js?v=36"></script>
 </body>
 </html>

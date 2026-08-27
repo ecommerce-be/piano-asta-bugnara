@@ -8,7 +8,7 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
    La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
    ha la versione vecchia in cache. NON toccare a mano. */
 export const VERSIONE_DATI = '2d3b9e98f2';
-export const AGGIORNATO_IL = '2026-08-27';
+export const AGGIORNATO_IL = '2026-08-26';
 
 /**
  * Chi e' fermo: infortunati e squalificati, da assets/data/infortuni.json.
@@ -200,27 +200,16 @@ export function simulaModificatore(mediaDifensori, mediaPortiere, mod, opts = {}
   };
 }
 
-/* ---------- stato dell'asta (locale e condivisibile) ---------- */
-
-const CHIAVE_MIA = 'pianoAsta:v1';        // { "D|Bremer|Juventus": 22 }  quanto ho pagato io
-const CHIAVE_ALTRUI = 'pianoAsta:altrui:v1';  // [ "A|Malen|Roma", ... ]  chi se lo e' preso un avversario
-
-function leggiJSON(chiave, vuoto) {
-  try { return JSON.parse(localStorage.getItem(chiave) || 'null') ?? vuoto; } catch { return vuoto; }
-}
-function scriviJSON(chiave, valore) {
-  try { localStorage.setItem(chiave, JSON.stringify(valore)); } catch { /* storage non disponibile */ }
-}
-
+/* ---------- conti sull'asta ----------
+ *
+ * Qui dentro non si legge e non si scrive niente: sono solo i conti.
+ * L'asta vive in un posto solo, il documento di lega `fantasquadre`, e chi la
+ * carica e la salva e' `astaLega.js`. Prima queste funzioni leggevano anche
+ * dal `localStorage`, ed e' esattamente da li' che nascevano le divergenze:
+ * lo stesso acquisto scritto in due archivi che prima o poi si contraddicono. */
 
 export const asta = {
   id(p) { return `${p.r}|${p.n}|${p.sq}`; },
-
-  leggi() { return leggiJSON(CHIAVE_MIA, {}); },
-  scrivi(stato) { scriviJSON(CHIAVE_MIA, stato); },
-
-  leggiAltrui() { return new Set(leggiJSON(CHIAVE_ALTRUI, [])); },
-  scriviAltrui(insieme) { scriviJSON(CHIAVE_ALTRUI, [...insieme]); },
 
   /** Un giocatore e' fuori dal mercato se l'ho preso io o se se l'e' preso un altro. */
   disponibile(p, stato, altrui) {
@@ -266,18 +255,9 @@ export const asta = {
   },
 };
 
-/* Serializza tutto lo stato (mio + avversari) in una stringa da incollare. */
-export function esportaStato(stato, altrui) {
-  const pacco = { v: 2, mia: stato, altrui: [...(altrui || [])] };
-  return btoa(unescape(encodeURIComponent(JSON.stringify(pacco))));
-}
-
-export function importaStato(testo) {
-  const dati = JSON.parse(decodeURIComponent(escape(atob(testo.trim()))));
-  // il formato vecchio era la sola mappa dei miei acquisti
-  if (dati && dati.v === 2) return { mia: dati.mia || {}, altrui: new Set(dati.altrui || []) };
-  return { mia: dati || {}, altrui: new Set() };
-}
+/* Esportare e importare l'asta come testo da incollare non serve piu': era il
+   modo di passarla al socio quando viveva in un browser. Adesso e' nel
+   database della lega e la vedete tutti e due senza fare niente. */
 
 /* ---------- utility ---------- */
 

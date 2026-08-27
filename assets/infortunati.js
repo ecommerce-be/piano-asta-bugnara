@@ -4,9 +4,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo,
   giorniAlRientro, gravita, classeGravita, RUOLI,
-} from './app.js?v=34';
-import { esc } from './db.js?v=34';
-import { leggiCfg } from './cfg.js?v=34';
+} from './app.js?v=36';
+import { esc } from './db.js?v=36';
+import { leggiCfg } from './cfg.js?v=36';
+import { caricaAsta, statoAsta } from './astaLega.js?v=36';
 
 const { players, lega } = await caricaDati();
 
@@ -15,7 +16,10 @@ const { cfg } = await leggiCfg(lega);
 ricalcola(players, cfg, cfg.piano);
 
 const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
-const stato = asta.leggi();
+
+/* "Solo i miei" guarda la rosa che hai comprato all'asta della lega. */
+let stato = {};
+try { await caricaAsta(); stato = statoAsta().mia; } catch { /* nessuna rosa */ }
 
 const { aggiornato, voci } = await caricaInfortuni();
 

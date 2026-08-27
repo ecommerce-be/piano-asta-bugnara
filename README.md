@@ -95,12 +95,71 @@ assets/
 data/
   listone-classic-2026-27.xlsx   il listone esportato dalla lega (sorgente)
   overrides.json                 coefficienti e note, editabili a mano
+  astaLega.js           l'asta della lega: un archivio solo, e come si uniscono due versioni
 tools/
   build_prices.py       rigenera assets/data/players.json da listone + overrides
+  aggiorna_dati.py      riscarica listone e infermeria, e rimarca l'impronta dei dati
   simulate_modifier.py  quanto rende il modificatore, per assetto e qualità del reparto
   supabase.sql          tabella e regole di sicurezza del database condiviso
+  prova-permessi.sql    tredici prove di sicurezza, da incollare nell'SQL Editor
+  coerenza.mjs          il controllo generale: lancia tutto quello che c'è qui sotto
+  prova-asta.mjs        le regole dell'asta condivisa, senza browser
+  prova-asta-browser.mjs il giro completo nel browser, con un finto Supabase
   versione.py           marca i file con ?v=N così il browser non serve la cache
 ```
+
+## Controllare che sia tutto a posto
+
+Un comando solo, che tira dentro tutti gli altri. Servono due finestre, perché
+la prima resta occupata dal server:
+
+```bash
+python3 -m http.server 8123      # su Windows: python -m http.server 8123
+```
+
+```bash
+node tools/coerenza.mjs
+```
+
+Controlla, in quest'ordine: che tutti i moduli si leggano davvero come moduli
+(`node --check` non basta, tratta i file come CommonJS e lascia passare errori
+che poi lasciano la pagina bianca); che nessun modulo si tenga una copia sua
+dell'asta; le 23 prove sulle regole dell'asta condivisa; che tutti i file
+portino la stessa `?v=`; che l'impronta dei dati in `app.js` corrisponda davvero
+a `players.json`, e da quanto non si aggiorna; che ogni pagina si apra senza
+errori; che i numeri di lega coincidano ovunque; che guida e rosa ideale
+propongano la stessa rosa; che nessun nome di giocatore sia scritto a mano
+nell'HTML; che la guida regga tutte e sedici le combinazioni di modulo e
+strategia; e infine il giro completo dell'asta dentro un browser vero, con un
+finto Supabase — segno un acquisto nel listone e lo ritrovo in «La mia rosa»,
+«Fantasquadre» e «Serie A» senza fare altro.
+
+Esce con codice 1 se qualcosa non torna, quindi si può incatenare a un commit.
+
+### Le prove che aprono il browser
+
+I controlli sulle pagine hanno bisogno di **Playwright**, che *non* è una
+dipendenza del sito — il sito non ne ha nessuna, e non ne vogliamo. È solo
+attrezzatura da banco di prova, quindi può non esserci: in quel caso
+`coerenza.mjs` fa lo stesso tutti i controlli sui file, dice chiaramente cosa
+ha saltato e non fallisce.
+
+Per averle anche in locale, una volta sola (finisce in `node_modules/`, che è
+già ignorato da git):
+
+```bash
+npm install --no-save playwright
+npx playwright install chromium
+```
+
+Se Chromium ce l'hai già altrove, basta indicarglielo con la variabile
+d'ambiente `CHROME_PATH`; `PLAYWRIGHT_PATH` fa lo stesso per il pacchetto.
+
+### Le prove di sicurezza del database
+
+Sono a parte, perché girano dentro Postgres: si incolla
+`tools/prova-permessi.sql` nell'SQL Editor di Supabase e si preme Run. Tredici
+prove, si crea e si cancella tutto da sola.
 
 ## Le statistiche dei giocatori
 
@@ -237,19 +296,45 @@ per underscore. Non toccarlo.
 
 ## Dati privati e dati condivisi
 
-Il sito tiene due categorie di dati, e la differenza conta.
+Tre livelli, e la differenza conta.
 
-**Privati del browser** — i parametri di lega che hai modificato e il tema. Stanno
-nel `localStorage`.
+**Della lega** — le regole (crediti, squadre, slot, carattere del mercato) e
+**l'asta**: chi si è aggiudicato chi e a quanto. Le vedono tutti i membri, di
+proposito: al tavolo lo sono comunque, e servono a farsi i conti su chi ha
+ancora crediti in mano.
 
-**Condivisi nel database** — la bozza, le fantasquadre e lo stato della tua asta.
-Stanno su Supabase, in una tabella `documenti` che tiene blocchi di JSON con una
-chiave: `bozza`, `fantasquadre`, `asta:<id utente>`.
+**Della squadra** — il piano di spesa, il modulo, la strategia e la bozza. Li
+vede solo chi gestisce quella fantasquadra: due account sulla stessa squadra
+vedono le stesse cose, nessun altro le vede. Sapere quanto un avversario è
+disposto a spendere sarebbe un vantaggio.
 
-Lo stato dell'asta è **locale-first**: ogni clic aggiorna subito lo schermo e il
-salvataggio parte tre secondi dopo l'ultima modifica. Durante la chiamata random
-non aspetti mai la rete, ma ritrovi tutto sul telefono. Ognuno ha il proprio
-documento: quello non è condiviso, la bozza e le fantasquadre sì.
+**Del browser** — solo il tema e qualche preferenza di visualizzazione
+(l'ultimo ruolo aperto nelle fasce, l'ultima squadra scelta). Roba che non vale
+la pena sincronizzare.
+
+### L'asta sta in un posto solo
+
+Fino alla versione 34 lo stesso fatto — *«Bremer è andato a me per 22»* — era
+scritto in tre posti: nel `localStorage` del browser, in un documento per utente
+(`asta:<id>`) e nelle rose delle fantasquadre. Tre archivi della stessa cosa
+vogliono dire, prima o poi, tre risposte diverse: il socio apriva il listone e
+lo vedeva vergine, cambiavi computer e ripartivi da zero crediti spesi, e ogni
+tanto compariva il badge «non registrato», che era la spia di due archivi
+divergenti.
+
+Adesso ce n'è uno: il documento di lega `fantasquadre`. Tutto il resto si
+**deduce** da lì — i tuoi acquisti sono la rosa della squadra che gestisci,
+«fuori mercato» sono le rose delle altre più i giocatori segnati presi senza
+dire da chi. Non c'è più niente da tenere allineato, perché non esiste un
+secondo posto che possa dire il contrario. Il codice sta in
+`assets/astaLega.js`; le pagine (listone, fantasquadre, la mia rosa, serie A,
+fasce, infortunati) sono sei modi di guardare lo stesso documento.
+
+Quando l'asta è aperta, il listone ricontrolla ogni otto secondi: gli acquisti
+degli altri compaiono da soli, senza ricaricare.
+
+Se avevi acquisti segnati nel vecchio archivio, il listone se ne accorge e ti
+chiede se portarli dentro invece di buttarli via in silenzio.
 
 ## Configurare il database
 
