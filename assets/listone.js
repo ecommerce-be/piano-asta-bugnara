@@ -3,13 +3,13 @@
 import {
   caricaDati, ricalcola, asta, esportaStato, importaStato,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=33';
+} from './app.js?v=34';
 import {
   pronto, configurato, collegato, squadra, utente, leggi as leggiDb, scrivi as scriviDb,
   montaAccesso, esc,
-} from './db.js?v=33';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=33';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=33';
+} from './db.js?v=34';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=34';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=34';
 
 const { players, lega } = await caricaDati();
 

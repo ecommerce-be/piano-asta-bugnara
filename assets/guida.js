@@ -9,10 +9,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, simulaModificatore,
   RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=33';
-import { leggiCfg } from './cfg.js?v=33';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=33';
-import { esc } from './db.js?v=33';
+} from './app.js?v=34';
+import { leggiCfg } from './cfg.js?v=34';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=34';
+import { esc } from './db.js?v=34';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);

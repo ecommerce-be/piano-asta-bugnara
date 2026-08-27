@@ -25,7 +25,7 @@ let sessione = null;
 export async function avvia() {
   if (cfg) return cfg;
   try {
-    const r = await fetch('assets/data/supabase.json?v=33?t=' + Date.now());
+    const r = await fetch('assets/data/supabase.json?v=34?t=' + Date.now());
     cfg = await r.json();
   } catch {
     cfg = {};
@@ -134,6 +134,18 @@ const CHIAVE_LEGA = 'pianoAsta:lega';
 
 let contesto = null;   // { lega, squadra, membri, squadre } oppure null
 
+/* Chi vuole essere avvisato quando il contesto cambia.
+ *
+ * Serve perche' la barra in cima ("collegato come… Lega Bugnara… Hertha
+ * Vernello") viene montata subito, mentre la lega si sa solo dopo un giro di
+ * rete. Senza questo, la barra resterebbe ferma su "non sei in nessuna lega"
+ * anche a pagina caricata, contraddicendo il resto della pagina. */
+const ascoltatori = new Set();
+export function alContesto(fn) { ascoltatori.add(fn); return () => ascoltatori.delete(fn); }
+function contestoCambiato() {
+  for (const fn of ascoltatori) { try { fn(contesto); } catch { /* una barra rotta non ferma le altre */ } }
+}
+
 export const inLega = () => Boolean(contesto?.lega);
 export const lega = () => contesto?.lega || null;
 export const squadra = () => contesto?.squadra || null;
@@ -184,10 +196,10 @@ export async function mieLeghe() {
  */
 export async function caricaContesto(idLega = null) {
   contesto = null;
-  if (!configurato() || !collegato()) return null;
+  if (!configurato() || !collegato()) { contestoCambiato(); return null; }
 
   const leghe = await mieLeghe();
-  if (!leghe.length) return null;
+  if (!leghe.length) { contestoCambiato(); return null; }
 
   const scelto = idLega || legaPreferita();
   const mia = leghe.find(l => l.id === scelto) || leghe[0];
@@ -198,6 +210,8 @@ export async function caricaContesto(idLega = null) {
     chiedi(`membri?lega_id=eq.${mia.id}&select=utente_id,squadra_id,ruolo,nome`),
   ]);
 
+  await firmaLaMiaRiga(mia.id, membri);
+
   contesto = {
     lega: mia,
     squadra: squadre.find(s => s.id === mia.squadraId) || null,
@@ -205,7 +219,29 @@ export async function caricaContesto(idLega = null) {
     membri,
     leghe,
   };
+  contestoCambiato();
   return contesto;
+}
+
+/**
+ * Se la mia riga fra i membri non ha un nome, ce lo mette.
+ *
+ * Succede a chi e' arrivato dalla migrazione della vecchia lega: quella riga
+ * e' stata scritta dal database, che il nome dell'account non ce l'aveva, e
+ * nella tabella "chi c'e'" comparivo come «senza nome». Chi entra dal sito il
+ * nome lo passa gia' lui, quindi qui non entra mai.
+ */
+async function firmaLaMiaRiga(idLega, membri) {
+  const io = utente();
+  if (!io) return;
+  const mia = membri.find(m => m.utente_id === io.id);
+  if (!mia || (mia.nome || '').trim()) return;
+  try {
+    const r = await fetch(
+      `${cfg.url}/rest/v1/membri?lega_id=eq.${idLega}&utente_id=eq.${io.id}`,
+      { method: 'PATCH', headers: intestazioni(), body: JSON.stringify({ nome: io.nome }) });
+    if (r.ok) mia.nome = io.nome;      // cosi' la pagina lo vede subito
+  } catch { /* pazienza: resta «senza nome» fino al prossimo giro */ }
 }
 
 export const leggiLeghe = () => contesto?.leghe || [];
@@ -465,7 +501,9 @@ export function montaAccesso(contenitore, alCambio) {
         ${!l ? '<span style="color:var(--warn);font-size:.8rem">non sei in nessuna lega</span>' : ''}
         <a class="chip" href="lega.html" style="text-decoration:none">la mia lega</a>
         <button class="chip" id="esci" style="margin-left:auto">esci</button></div>`;
-      contenitore.querySelector('#esci').onclick = () => { esci(); contesto = null; disegna(); alCambio?.(); };
+      contenitore.querySelector('#esci').onclick = () => {
+        esci(); contesto = null; contestoCaricato = false; disegna(); contestoCambiato(); alCambio?.();
+      };
       return;
     }
 
@@ -509,4 +547,9 @@ export function montaAccesso(contenitore, alCambio) {
   };
 
   disegna();
+
+  /* Da qui in poi la barra si ridisegna da sola: appena il sito scopre in che
+     lega e in che squadra sei, le pill compaiono senza che la pagina debba
+     ricordarsi di chiederlo. */
+  alContesto(() => disegna());
 }

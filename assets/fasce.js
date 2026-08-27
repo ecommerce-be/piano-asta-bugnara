@@ -8,10 +8,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=33';
-import { valuta, titolariDi } from './consiglio.js?v=33';
-import { leggiCfg } from './cfg.js?v=33';
-import { esc } from './db.js?v=33';
+} from './app.js?v=34';
+import { valuta, titolariDi } from './consiglio.js?v=34';
+import { leggiCfg } from './cfg.js?v=34';
+import { esc } from './db.js?v=34';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
