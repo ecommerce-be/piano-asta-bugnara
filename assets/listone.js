@@ -3,18 +3,19 @@
 import {
   caricaDati, ricalcola, asta,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=36';
+} from './app.js?v=38';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=36';
+} from './db.js?v=38';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
   miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
   segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
-} from './astaLega.js?v=36';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=36';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=36';
+  alSalvataggio, inSospeso, ritentaOra, situazione,
+} from './astaLega.js?v=38';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=38';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=38';
 
 const { players, lega } = await caricaDati();
 
@@ -178,6 +179,207 @@ function disegnaFasce() {
   }).join('');
 }
 
+/* ═══════════ chiamata rapida ═══════════
+ *
+ * All'asta random hai una decina di secondi fra il momento in cui il nome
+ * viene chiamato e quello in cui devi decidere. Cercare il giocatore nella
+ * tabella, aprire una finestra, scegliere la squadra da un elenco e scrivere
+ * il prezzo sono quattro gesti: troppi, e infatti si finisce per segnare gli
+ * acquisti dopo, a memoria, sbagliandoli.
+ *
+ * Qui sono due invii. Scrivi il nome, invio: compare la scheda con il tuo
+ * tetto e — la cosa che conta davvero — chi altro può ancora rilanciare e
+ * fino a quanto. Scrivi il prezzo, invio: registrato, e il cursore torna
+ * subito nel campo del nome, pronto per la chiamata dopo.
+ *
+ * Tutto da tastiera, senza mai toccare il mouse.
+ */
+
+let chiamato = null;      // il giocatore scelto, in attesa del prezzo
+let evidenziato = 0;      // quale suggerimento è selezionato
+
+const inNome = document.getElementById('chiNome');
+const boxSugg = document.getElementById('chiSugg');
+const boxScheda = document.getElementById('chiScheda');
+
+/** I candidati per quello che hai scritto: i più cari prima, i presi in fondo. */
+function candidati(testo) {
+  const s = testo.trim().toLowerCase();
+  if (s.length < 2) return [];
+  return players
+    .filter(p => p.n.toLowerCase().includes(s) || p.sq.toLowerCase().includes(s))
+    .sort((a, b) => {
+      const pa = Boolean(possessore(asta.id(a))), pb = Boolean(possessore(asta.id(b)));
+      return (pa - pb) || b.max - a.max;
+    })
+    .slice(0, 7);
+}
+
+function disegnaSugg() {
+  const lista = candidati(inNome.value);
+  if (!lista.length || chiamato) { boxSugg.innerHTML = ''; return; }
+  evidenziato = Math.min(evidenziato, lista.length - 1);
+  boxSugg.innerHTML = lista.map((p, i) => {
+    const q = possessore(asta.id(p));
+    return `<button type="button" role="option" aria-selected="${i === evidenziato}"
+      class="${i === evidenziato ? 'su' : ''}" data-i="${i}"${q ? ' disabled' : ''}>
+      ${badgeRuolo(p.r)}<span class="nm">${esc(p.n)}</span>
+      <span class="sq">${esc(p.sq)}</span>
+      ${q ? `<span class="gia">già di ${esc(q.squadra.nome)}</span>` : `<span class="mx">tuo max ${p.max}</span>`}
+    </button>`;
+  }).join('');
+}
+
+/** Sceglie il giocatore e apre il campo del prezzo. */
+function scegliChiamato(p) {
+  if (!p || possessore(asta.id(p))) return;
+  chiamato = p;
+  boxSugg.innerHTML = '';
+  disegnaScheda();
+  boxScheda.querySelector('#chiPrezzo')?.focus();
+}
+
+function annullaChiamata() {
+  chiamato = null;
+  evidenziato = 0;
+  inNome.value = '';
+  boxSugg.innerHTML = '';
+  boxScheda.innerHTML = '';
+  inNome.focus();
+}
+
+function disegnaScheda() {
+  if (!chiamato) { boxScheda.innerHTML = ''; return; }
+  const p = chiamato;
+  const mia = miaSquadra();
+
+  /* Chi può ancora prendertelo, e fino a dove può spingersi: è l'unica cosa
+     che serve sapere nei dieci secondi della chiamata. */
+  const rivali = situazione(cfg)
+    .filter(s => !s.mia && s.liberi[p.r] > 0 && !s.obbligata && !s.completa);
+  const tetto = rivali[0]?.max ?? 0;
+
+  const opzioni = squadreAsta().map(s =>
+    `<option value="${esc(s.id)}"${s.id === mia?.id ? ' selected' : ''}>${esc(s.nome)}</option>`).join('');
+
+  boxScheda.innerHTML = `
+    <div class="chgioc">
+      ${badgeRuolo(p.r)}<strong>${esc(p.n)}</strong>
+      <span class="sq">${esc(p.sq)}</span>${segnale(p)}
+      <span class="chnum">tuo max <b>${p.max}</b></span>
+      <span class="chnum">mercato <b>${Math.round(p.mkt)}</b></span>
+      <span class="pill ${CLASSE_VERDETTO[p.v] || 'p-g'}">${p.v}</span>
+    </div>
+    <div class="chriga">
+      <input id="chiPrezzo" type="number" min="0" max="${cfg.crediti}" inputmode="numeric"
+             placeholder="a quanto?" aria-label="Prezzo pagato">
+      <select id="chiSquadra" aria-label="A quale fantasquadra">${opzioni}
+        <option value="__fuori">— fuori mercato, non registro a chi</option></select>
+      <button class="btn" id="chiOk">Registra</button>
+      <button class="chip" id="chiNo">annulla <kbd>esc</kbd></button>
+    </div>
+    <div class="chrivali">${rivali.length
+    ? `<strong>${rivali.length}</strong> ${rivali.length === 1 ? 'squadra può' : 'squadre possono'} ancora rilanciare
+       — la più ricca arriva a <strong>${tetto}</strong>: ${rivali.slice(0, 4).map(s => `${esc(s.nome)} ${s.max}`).join(' · ')}`
+    : 'Nessun altro ha bisogno di questo ruolo: qui non ti rilancia nessuno.'}</div>`;
+
+  boxScheda.querySelector('#chiOk').onclick = registraChiamata;
+  boxScheda.querySelector('#chiNo').onclick = annullaChiamata;
+  boxScheda.querySelector('#chiPrezzo').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); registraChiamata(); }
+    if (e.key === 'Escape') { e.preventDefault(); annullaChiamata(); }
+  });
+  boxScheda.querySelector('#chiSquadra').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); registraChiamata(); }
+  });
+}
+
+async function registraChiamata() {
+  if (!chiamato) return;
+  if (!pronta()) return;
+  const prezzo = parseInt(boxScheda.querySelector('#chiPrezzo').value, 10);
+  const dove = boxScheda.querySelector('#chiSquadra').value;
+  if (!(prezzo >= 0)) return boxScheda.querySelector('#chiPrezzo').focus();
+
+  const p = chiamato;
+  const gid = asta.id(p);
+  if (dove === '__fuori') segnaFuori(gid);
+  else aggiudica(gid, dove, prezzo, p);
+
+  const nome = dove === '__fuori' ? 'fuori mercato'
+    : squadreAsta().find(s => s.id === dove)?.nome || '';
+  annullaChiamata();
+  toast(`${p.n} → ${nome}${dove === '__fuori' ? '' : ` per ${prezzo}`}`);
+  await salva();
+}
+
+inNome.addEventListener('input', () => { evidenziato = 0; disegnaSugg(); });
+
+inNome.addEventListener('keydown', e => {
+  const lista = candidati(inNome.value);
+  if (e.key === 'ArrowDown') { e.preventDefault(); evidenziato = Math.min(evidenziato + 1, lista.length - 1); disegnaSugg(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); evidenziato = Math.max(evidenziato - 1, 0); disegnaSugg(); }
+  else if (e.key === 'Enter') { e.preventDefault(); scegliChiamato(lista[evidenziato]); }
+  else if (e.key === 'Escape') { e.preventDefault(); annullaChiamata(); }
+});
+
+boxSugg.addEventListener('click', e => {
+  const b = e.target.closest('button[data-i]');
+  if (b) scegliChiamato(candidati(inNome.value)[Number(b.dataset.i)]);
+});
+
+/* ---------- quanto può ancora offrire ognuno ----------
+ *
+ * L'informazione che al tavolo decide se rilanciare, e che nessuno fa a mente.
+ * Quando stai filtrando per ruolo mostra gli slot liberi in QUEL ruolo: è la
+ * domanda vera durante la chiamata, cioè «chi altro deve ancora prendere un
+ * portiere, e fino a quanto può spingersi». */
+
+function disegnaAvversari() {
+  const box = document.getElementById('avversari');
+  const nota = document.getElementById('avvNota');
+  if (!box) return;
+
+  const tutti = situazione(cfg);
+  if (!tutti.length) {
+    box.innerHTML = '<div class="vuotafs">Le squadre arrivano dalla pagina «La mia lega».</div>';
+    if (nota) nota.textContent = '';
+    return;
+  }
+
+  const perRuolo = filtroRuolo !== 'ALL';
+  const serve = s => (perRuolo ? s.liberi[filtroRuolo] : s.slotLiberi);
+  /* chi quel ruolo ce l'ha già a posto non è concorrenza sulla chiamata */
+  const rilevanti = tutti.filter(s => serve(s) > 0 && !s.mia);
+  const pericolo = rilevanti.filter(s => !s.obbligata);
+
+  if (nota) {
+    nota.textContent = perRuolo
+      ? `— ${pericolo.length} ${pericolo.length === 1 ? 'squadra può' : 'squadre possono'} ancora rilanciare su un ${NOME_RUOLO[filtroRuolo].toLowerCase().replace(/i$/, 'e')}`
+      : `— ${pericolo.length} ${pericolo.length === 1 ? 'squadra' : 'squadre'} con crediti veri in mano`;
+  }
+
+  box.innerHTML = `<div class="avvgriglia">${tutti.map(s => {
+    const n = serve(s);
+    const fuoriGioco = s.completa || n === 0;
+    const cls = [s.mia && 'mia', fuoriGioco && 'spenta', s.obbligata && !fuoriGioco && 'obbligata']
+      .filter(Boolean).join(' ');
+    const dettaglio = fuoriGioco
+      ? (s.completa ? 'rosa completa' : `non gli serve ${perRuolo ? 'in questo ruolo' : ''}`)
+      : s.obbligata
+        ? 'obbligata a 1 credito'
+        : `${s.residuo} cr · ${n} slot da riempire${perRuolo ? ' qui' : ''}`;
+    return `<div class="avvcard ${cls}">
+      <div class="avvn">${esc(s.nome)}${s.mia ? '<span class="pill p-t">tu</span>' : ''}</div>
+      <div class="avvmax">${fuoriGioco ? '—' : s.max}<small>${fuoriGioco ? '' : ' max'}</small></div>
+      <div class="avvd">${esc(dettaglio)}</div>
+    </div>`;
+  }).join('')}</div>
+  <p class="spiega" style="padding:.6rem 0 0">Il <em>max</em> non sono i crediti che ha in cassa: sono
+    quelli meno un credito per ogni altro slot che gli resta da riempire. È il massimo che può davvero
+    offrire su un giocatore solo — oltre quello, non può rilanciare nemmeno volendo.</p>`;
+}
+
 /* ---------- tabella ---------- */
 
 function disegnaTabella() {
@@ -209,17 +411,21 @@ function disegnaTabella() {
     const pagato = stato[id] || '';
     const via = altrui.has(id);
     const cls = via ? 'altrui' : pagato ? (pagato > p.max ? 'over' : 'taken') : '';
+    /* Le classi `c-*` non servono al colore: servono al telefono. Sotto i
+       620px la tabella smette di essere una tabella e ogni riga diventa una
+       scheda, e sono queste classi a dire a ogni cella dove andare a finire.
+       Con :nth-child sarebbe bastato spostare una colonna per rompere tutto. */
     return `<tr class="${cls}">
-      <td><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}</span>
+      <td class="c-gioc"><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}</span>
         <span class="sq">${esc(p.sq)}</span></span></span></td>
-      <td class="num mktc">${p.q}</td>
-      <td class="num mktc">${Math.round(p.mkt)}</td>
-      <td class="num maxc">${p.max}</td>
-      <td class="num"><input type="number" min="0" max="${cfg.crediti}" value="${pagato}"
-           data-id="${id}" aria-label="Prezzo pagato per ${p.n}"${via ? ' disabled' : ''}></td>
-      <td>${cellaFuori(p, id, via)}</td>
-      <td><span class="pill ${CLASSE_VERDETTO[p.v] || 'p-g'}">${p.v}</span></td>
-      <td class="note">${p.nota || ''}</td></tr>`;
+      <td class="num mktc c-q" data-c="quot."><span>${p.q}</span></td>
+      <td class="num mktc c-mkt" data-c="mercato"><span>${Math.round(p.mkt)}</span></td>
+      <td class="num maxc c-max" data-c="tuo max"><span>${p.max}</span></td>
+      <td class="num c-preso"><input type="number" min="0" max="${cfg.crediti}" value="${pagato}"
+           data-id="${id}" placeholder="preso a" aria-label="Prezzo pagato per ${p.n}"${via ? ' disabled' : ''}></td>
+      <td class="c-ass">${cellaFuori(p, id, via)}</td>
+      <td class="c-verd"><span class="pill ${CLASSE_VERDETTO[p.v] || 'p-g'}">${p.v}</span></td>
+      <td class="note c-nota">${p.nota || ''}</td></tr>`;
   }).join('');
 
   if (righe.length > 900) {
@@ -233,6 +439,7 @@ function aggiorna() {
   controllaCoerenza();
   disegnaLedger();
   disegnaFasce();
+  disegnaAvversari();
   disegnaTabella();
 }
 
@@ -298,10 +505,33 @@ async function libera(id) {
  * Ogni otto secondi si controlla se e' cambiato qualcosa, cosi' durante la
  * chiamata vedete gli acquisti dell'altro comparire da soli. */
 
-function statoSync(msg) {
+/* La riga di stato dell'asta. Oltre a dire com'e' andata l'ultima cosa, deve
+   dire in faccia se c'e' qualcosa che NON e' ancora arrivato al database:
+   e' l'unica informazione che al tavolo non puo' restare implicita. */
+let messaggioSync = '';
+
+function statoSync(msg) { messaggioSync = msg; disegnaSync(); }
+
+function disegnaSync() {
   const el = document.getElementById('sync');
-  if (el) el.textContent = msg;
+  if (!el) return;
+  const s = inSospeso();
+  const avviso = s.quanti
+    ? `<span class="nonsalvato">${s.inCorso ? 'sto salvando' : `${s.quanti} ${s.quanti === 1 ? 'gesto' : 'gesti'} non ancora salvat${s.quanti === 1 ? 'o' : 'i'}`}${
+      s.errore && !s.inCorso ? ` — ${esc(s.errore)}` : ''}${
+      s.ritentoFra ? ` · riprovo fra ${s.ritentoFra}s` : ''}</span>
+       <button class="chip" id="ritenta">riprova ora</button>`
+    : '';
+  el.innerHTML = `<span>${esc(messaggioSync)}</span> ${avviso}`;
+  el.querySelector('#ritenta')?.addEventListener('click', async () => {
+    try { await ritentaOra(); statoSync('Salvato.'); }
+    catch { /* lo dice gia' l'avviso */ }
+  });
 }
+
+/* Appena cambia qualcosa nel salvataggio, la riga si riscrive da sola: non
+   serve che ogni gesto si ricordi di aggiornarla. */
+alSalvataggio(() => disegnaSync());
 
 /** Si puo' toccare l'asta? Se no, lo dice e basta: niente clic a vuoto. */
 function pronta() {
@@ -326,16 +556,19 @@ function pronta() {
   return true;
 }
 
+/* Prima si aggiorna lo schermo, poi si prova a mandare: al tavolo non devi
+   mai aspettare la rete per vedere l'acquisto che hai appena segnato. Se il
+   salvataggio non riesce ci pensa `astaLega` a ritentare da solo, e l'avviso
+   arancione qui sotto dice quanti gesti sono ancora in canna. */
 async function salva() {
   aggiorna();
-  statoSync('Salvo…');
   try {
     const r = await salvaAsta();
     rileggiStato();
     aggiorna();
     statoSync(r.fuso ? 'Salvato, e ho unito quello che aveva segnato l\'altro.' : 'Salvato.');
-  } catch (e) {
-    statoSync('Non ho potuto salvare: ' + e.message);
+  } catch {
+    statoSync('');   // il perché lo dice l'avviso, con quanti gesti mancano
   }
 }
 
@@ -403,6 +636,7 @@ document.getElementById('fFascia').addEventListener('change', disegnaTabella);
 document.querySelectorAll('.chip[data-r]').forEach(c => c.onclick = () => {
   filtroRuolo = c.dataset.r;
   document.querySelectorAll('.chip[data-r]').forEach(x => x.setAttribute('aria-pressed', String(x === c)));
+  disegnaAvversari();   // «chi può ancora rilanciare» dipende dal ruolo chiamato
   disegnaTabella();
 });
 
@@ -486,12 +720,18 @@ corpo.addEventListener('keydown', e => {
   corpo.querySelector(`button[data-conferma="${CSS.escape(e.target.dataset.prezzo)}"]`)?.click();
 });
 
-/* scorciatoia: "/" mette il cursore nella ricerca */
+/* Scorciatoia: "/" porta alla chiamata, non alla ricerca nella tabella.
+   All'asta il gesto che ripeti trenta volte e' registrare un acquisto.
+   Il campo della chiamata e' l'unica casella dove "/" resta una scorciatoia:
+   li' dentro premerlo vuol dire «ricomincia da capo», e se non lo prendessimo
+   noi finirebbe scritto nel nome — che e' esattamente quello che succedeva. */
 document.addEventListener('keydown', e => {
-  if (e.key === '/' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) {
-    e.preventDefault();
-    document.getElementById('q').focus();
-  }
+  if (e.key !== '/') return;
+  const dove = document.activeElement;
+  const inUnCampo = /^(INPUT|SELECT|TEXTAREA)$/.test(dove?.tagName) && dove !== inNome;
+  if (inUnCampo) return;
+  e.preventDefault();
+  annullaChiamata();
 });
 
 /* Ogni otto secondi: se l'altro ha segnato qualcosa, compare qui da solo. */

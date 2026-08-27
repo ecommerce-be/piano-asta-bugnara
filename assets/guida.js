@@ -9,10 +9,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, simulaModificatore,
   RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=36';
-import { leggiCfg } from './cfg.js?v=36';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=36';
-import { esc } from './db.js?v=36';
+} from './app.js?v=38';
+import { leggiCfg } from './cfg.js?v=38';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=38';
+import { esc } from './db.js?v=38';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -462,19 +462,56 @@ const contTab = document.getElementById('tabs');
 const corpoShort = document.querySelector('#short tbody');
 
 /* Prima erano quattro liste di nomi scritte a mano, che invecchiavano al primo
-   aggiornamento del listone. Adesso e' semplicemente chi rende di piu' per
-   credito in quel ruolo, calcolato sui dati di oggi. */
+   aggiornamento del listone.
+ *
+ * Poi sono diventate «chi rende di piu' per credito speso», ed era peggio: a
+ * costo uno il rapporto punti/prezzo esplode, quindi in cima finivano i
+ * portieri di riserva da un credito che rendono nove punti, davanti a Svilar.
+ * Matematicamente giusto, praticamente inutile — quella non e' una lista di
+ * chi comprare, e' una lista di chi non serve a nessuno.
+ *
+ * Adesso la domanda e' un'altra, ed e' quella che si fa davvero al tavolo:
+ * dove il MIO tetto batte il prezzo che pagheranno gli altri? Quel divario
+ * sono crediti di vantaggio, e si ordina per quello. Chi non ha vantaggio non
+ * compare: se in un ruolo ce ne sono sette e non diciotto, e' un'informazione,
+ * non un buco da riempire.
+ *
+ * Si guarda solo fra quelli che verranno davvero comprati (dieci squadre per
+ * tre portieri fanno trenta portieri): oltre quella soglia non li vuole
+ * nessuno, e un «vantaggio» su un giocatore che resta invenduto non esiste.
+ */
 function disegnaShortlist(r) {
-  const lista = players.filter(p => p.r === r)
-    .sort((a, b) => b.val / prezzo(b) - a.val / prezzo(a) || b.val - a.val)
+  const comprati = cfg.squadre * cfg.slot[r];
+  const seRVono = players.filter(p => p.r === r)
+    .sort((a, b) => b.val - a.val)
+    .slice(0, comprati);
+
+  const lista = seRVono
+    .filter(p => p.max > prezzo(p))
+    .sort((a, b) => (b.max - prezzo(b)) - (a.max - prezzo(a)) || b.val - a.val)
     .slice(0, 18);
+
+  const nota = document.getElementById('shortNota');
+  if (nota) {
+    nota.innerHTML = lista.length
+      ? `In questo reparto il tuo tetto batte il mercato su <strong>${lista.length}</strong>
+         giocator${lista.length === 1 ? 'e' : 'i'} dei ${comprati} che verranno comprati.
+         Il <em>vantaggio</em> è di quanti crediti: è lì che guadagni, ed è per quello che sono in
+         quest'ordine.`
+      : `In questo reparto non c'è nessun giocatore su cui il tuo tetto batta il mercato: il tuo
+         piano destina pochi crediti qui, quindi li prenderai al minimo o li lascerai andare.
+         È una conseguenza della strategia che hai scelto, non un errore.`;
+  }
+
   corpoShort.innerHTML = lista.map(p => `<tr>
       <td>${badgeRuolo(p.r)}<span class="nm">${esc(p.n)}</span><br><span class="sq">${esc(p.sq)}</span></td>
       <td class="num mktc">${p.q}</td>
       <td class="num mktc">${prezzo(p)}</td>
       <td class="num maxc">${p.max}</td>
+      <td class="num"><strong style="color:var(--acc)">+${p.max - prezzo(p)}</strong></td>
       <td><span class="pill ${CLASSE_VERDETTO[p.v] || 'p-g'}">${esc(p.v)}</span></td>
-      <td class="note">${esc(p.nota || '—')}</td></tr>`).join('');
+      <td class="note">${esc(p.nota || '—')}</td></tr>`).join('')
+    || `<tr><td colspan="7" class="note" style="color:var(--ink3)">Nessuno su cui hai un vantaggio di prezzo.</td></tr>`;
 }
 
 if (contTab) {

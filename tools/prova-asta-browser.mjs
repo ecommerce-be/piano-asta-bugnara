@@ -38,6 +38,7 @@ const MEMBRI = [{ utente_id: 'u1', squadra_id: 's1', ruolo: 'admin', nome: 'Pier
 /** documenti: chiave "<squadra|lega>:<chiave>" → { dati, versione } */
 const documenti = new Map();
 let scritture = 0;
+let reteGiu = false;   // per provare l'asta con la rete che cade
 
 /* PostgREST filtra con `squadra_id=is.null` oppure `squadra_id=eq.<id>`:
    qui li riportiamo alla stessa chiave con cui li scriviamo. */
@@ -59,6 +60,7 @@ async function serviRest(rotta) {
   if (u.includes('/rest/v1/membri')) return json(MEMBRI);
 
   if (u.includes('/rest/v1/documenti')) {
+    if (reteGiu && rotta.request().method() !== 'GET') return rotta.abort('failed');
     const k = chiaveDoc(u);
     if (metodo === 'GET') {
       const d = documenti.get(k);
@@ -202,6 +204,117 @@ const rigaAltro = await p.locator(`#big tbody tr:has(input[data-id="${idAltro}"]
 prova('l\'acquisto dell\'altra squadra compare da solo', /Real Bugnara/i.test(rigaAltro),
   rigaAltro.slice(0, 120) || 'riga non trovata');
 await p.close();
+
+/* ---------- 4-bis. la chiamata rapida, tutta da tastiera ---------- */
+
+console.log('\n— la chiamata rapida: due invii e l\'acquisto è registrato —');
+
+p = await apri('listone.html');
+{
+  await p.keyboard.press('/');
+  const dove = await p.evaluate(() => document.activeElement?.id);
+  prova('«/» porta il cursore nella chiamata', dove === 'chiNome', `sta in "${dove}"`);
+
+  await p.keyboard.type('Hojlund', { delay: 20 });
+  await p.waitForTimeout(400);
+  const sugg = await p.locator('#chiSugg').innerText();
+  prova('scrivendo il nome compaiono i candidati', /Hojlund/i.test(sugg), sugg.replace(/\n/g, ' · '));
+
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(300);
+  const scheda = await p.locator('#chiScheda').innerText();
+  prova('il primo invio apre la scheda col tuo tetto', /tuo max/i.test(scheda), scheda.slice(0, 90));
+  prova('e dice chi può ancora rilanciare', /rilanciare|nessun altro/i.test(scheda),
+    scheda.replace(/\n/g, ' · ').slice(0, 160));
+  prova('col cursore già nel prezzo',
+    await p.evaluate(() => document.activeElement?.id === 'chiPrezzo'));
+
+  await p.keyboard.type('64');
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(1400);
+
+  const rosa = documenti.get('|fantasquadre')?.dati?.squadre?.find(s => s.id === 's1')?.rosa || [];
+  prova('il secondo invio lo registra nella mia squadra',
+    rosa.some(g => g.n === 'Hojlund' && g.prezzo === 64), JSON.stringify(rosa));
+  prova('e il cursore torna nel nome, pronto per la chiamata dopo',
+    await p.evaluate(() => document.activeElement?.id === 'chiNome'));
+}
+await p.close();
+
+/* ---------- 4-ter. la rete che cade al tavolo ---------- */
+
+console.log('\n— se la rete cade, il sito lo dice invece di far finta di niente —');
+
+p = await apri('listone.html');
+{
+  reteGiu = true;
+  await p.keyboard.press('/');
+  await p.keyboard.type('Krstovic', { delay: 20 });
+  await p.waitForTimeout(400);
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(300);
+  await p.keyboard.type('30');
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(1500);
+
+  const avviso = await p.locator('#sync').innerText();
+  prova('avvisa che qualcosa non è ancora salvato', /non ancora salvat/i.test(avviso),
+    avviso.replace(/\n/g, ' · '));
+  prova('l\'acquisto resta comunque sullo schermo',
+    /Krstovic/.test(await p.locator('#big tbody').innerText()));
+  prova('e finisce in una copia di scorta nel browser',
+    await p.evaluate(() => (localStorage.getItem('pianoAsta:asta-da-mandare') || '').includes('Krstovic')));
+
+  /* torna la rete: il ritentativo automatico deve farcela da solo */
+  reteGiu = false;
+  await p.waitForTimeout(6000);
+  const rosa = documenti.get('|fantasquadre')?.dati?.squadre?.find(s => s.id === 's1')?.rosa || [];
+  prova('e appena la rete torna ci arriva da solo', rosa.some(g => g.n === 'Krstovic'),
+    JSON.stringify(rosa.map(g => g.n)));
+  prova('poi l\'avviso sparisce',
+    !/non ancora salvat/i.test(await p.locator('#sync').innerText()));
+}
+await p.close();
+
+/* ---------- 4-quater. tutto leggibile sul telefono ---------- */
+
+console.log('\n— e sul telefono si vede bene —');
+{
+  const tel = await browser.newContext({
+    viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+  });
+  await tel.addInitScript(([u, l]) => {
+    localStorage.setItem('pianoAsta:sessione', JSON.stringify({
+      access_token: 'finto', refresh_token: 'finto', expires_at: Date.now() + 3600e3, user: u,
+    }));
+    localStorage.setItem('pianoAsta:lega', l);
+  }, [UTENTE, LEGA.id]);
+  await tel.route('**/assets/data/supabase.json*', r => r.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ url: 'https://finto.supabase.co', anonKey: 'eyJprova' }),
+  }));
+  await tel.route('https://finto.supabase.co/**', serviRest);
+
+  const m = await tel.newPage();
+  await m.goto(BASE + 'listone.html', { waitUntil: 'domcontentloaded' });
+  await m.waitForTimeout(2600);
+  const r = await m.evaluate(() => {
+    const riga = document.querySelector('#big tbody tr');
+    const largo = document.documentElement.clientWidth;
+    return {
+      finestra: window.innerWidth,
+      colonna: riga ? getComputedStyle(riga).display : '',
+      sfora: riga ? riga.getBoundingClientRect().right > largo + 2 : false,
+      chiamata: document.querySelector('#chiamata')?.getBoundingClientRect().width || 0,
+    };
+  });
+  prova('la pagina entra nello schermo', r.finestra === 390, `larga ${r.finestra}px`);
+  prova('le righe del listone diventano schede', r.colonna === 'grid', `display: ${r.colonna}`);
+  prova('e nessuna riga sborda di lato', !r.sfora);
+  prova('la chiamata c\'è anche qui', r.chiamata > 300 && r.chiamata <= 390, `${Math.round(r.chiamata)}px`);
+  await m.close();
+  await tel.close();
+}
 
 /* ---------- 5. niente errori per strada ---------- */
 

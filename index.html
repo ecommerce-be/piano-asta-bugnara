@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=36">
+<link rel="stylesheet" href="assets/style.css?v=38">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="36">
+<meta name="versione" content="38">
 </head>
 <body>
 <div class="topbar"><div class="inner">
@@ -73,7 +73,7 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 </section>
 
 
-<section id="rosa">
+<section id="rosa-scelte">
   <p class="eyebrow">La rosa</p>
   <h2 id="rosaTit">Le scelte</h2>
   <p id="rosaIntro1"></p>
@@ -115,9 +115,10 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
 <section>
   <p class="eyebrow">Target</p>
   <h2>Chi comprare, reparto per reparto</h2>
-  <p>I diciotto che rendono di più per credito speso in ogni ruolo, ricalcolati sui dati di oggi — non una lista scritta a mano che invecchia. <strong>Mercato atteso</strong> è quanto quel giocatore costerà davvero al tavolo; <strong>mio max</strong> è il tuo tetto. Dove il tetto è più alto del mercato hai un vantaggio: quello è un <span class="pill p-t">target</span>. Dove è più basso, il giocatore vale meno di quanto lo pagheranno: <span class="pill p-l">lascia</span>.</p>
+  <p>Non i migliori in assoluto, ma quelli su cui <strong>tu</strong> hai un vantaggio: ricalcolati sui dati di oggi, non una lista scritta a mano che invecchia. <strong>Mercato atteso</strong> è quanto quel giocatore costerà davvero al tavolo; <strong>mio max</strong> è il tuo tetto; il <strong>vantaggio</strong> è la differenza, cioè i crediti che ti restano in tasca comprandolo. Chi costa più di quanto vale per te non compare: quello è un <span class="pill p-l">lascia</span>, e lo trovi nel <a href="listone.html">listone</a>.</p>
   <div class="tabs" role="tablist" id="tabs"></div>
-  <div class="tblwrap"><table id="short"><thead><tr><th>Giocatore</th><th class="num">Quot.</th><th class="num">Mercato atteso</th><th class="num">Mio max</th><th>Verdetto</th><th>Perché</th></tr></thead><tbody></tbody></table></div>
+  <p class="spiega" id="shortNota" style="padding:0 0 .8rem"></p>
+  <div class="tblwrap"><table id="short"><thead><tr><th>Giocatore</th><th class="num">Quot.</th><th class="num">Mercato atteso</th><th class="num">Mio max</th><th class="num">Vantaggio</th><th>Verdetto</th><th>Perché</th></tr></thead><tbody></tbody></table></div>
 </section>
 
 <section>
@@ -136,8 +137,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   <p>Il mercato chiude il 1° settembre: prima di sedersi al tavolo vanno ricontrollati i rigoristi di Milan e Juventus, la porta del Torino e la punta che l'Atalanta sta ancora cercando.</p>
 </footer>
 </div>
-<script type="module" src="assets/guida.js?v=36"></script>
-<script type="module" src="assets/menu.js?v=36"></script>
-<script type="module" src="assets/theme.js?v=36"></script>
+<script type="module" src="assets/guida.js?v=38"></script>
+<script type="module" src="assets/menu.js?v=38"></script>
+<script type="module" src="assets/theme.js?v=38"></script>
 </body>
 </html>

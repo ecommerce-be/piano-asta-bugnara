@@ -19,7 +19,7 @@
  * Il database si legge solo da collegati, e le pagine devono funzionare anche
  * prima di entrare. Quindi teniamo una copia nel browser: si aggiorna a ogni
  * lettura riuscita e serve da riserva quando l'accesso non c'è. */
-import { pronto, configurato, collegato, inLega, squadra, leggi, scrivi } from './db.js?v=36';
+import { pronto, configurato, collegato, inLega, squadra, leggi, scrivi } from './db.js?v=38';
 
 const CHIAVE_LEGA = 'impostazioni';
 const CHIAVE_PIANO = 'piano';

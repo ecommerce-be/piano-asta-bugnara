@@ -34,9 +34,11 @@ const SQUADRE = [
 
 /* il documento come se fosse nel database */
 let remoto = { dati: null, versione: 0 };
+let reteGiu = false;   // per provare cosa succede quando la rete cade a meta' asta
 
 globalThis.fetch = async (url, opt = {}) => {
   const u = String(url);
+  if (reteGiu && u.includes('/rest/v1/documenti')) throw new TypeError('Failed to fetch');
   const ok = d => ({ ok: true, status: 200, json: async () => d, text: async () => JSON.stringify(d) });
   if (u.includes('supabase.json')) return ok({ url: 'https://finto.supabase.co', anonKey: 'eyJfinta' });
   if (u.includes('/rest/v1/membri?select=')) {
@@ -174,6 +176,7 @@ prova('se poi si scopre a chi e\' andato, l\'assegnazione batte il "fuori mercat
 console.log('\n— il giro completo: segno, salvo, rileggo —');
 
 remoto = { dati: null, versione: 0 };
+localStorage.removeItem('pianoAsta:asta-da-mandare');   // browser pulito
 await A.caricaAsta();
 A.allineaAllaLega(SQUADRE, [{ utente_id: 'u1', squadra_id: 's1', nome: 'Pierre' }]);
 A.assegna(BREMER, 's1', 22, { n: 'Bremer', sq: 'Juventus', r: 'D' });
@@ -215,6 +218,43 @@ const st3 = A.statoAsta();
 prova('la mia rosa e\' vuota', Object.keys(st3.mia).length === 0 && quanti > 0);
 prova('quella dell\'altro no', A.possessore(MALEN)?.squadra.id === 's2');
 
+/* ---------- 8. la rete che cade a meta' asta ---------- */
+
+console.log('\n— se la rete cade, quello che hai segnato non si perde —');
+
+remoto = { dati: null, versione: 0 };
+localStorage.removeItem('pianoAsta:asta-da-mandare');
+await A.caricaAsta();
+A.allineaAllaLega(SQUADRE, [{ utente_id: 'u1', squadra_id: 's1', nome: 'Pierre' }]);
+
+reteGiu = true;
+A.assegna(GILA, 's1', 18, { n: 'Gila', sq: 'Lazio', r: 'D' });
+let esploso = false;
+try { await A.salvaAsta(); } catch { esploso = true; }
+
+prova('il salvataggio fallisce, e lo dice', esploso && A.inSospeso().quanti >= 1,
+  JSON.stringify(A.inSospeso()));
+prova('ma l\'acquisto resta sullo schermo', A.statoAsta().mia[GILA] === 18);
+prova('e finisce in una copia di scorta nel browser',
+  Boolean(localStorage.getItem('pianoAsta:asta-da-mandare')));
+prova('con dentro il giocatore giusto',
+  (localStorage.getItem('pianoAsta:asta-da-mandare') || '').includes('Gila'));
+
+/* «ricarico la pagina»: il documento in memoria torna quello del database,
+   che di quell'acquisto non sa niente. Deve ripescarlo dalla scorta. */
+reteGiu = false;
+await A.caricaAsta();
+prova('ricaricando, l\'acquisto torna fuori dalla scorta', A.statoAsta().mia[GILA] === 18,
+  JSON.stringify(A.statoAsta().mia));
+
+await A.ritentaOra();
+prova('e al primo tentativo riuscito arriva al database',
+  JSON.stringify(remoto.dati).includes('Gila'));
+prova('dopo di che non resta piu' + ' niente in sospeso', A.inSospeso().quanti === 0,
+  JSON.stringify(A.inSospeso()));
+prova('e la copia di scorta sparisce',
+  localStorage.getItem('pianoAsta:asta-da-mandare') === null);
+
 /* ---------- ---------- */
 
 console.log('\n' + '='.repeat(52));
@@ -223,3 +263,4 @@ if (ko) {
   process.exit(1);
 }
 console.log(`Tutto a posto: ${tot} prove su ${tot}.`);
+process.exit(0);   // se e' rimasto in piedi un ritentativo, non aspettiamolo

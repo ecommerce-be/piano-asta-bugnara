@@ -205,6 +205,53 @@ for (const pagina of PAGINE) {
   await p.close();
 }
 
+/* ---------- 1-bis. tutto entra nello schermo del telefono ----------
+ *
+ * All'asta il portatile ce l'ha uno solo: gli altri hanno il telefono in mano.
+ * E una pagina che non entra non si vede "un po' stretta" — il browser
+ * rimpicciolisce l'intera pagina finché ci sta, quindi il testo diventa
+ * illeggibile tutto insieme. E' successo alla guida, che ereditava un
+ * `min-width:1150px` scritto per la tabella della Serie A.
+ *
+ * Le tabelle larghe sono legittime, purche' scorrano dentro il loro
+ * contenitore: quello che non deve succedere e' che sia la PAGINA a sforare. */
+
+console.log('\n— tutto entra nello schermo del telefono —');
+{
+  const TELEFONO = { width: 390, height: 844 };
+  const mob = await browser.newContext({
+    viewport: TELEFONO, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+  });
+  for (const pagina of PAGINE) {
+    const p = await mob.newPage();
+    await p.goto(BASE + pagina, { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(2200);
+    const r = await p.evaluate(() => {
+      const largo = document.documentElement.clientWidth;
+      /* chi sfora davvero: si ignora quello che sta dentro un contenitore che
+         scorre di suo, perche' li' e' voluto */
+      const colpevoli = [...document.querySelectorAll('body *')]
+        .filter(e => e.getBoundingClientRect().right > largo + 2)
+        .filter(e => !e.closest('.scroller,.tblwrap,[style*="overflow"]'))
+        .map(e => `${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}`
+          + `${typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : ''}`
+          + ` (${Math.round(e.getBoundingClientRect().width)}px)`);
+      return { finestra: window.innerWidth, colpevoli: [...new Set(colpevoli)].slice(0, 3) };
+    });
+    await p.close();
+    /* se il browser ha dovuto allargare la finestra oltre i 390 dello schermo,
+       vuol dire che ha rimpicciolito la pagina per farcela stare */
+    if (r.finestra > TELEFONO.width) {
+      nota(`[${pagina}] non entra in un telefono: la pagina è larga ${r.finestra}px invece di ${TELEFONO.width}`
+         + (r.colpevoli.length ? ` — colpa di ${r.colpevoli.join(', ')}` : ''));
+      console.log(`  ${pagina.padEnd(20)} ✗ ${r.finestra}px  ${r.colpevoli.join(', ')}`);
+    } else {
+      console.log(`  ${pagina.padEnd(20)} ✓`);
+    }
+  }
+  await mob.close();
+}
+
 /* ---------- 2. i numeri di lega coincidono ovunque ---------- */
 
 console.log('\n— gli stessi numeri su tutte le pagine —');
@@ -290,6 +337,55 @@ if (soloGuida.length || soloCons.length) {
 }
 if (spesaGuida && spesaCons && spesaGuida !== spesaCons) {
   nota(`spesa diversa fra guida (${spesaGuida}) e rosa ideale (${spesaCons})`);
+}
+
+/* ---------- 3-bis. «Chi comprare» propone gente che vale la pena comprare ----------
+ *
+ * Sembra ovvio e non lo era. La lista ordinava per punti-per-credito, e a
+ * costo uno quel rapporto esplode: in cima ai portieri finivano otto riserve
+ * da un credito, davanti a Svilar. Matematicamente giusto, praticamente
+ * inutile. Adesso ordina per vantaggio (il tuo tetto meno il prezzo di
+ * mercato) e chi non ne ha non compare — ma un criterio del genere si può
+ * rompere di nuovo in silenzio, quindi si controlla. */
+
+console.log('\n— «chi comprare» non si riempie di giocatori da un credito —');
+{
+  const g = await apri('index.html');
+  const schede = await g.locator('#tabs button').count();
+  for (let i = 0; i < schede; i++) {
+    const nome = (await g.locator('#tabs button').nth(i).textContent()).split('·')[0].trim();
+    await g.locator('#tabs button').nth(i).click();
+    await g.waitForTimeout(400);
+    const righe = await g.locator('#short tbody tr').evaluateAll(rs => rs
+      .filter(r => r.children.length >= 6)
+      .map(r => ({
+        n: r.children[0].innerText.split('\n')[0].trim(),
+        max: Number(r.children[3].innerText.trim()),
+        vant: Number(r.children[4].innerText.replace('+', '').trim()),
+        v: r.children[5].innerText.trim(),
+      })));
+    if (!righe.length) { console.log(`  ${nome.padEnd(15)} — nessun vantaggio in questo reparto`); continue; }
+
+    const senzaVantaggio = righe.filter(x => !(x.vant > 0));
+    const daUnCredito = righe.filter(x => x.max <= 1);
+    const buoni = righe.filter(x => /TARGET|PREZZO GIUSTO/.test(x.v)).length;
+
+    if (senzaVantaggio.length) {
+      nota(`[chi comprare · ${nome}] ${senzaVantaggio.length} righe senza vantaggio: `
+         + senzaVantaggio.slice(0, 3).map(x => x.n).join(', '));
+    }
+    if (daUnCredito.length) {
+      nota(`[chi comprare · ${nome}] ci sono ${daUnCredito.length} giocatori col tetto a 1 credito `
+         + `(${daUnCredito.slice(0, 3).map(x => x.n).join(', ')}): è il sintomo dell'ordinamento `
+         + 'per punti-per-credito, che a costo 1 premia le riserve');
+    }
+    if (buoni < righe.length / 2) {
+      nota(`[chi comprare · ${nome}] solo ${buoni} righe su ${righe.length} sono TARGET o PREZZO GIUSTO`);
+    }
+    console.log(`  ${nome.padEnd(15)} ${String(righe.length).padStart(2)} righe · vantaggio da `
+      + `+${righe.at(-1).vant} a +${righe[0].vant} · ${buoni} consigliabili · primo: ${righe[0].n}`);
+  }
+  await g.close();
 }
 
 /* ---------- 4. nessun nome di giocatore inchiodato nell'HTML ---------- */

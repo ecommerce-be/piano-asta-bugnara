@@ -26,9 +26,9 @@
  * altro li legge.
  */
 import {
-  pronto, configurato, collegato, inLega, squadra, utente,
+  pronto, configurato, collegato, inLega, lega, squadra, utente,
   leggi, scrivi, osserva,
-} from './db.js?v=36';
+} from './db.js?v=38';
 
 export const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [], fuori: {}, liberati: {} };
@@ -119,6 +119,42 @@ export function possessore(gid) {
 /** Segnato preso ma senza proprietario. */
 export const fuoriMercato = gid => !possessore(gid) && eFuori(gid);
 
+/* ---------- quanto può ancora offrire ognuno ----------
+ *
+ * E' il conto che decide se rilanciare, e nessuno lo fa a mente al tavolo.
+ * Una squadra con 40 crediti e 9 slot ancora da riempire non può offrirne 40:
+ * deve tenere un credito per ognuno degli altri otto slot, quindi il suo tetto
+ * vero è 32. Sapere che l'avversario si ferma per forza a 32 cambia
+ * completamente come rilanci — e vale anche al contrario, perché è lo stesso
+ * conto che dice quanto puoi permetterti tu.
+ *
+ * L'altra faccia della stessa cosa: chi ha esattamente un credito per slot è
+ * «obbligato», non può più competere su niente. Da quel momento quei crediti
+ * non sono più concorrenza.
+ */
+export function situazione(cfg) {
+  const RUOLI = ['P', 'D', 'C', 'A'];
+  const idMia = squadra()?.id || null;
+
+  return dati.squadre.map(s => {
+    const speso = s.rosa.reduce((a, g) => a + (Number(g.prezzo) || 0), 0);
+    const residuo = cfg.crediti - speso;
+    const presi = Object.fromEntries(RUOLI.map(r => [r, s.rosa.filter(g => g.r === r).length]));
+    const liberi = Object.fromEntries(RUOLI.map(r => [r, Math.max(0, cfg.slot[r] - presi[r])]));
+    const slotLiberi = RUOLI.reduce((a, r) => a + liberi[r], 0);
+
+    /* il tetto vero: quello che resta, meno un credito per ogni altro slot */
+    const max = slotLiberi > 0 ? Math.max(0, residuo - (slotLiberi - 1)) : 0;
+
+    return {
+      id: s.id, nome: s.nome, mia: s.id === idMia,
+      speso, residuo, presi, liberi, slotLiberi, max,
+      completa: slotLiberi === 0,
+      obbligata: slotLiberi > 0 && max <= 1,
+    };
+  }).sort((a, b) => b.max - a.max);
+}
+
 /* ---------- unione di due versioni ----------
  *
  * Durante l'asta salvate in due, a pochi secondi di distanza. Se l'unione
@@ -200,28 +236,155 @@ export async function caricaAsta() {
   dati = normalizza(r.dati);
   versione = r.versione;
   meta = { nuovo: Boolean(r.nuovo), da: r.da || '', aggiornato: r.aggiornato || '' };
+  recuperaSospeso();
   return { dati, versione, meta };
 }
 
 /** Applica al documento in memoria quello che e' arrivato dal controllo periodico. */
 export function accetta(r) {
-  dati = normalizza(r.dati);
+  /* Se ho roba non ancora salvata, quello che arriva non la deve cancellare:
+     si uniscono, come si farebbe salvando. */
+  dati = daSalvare ? fondi(r.dati, dati) : normalizza(r.dati);
   versione = r.versione;
   meta = { nuovo: false, da: r.da || '', aggiornato: r.aggiornato || '' };
   return dati;
 }
 
+export const osservaAsta = (alCambio, intervallo = 8000) =>
+  osserva(CHIAVE, () => versione, alCambio, intervallo);
+
+/* ═══════════ il salvataggio, che al tavolo non deve tradire ═══════════
+ *
+ * All'asta la rete e' quella che e': il telefono in tethering, il wifi di casa
+ * di qualcun altro, dieci persone collegate. Prima di questo blocco, un
+ * salvataggio fallito restava fallito — lo schermo mostrava l'acquisto, il
+ * database non ce l'aveva, e bastava ricaricare la pagina per perderlo.
+ *
+ * Adesso tre cose, in ordine di importanza:
+ *
+ *   1. ogni modifica finisce SUBITO in una copia di scorta in questo browser,
+ *      prima ancora di provare a mandarla. Ricaricare non perde niente.
+ *   2. se il salvataggio non riesce, si ritenta da solo, aspettando sempre un
+ *      po' di piu' — senza martellare la rete che gia' non va.
+ *   3. la pagina puo' chiedere quanti gesti non sono ancora arrivati, e dirlo
+ *      in faccia invece di lasciar credere che sia tutto a posto.
+ *
+ * La copia di scorta non e' un secondo archivio: e' lo stesso documento in
+ * attesa di partire, e appena parte sparisce. */
+
+const SCORTA = 'pianoAsta:asta-da-mandare';
+
+let daSalvare = 0;          // gesti fatti e non ancora arrivati al database
+let ultimoErrore = '';
+let inCorso = false;
+let timerRitenta = null;
+let attesa = 0;             // quanto aspetto prima del prossimo tentativo
+let passo = 0;              // a che punto sono della scaletta qui sotto
+
+/* Si aspetta sempre un po' di piu': se la rete e' giu' non ha senso
+   martellarla, e se torna su il primo tentativo utile arriva comunque
+   entro mezzo minuto. */
+const RITENTI = [2000, 5000, 10000, 20000, 30000];
+
+const ascoltatori = new Set();
+export function alSalvataggio(fn) { ascoltatori.add(fn); return () => ascoltatori.delete(fn); }
+const avvisa = () => { for (const f of ascoltatori) { try { f(inSospeso()); } catch { /* una barra rotta non ferma le altre */ } } };
+
+/** Com'e' messo il salvataggio, per chi lo deve mostrare. */
+export const inSospeso = () => ({
+  quanti: daSalvare,
+  errore: ultimoErrore,
+  inCorso,
+  ritentoFra: timerRitenta ? Math.round(attesa / 1000) : 0,
+});
+
+/** Segna che c'e' qualcosa da mandare, e mettilo al sicuro subito. */
+function daMandare() {
+  daSalvare++;
+  scriviScorta();
+  avvisa();
+}
+
+function scriviScorta() {
+  try {
+    localStorage.setItem(SCORTA, JSON.stringify({
+      lega: lega()?.id || null, versione, dati, quanti: daSalvare, il: adesso(),
+    }));
+  } catch { /* storage pieno o non disponibile: pazienza, resta in memoria */ }
+}
+
+function buttaScorta() {
+  try { localStorage.removeItem(SCORTA); } catch { /* niente da fare */ }
+}
+
+/**
+ * Riprende quello che era rimasto in canna.
+ *
+ * Succede se hai chiuso la pagina — o ti si e' scaricato il telefono — mentre
+ * un salvataggio non era ancora andato. Quello che c'era si unisce a quello
+ * che nel frattempo ha scritto il database, senza sovrascriverlo, e riparte.
+ */
+function recuperaSospeso() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(SCORTA) || 'null'); } catch { s = null; }
+  if (!s?.dati || s.lega !== lega()?.id) return;
+  dati = fondi(dati, normalizza(s.dati));
+  daSalvare = Math.max(1, Number(s.quanti) || 1);
+  avvisa();
+  programmaRitento(true);
+}
+
 export async function salvaAsta() {
   if (!collegato()) throw new Error('Per segnare gli acquisti devi entrare col tuo account.');
   if (!inLega()) throw new Error('Prima devi entrare in una lega, dalla pagina «La mia lega».');
-  const r = await scrivi(CHIAVE, dati, versione, fondi);
-  versione = r.versione;
-  if (r.fuso) dati = normalizza(r.dati);
-  return r;
+
+  clearTimeout(timerRitenta);
+  timerRitenta = null;
+  inCorso = true;
+  avvisa();
+  const quantiAllora = daSalvare;
+
+  try {
+    const r = await scrivi(CHIAVE, dati, versione, fondi);
+    versione = r.versione;
+    if (r.fuso) dati = normalizza(r.dati);
+    /* se nel frattempo hai segnato altro, quello resta da mandare */
+    daSalvare = Math.max(0, daSalvare - quantiAllora);
+    ultimoErrore = '';
+    attesa = 0;
+    passo = 0;
+    inCorso = false;
+    if (daSalvare) scriviScorta(); else buttaScorta();
+    avvisa();
+    return r;
+  } catch (e) {
+    inCorso = false;
+    ultimoErrore = e.message;
+    if (!daSalvare) daSalvare = 1;     // c'era comunque qualcosa da mandare
+    scriviScorta();
+    programmaRitento();
+    avvisa();
+    throw e;
+  }
 }
 
-export const osservaAsta = (alCambio, intervallo = 8000) =>
-  osserva(CHIAVE, () => versione, alCambio, intervallo);
+/** Riprova da solo, aspettando ogni volta un po' di piu'. */
+function programmaRitento(subito = false) {
+  clearTimeout(timerRitenta);
+  attesa = subito ? 500 : RITENTI[Math.min(passo++, RITENTI.length - 1)];
+  timerRitenta = setTimeout(async () => {
+    timerRitenta = null;
+    if (!daSalvare) return;
+    try { await salvaAsta(); } catch { /* riprovera' da solo */ }
+  }, attesa);
+  avvisa();
+}
+
+/** Riprova adesso, perche' l'ha chiesto qualcuno. */
+export async function ritentaOra() {
+  passo = 0;
+  return salvaAsta();
+}
 
 /* ---------- le tre cose che si fanno durante l'asta ---------- */
 
@@ -242,6 +405,7 @@ export function assegna(gid, idSquadra, prezzo, p) {
     il, chi: chi(),
   });
   tocca(s);
+  daMandare();
   return s;
 }
 
@@ -251,6 +415,7 @@ export function segnaFuori(gid) {
   scollega(gid, il);
   dati.fuori[gid] = il;
   delete dati.liberati[gid];
+  daMandare();
 }
 
 /** Rimette un giocatore sul mercato, da qualunque squadra venisse. */
@@ -260,6 +425,7 @@ export function libera(gid) {
   scollega(gid, il);
   dati.liberati[gid] = il;
   delete dati.fuori[gid];
+  daMandare();
   return q;
 }
 
@@ -283,6 +449,7 @@ export function svuota(idSquadra) {
   for (const g of s.rosa) { s.tolti[g.id] = il; dati.liberati[g.id] = il; }
   s.rosa = [];
   tocca(s);
+  daMandare();
   return quanti;
 }
 
