@@ -8,7 +8,7 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
    La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
    ha la versione vecchia in cache. NON toccare a mano. */
 export const VERSIONE_DATI = '2d3b9e98f2';
-export const AGGIORNATO_IL = '2026-08-27';
+export const AGGIORNATO_IL = '2026-08-28';
 
 /**
  * Chi e' fermo: infortunati e squalificati, da assets/data/infortuni.json.
