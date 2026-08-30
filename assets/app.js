@@ -7,8 +7,8 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
 /* Impronta dei dati: cambia solo quando players.json cambia davvero.
    La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
    ha la versione vecchia in cache. NON toccare a mano. */
-export const VERSIONE_DATI = '47a4dbfd0b';
-export const AGGIORNATO_IL = '2026-08-29';
+export const VERSIONE_DATI = '84d98c670f';
+export const AGGIORNATO_IL = '2026-08-30';
 
 /**
  * Chi e' fermo: infortunati e squalificati, da assets/data/infortuni.json.
