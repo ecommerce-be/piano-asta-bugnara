@@ -8,12 +8,12 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, simulaModificatore, badgeRuolo,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=45';
-import { pronto, collegato, esc } from './db.js?v=45';
-import { caricaAsta, salvaAsta, statoAsta, miaSquadra, libera as rimetti } from './astaLega.js?v=45';
-import { toast } from './ui.js?v=45';
-import { leggiCfg } from './cfg.js?v=45';
-import { valuta } from './consiglio.js?v=45';
+} from './app.js?v=46';
+import { pronto, collegato, esc } from './db.js?v=46';
+import { caricaAsta, salvaAsta, statoAsta, miaSquadra, libera as rimetti } from './astaLega.js?v=46';
+import { toast } from './ui.js?v=46';
+import { leggiCfg } from './cfg.js?v=46';
+import { valuta } from './consiglio.js?v=46';
 
 const { players, lega } = await caricaDati();
 

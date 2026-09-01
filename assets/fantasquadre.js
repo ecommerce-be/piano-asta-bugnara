@@ -1,16 +1,16 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=45';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=46';
 import {
   pronto, configurato, collegato, squadra, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=45';
+} from './db.js?v=46';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, documento, metaAsta,
   allineaAllaLega, assegna as aggiudica, libera as rimetti,
-} from './astaLega.js?v=45';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=45';
-import { leggiCfg } from './cfg.js?v=45';
+} from './astaLega.js?v=46';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=46';
+import { leggiCfg } from './cfg.js?v=46';
 
 const { players, lega } = await caricaDati();
 

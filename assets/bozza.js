@@ -1,12 +1,12 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=45';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=46';
 import {
   pronto, configurato, collegato, inLega, squadra, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=45';
-import { autosalva, conferma as chiediConferma } from './ui.js?v=45';
-import { leggiCfg } from './cfg.js?v=45';
+} from './db.js?v=46';
+import { autosalva, conferma as chiediConferma } from './ui.js?v=46';
+import { leggiCfg } from './cfg.js?v=46';
 
 /* La bozza e' il TUO piano: sta nel documento di squadra, e il database la
    mostra solo a chi gestisce quella squadra. Il `true` in fondo a leggi(),

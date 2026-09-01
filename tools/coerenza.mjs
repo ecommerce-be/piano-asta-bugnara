@@ -112,15 +112,26 @@ const nota = t => problemi.push(t);
      puo' rovinare il listone in silenzio: ha il suo banco di prova, e gira
      insieme al resto. */
   {
-    const esito = await new Promise(ok => {
-      execFile('python3', [fileURLToPath(new URL('prova-anagrafica.py', import.meta.url))],
-        (err, out) => ok({ ko: Boolean(err), out: String(out) }));
+    /* Su Windows l'eseguibile si chiama `python`, non `python3`: cercando solo
+       `python3` queste prove venivano SALTATE in silenzio proprio sul computer
+       da cui si fa il push, e coerenza diceva «tutto a posto» avendone
+       controllato una parte. Si provano i nomi possibili, in ordine. */
+    const lancia = comando => new Promise(ok => {
+      execFile(comando, [fileURLToPath(new URL('prova-anagrafica.py', import.meta.url))],
+        (err, out) => ok({ ko: Boolean(err), out: String(out), assente: Boolean(err?.code === 'ENOENT') }));
     });
+    let esito = null;
+    for (const comando of ['python3', 'python', 'py']) {
+      esito = await lancia(comando);
+      if (!esito.assente) break;
+    }
     const conta = esito.out.match(/(\d+) prove su (\d+)/);
     if (esito.ko && /ATTENZIONE|FALLITO/.test(esito.out)) {
-      nota('le prove su squadre e ruoli non passano — lancia: python3 tools/prova-anagrafica.py');
+      nota('le prove su squadre e ruoli non passano — lancia: python tools/prova-anagrafica.py');
+    } else if (esito.assente) {
+      console.log('  (prove su squadre e ruoli saltate: non trovo python)');
     } else if (esito.ko) {
-      console.log('  (prove su squadre e ruoli saltate: manca python3)');
+      nota(`le prove su squadre e ruoli non sono partite: ${esito.out.trim().split('\n').pop()}`);
     } else {
       console.log(`  prove su squadre e ruoli: ${conta ? conta[1] + '/' + conta[2] : 'passate'}`);
     }
@@ -180,14 +191,24 @@ const nota = t => problemi.push(t);
     rseg: 'rigori segnati', rsba: 'rigori sbagliati', au: 'autogol',
     assist: 'assist', amm: 'ammonizioni', esp: 'espulsioni',
   };
+  /* L'autogol Fantacalcio.it non lo pubblica: sulla pagina delle statistiche
+     quella colonna non c'è proprio (verificato con --diagnosi il 1 settembre).
+     Non è un guasto da segnalare ogni volta — se un giorno ricompare, il dato
+     entra da solo, perché il sinonimo resta in COLONNE. */
+  const NON_PUBBLICATE = ['au'];
   const players = JSON.parse(testoPlayers);
   const pieno = c => players.filter(p => p[c] != null).length;
-  const vuote = Object.keys(NOMI).filter(c => pieno(c) === 0);
+  const vuote = Object.keys(NOMI).filter(c => pieno(c) === 0 && !NON_PUBBLICATE.includes(c));
+  const assenti = NON_PUBBLICATE.filter(c => pieno(c) === 0);
   const parziali = Object.keys(NOMI).filter(c => pieno(c) > 0 && pieno(c) < players.length);
   console.log('  colonne piene su tutti: '
     + Object.keys(NOMI).filter(c => pieno(c) === players.length).map(c => NOMI[c]).join(', '));
   if (parziali.length) {
     console.log('  colonne parziali: ' + parziali.map(c => `${NOMI[c]} ${pieno(c)}/${players.length}`).join(', '));
+  }
+  if (assenti.length) {
+    console.log('  non pubblicate da Fantacalcio.it (e quindi nascoste): '
+      + assenti.map(c => NOMI[c]).join(', '));
   }
   if (vuote.length) {
     console.log(`  ATTENZIONE — colonne vuote per tutti e ${players.length}: `

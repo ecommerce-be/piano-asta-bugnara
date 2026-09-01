@@ -1,9 +1,9 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=45';
-import { pronto, esc } from './db.js?v=45';
-import { leggiCfg } from './cfg.js?v=45';
-import { caricaAsta, statoAsta, squadreAsta } from './astaLega.js?v=45';
+import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=46';
+import { pronto, esc } from './db.js?v=46';
+import { leggiCfg } from './cfg.js?v=46';
+import { caricaAsta, statoAsta, squadreAsta } from './astaLega.js?v=46';
 
 const { players, lega } = await caricaDati();
 
@@ -33,6 +33,13 @@ try {
     for (const g of s.rosa) proprietario[g.id] = { squadra: s.nome, prezzo: g.prezzo };
   }
 } catch { /* senza accesso resta tutto libero */ }
+
+/* L'autogol Fantacalcio.it non lo pubblica: sulla pagina delle statistiche
+   quella colonna non esiste. Tenerla in tabella vuol dire una colonna bianca
+   per tutti, che si legge come «nessun autogol» invece che «non lo sappiamo».
+   Se un giorno il dato ricompare, la colonna torna da sola. */
+const mostraAu = players.some(p => p.au != null);
+if (!mostraAu) document.querySelectorAll('#rosa th.aucol').forEach(e => e.remove());
 
 const ORDINE = { P: 0, D: 1, C: 2, A: 3 };
 const squadre = [...new Set(players.map(p => p.sq))].sort((a, b) => a.localeCompare(b, 'it'));
@@ -101,14 +108,14 @@ function disegna() {
       <td class="num pcol">${num(p.rp)}</td>
       <td class="num">${num(p.rseg)}</td>
       <td class="num">${num(p.rsba)}</td>
-      <td class="num">${num(p.au)}</td>
+      ${mostraAu ? `<td class="num aucol">${num(p.au)}</td>` : ''}
       <td class="num">${num(p.amm)}</td>
       <td class="num">${num(p.esp)}</td>
       <td class="num mktc">${num(p.qi)}</td>
       <td class="num mktc"${p.fvm != null ? ` title="Su base ${BASE_FVM} crediti vale ${p.fvm}"` : ''}>${num(fvmNostro(p))}</td>
       <td><span class="pill ${st.pill}">${esc(st.testo)}</span></td>
       <td class="note">${p.nota ? `<span class="txt" title="${esc(p.nota)}">${esc(p.nota)}</span>` : ''}</td></tr>`;
-  }).join('') || '<tr><td colspan="20" class="note" style="color:var(--ink3)">Nessun giocatore con questi filtri.</td></tr>';
+  }).join('') || `<tr><td colspan="${mostraAu ? 20 : 19}" class="note" style="color:var(--ink3)">Nessun giocatore con questi filtri.</td></tr>`;
 
   /* riepilogo della squadra scelta */
   const box = document.getElementById('riepilogo');
