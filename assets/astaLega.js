@@ -28,7 +28,7 @@
 import {
   pronto, configurato, collegato, inLega, lega, squadra, utente,
   leggi, scrivi, osserva,
-} from './db.js?v=40';
+} from './db.js?v=43';
 
 export const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [], fuori: {}, liberati: {} };
@@ -69,6 +69,86 @@ function normalizza(d) {
   };
 }
 
+/* ---------- i trasferimenti non devono far sparire un acquisto ----------
+ *
+ * L'identificativo di un giocatore è `ruolo|nome|squadra` — la squadra ci sta
+ * dentro. Va benissimo finché nessuno cambia maglia, ma il listone si aggiorna
+ * ogni mattina e i trasferimenti arrivano: il primo settembre, in un colpo
+ * solo, dodici giocatori hanno cambiato squadra (Pinamonti dal Sassuolo alla
+ * Lazio, Ricci dal Milan al Como…).
+ *
+ * Da quel momento l'acquisto registrato all'asta — «A|Pinamonti|Sassuolo» —
+ * non corrisponde più a nessuno nel listone di oggi, e il giocatore risulta
+ * libero: comprabile una seconda volta, da chiunque. Al tavolo sarebbe un
+ * disastro, e silenzioso.
+ *
+ * Qui si costruisce un ponte: per ogni identificativo salvato che oggi non
+ * esiste più, se c'è UN SOLO giocatore con quel nome (e ruolo) nel listone
+ * attuale, si sa dove è finito. Non si riscrive niente nel documento — il
+ * documento è il verbale dell'asta e resta com'è stato scritto — si traduce
+ * al volo in lettura. Le scritture usano l'identificativo di oggi, così
+ * l'archivio si allinea da solo, un gesto alla volta, senza mai duplicare.
+ *
+ * Gli omonimi restano fuori di proposito: fra due Pereira senza squadra non
+ * c'è modo di sapere quale si è trasferito, e indovinare è peggio che
+ * lasciare le cose come stanno. */
+
+let ponte = new Map();
+let listone = null;      // l'ultimo listone visto: serve a rifare il ponte da soli
+
+/** L'identificativo di oggi per un acquisto registrato ieri. */
+export const avanti = gid => ponte.get(gid) || gid;
+
+const senzaAccenti = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const pezzi = gid => {
+  const p = String(gid).split('|');
+  return p.length < 3 ? null : { r: p[0], n: p.slice(1, -1).join('|'), sq: p[p.length - 1] };
+};
+
+/**
+ * Rilegge le rose alla luce del listone di oggi. Va chiamata dopo caricaAsta()
+ * e caricaDati(), passando i giocatori. Restituisce quanti acquisti sono stati
+ * riagganciati a una maglia nuova.
+ */
+export function riaggancia(players) {
+  ponte = new Map();
+  if (Array.isArray(players) && players.length) listone = players;
+  const elenco = Array.isArray(players) && players.length ? players : listone;
+  if (!elenco) return 0;
+
+  const oggi = new Set();
+  const perRuoloNome = new Map();
+  const perNome = new Map();
+  const metti = (mappa, k, v) => mappa.set(k, mappa.has(k) ? null : v);  // null = omonimi
+  for (const p of elenco) {
+    const id = `${p.r}|${p.n}|${p.sq}`;
+    oggi.add(id);
+    metti(perRuoloNome, `${p.r}|${senzaAccenti(p.n)}`, id);
+    metti(perNome, senzaAccenti(p.n), id);
+  }
+
+  const salvati = new Set();
+  for (const s of dati.squadre) for (const g of s.rosa) salvati.add(g.id);
+  for (const gid of Object.keys(dati.fuori)) salvati.add(gid);
+
+  for (const gid of salvati) {
+    if (oggi.has(gid)) continue;
+    const p = pezzi(gid);
+    if (!p) continue;
+    /* prima per ruolo e nome; se anche il ruolo è cambiato, per nome soltanto */
+    const nuovo = perRuoloNome.get(`${p.r}|${senzaAccenti(p.n)}`) || perNome.get(senzaAccenti(p.n));
+    if (nuovo && nuovo !== gid) ponte.set(gid, nuovo);
+  }
+  return ponte.size;
+}
+
+/** Chi è stato riagganciato, per poterlo dire a chi guarda. */
+export const riagganciati = () => [...ponte].map(([vecchio, nuovo]) => ({
+  n: pezzi(vecchio)?.n || vecchio,
+  da: pezzi(vecchio)?.sq || '',
+  a: pezzi(nuovo)?.sq || '',
+}));
+
 /* ---------- lettura dello stato ---------- */
 
 export const documento = () => dati;
@@ -82,9 +162,21 @@ export function miaSquadra() {
   return mia ? dati.squadre.find(s => s.id === mia.id) || null : null;
 }
 
+/* Le due lapidi lette attraverso il ponte: un giocatore segnato ieri come
+   «preso» sotto la vecchia maglia conta anche oggi, sotto quella nuova. */
+function quando(mappa, gid) {
+  let out = mappa[gid] || '';
+  for (const [k, v] of Object.entries(mappa)) {
+    if (k !== gid && avanti(k) === gid && v > out) out = v;
+  }
+  return out;
+}
+
 /** Un giocatore e' segnato preso senza dire da chi? */
-const eFuori = gid =>
-  Boolean(dati.fuori[gid]) && dati.fuori[gid] > (dati.liberati[gid] || '');
+const eFuori = gid => {
+  const preso = quando(dati.fuori, gid);
+  return Boolean(preso) && preso > quando(dati.liberati, gid);
+};
 
 /**
  * Lo stato dell'asta come lo vogliono le pagine: quanto ho pagato io, e chi
@@ -97,12 +189,15 @@ export function statoAsta() {
   const idMia = squadra()?.id || null;
   for (const s of dati.squadre) {
     for (const g of s.rosa) {
-      if (idMia && s.id === idMia) mia[g.id] = Number(g.prezzo) || 0;
-      else altrui.add(g.id);
+      /* `avanti` traduce l'acquisto di ieri nella maglia di oggi: senza,
+         chi ha cambiato squadra tornerebbe libero e comprabile due volte. */
+      if (idMia && s.id === idMia) mia[avanti(g.id)] = Number(g.prezzo) || 0;
+      else altrui.add(avanti(g.id));
     }
   }
   for (const gid of Object.keys(dati.fuori)) {
-    if (eFuori(gid) && !(gid in mia)) altrui.add(gid);
+    const oggi = avanti(gid);
+    if (eFuori(oggi) && !(oggi in mia)) altrui.add(oggi);
   }
   return { mia, altrui };
 }
@@ -110,7 +205,7 @@ export function statoAsta() {
 /** Chi possiede questo giocatore: { squadra, prezzo } oppure null. */
 export function possessore(gid) {
   for (const s of dati.squadre) {
-    const g = s.rosa.find(x => x.id === gid);
+    const g = s.rosa.find(x => avanti(x.id) === gid);
     if (g) return { squadra: s, prezzo: Number(g.prezzo) || 0 };
   }
   return null;
@@ -224,18 +319,22 @@ function unisciSquadra(remota, locale) {
  * restituisce un'asta vuota, cosi' le pagine di sola consultazione
  * (fasce, infortunati) continuano a funzionare da sole.
  */
-export async function caricaAsta() {
+export async function caricaAsta(players) {
   await pronto();
   if (!configurato() || !collegato() || !inLega()) {
     dati = structuredClone(VUOTO);
     versione = 0;
     meta = { nuovo: true, da: '', aggiornato: '', assente: true };
+    riaggancia(players);
     return { dati, versione, meta };
   }
   const r = await leggi(CHIAVE, structuredClone(VUOTO));
   dati = normalizza(r.dati);
   versione = r.versione;
   meta = { nuovo: Boolean(r.nuovo), da: r.da || '', aggiornato: r.aggiornato || '' };
+  /* Il listone di oggi puo' non essere piu' quello del giorno dell'acquisto:
+     il ponte va rifatto ogni volta che il documento viene riletto. */
+  riaggancia(players);
   recuperaSospeso();
   return { dati, versione, meta };
 }
@@ -247,6 +346,7 @@ export function accetta(r) {
   dati = daSalvare ? fondi(r.dati, dati) : normalizza(r.dati);
   versione = r.versione;
   meta = { nuovo: false, da: r.da || '', aggiornato: r.aggiornato || '' };
+  riaggancia();
   return dati;
 }
 
@@ -329,6 +429,7 @@ function recuperaSospeso() {
   try { s = JSON.parse(localStorage.getItem(SCORTA) || 'null'); } catch { s = null; }
   if (!s?.dati || s.lega !== lega()?.id) return;
   dati = fondi(dati, normalizza(s.dati));
+  riaggancia();
   daSalvare = Math.max(1, Number(s.quanti) || 1);
   avvisa();
   programmaRitento(true);
@@ -347,7 +448,7 @@ export async function salvaAsta() {
   try {
     const r = await scrivi(CHIAVE, dati, versione, fondi);
     versione = r.versione;
-    if (r.fuso) dati = normalizza(r.dati);
+    if (r.fuso) { dati = normalizza(r.dati); riaggancia(); }
     /* se nel frattempo hai segnato altro, quello resta da mandare */
     daSalvare = Math.max(0, daSalvare - quantiAllora);
     ultimoErrore = '';
@@ -431,13 +532,21 @@ export function libera(gid) {
 
 /** Toglie il giocatore da dove si trovava, lasciando la lapide. */
 function scollega(gid, il) {
+  /* Si toglie anche la riga scritta sotto la maglia vecchia, e la lapide si
+     mette su tutti e due gli identificativi: chi sta salvando in questo
+     momento da un altro computer potrebbe avere in mano ancora il vecchio. */
+  const suo = g => g.id === gid || avanti(g.id) === gid;
   for (const s of dati.squadre) {
-    if (!s.rosa.some(g => g.id === gid)) continue;
-    s.rosa = s.rosa.filter(g => g.id !== gid);
+    const via = s.rosa.filter(suo);
+    if (!via.length) continue;
+    s.rosa = s.rosa.filter(g => !suo(g));
+    for (const g of via) s.tolti[g.id] = il;
     s.tolti[gid] = il;
     tocca(s);
   }
-  if (dati.fuori[gid]) { delete dati.fuori[gid]; dati.liberati[gid] = il; }
+  for (const k of Object.keys(dati.fuori)) {
+    if (k === gid || avanti(k) === gid) { delete dati.fuori[k]; dati.liberati[k] = il; }
+  }
 }
 
 /** Svuota la rosa di una squadra: i suoi giocatori tornano tutti sul mercato. */
@@ -446,7 +555,11 @@ export function svuota(idSquadra) {
   if (!s) return 0;
   const quanti = s.rosa.length;
   const il = adesso();
-  for (const g of s.rosa) { s.tolti[g.id] = il; dati.liberati[g.id] = il; }
+  for (const g of s.rosa) {
+    s.tolti[g.id] = il;
+    dati.liberati[g.id] = il;
+    dati.liberati[avanti(g.id)] = il;
+  }
   s.rosa = [];
   tocca(s);
   daMandare();

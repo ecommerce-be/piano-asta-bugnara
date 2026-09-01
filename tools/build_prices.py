@@ -70,7 +70,7 @@ def leggi_listone(path: Path) -> list[dict]:
 # quotidiano leggendo Fantacalcio.it. Ricostruendo dal file esportato
 # andrebbero persi tutti, e il sito tornerebbe indietro di giorni.
 SOLO_DAL_SITO = ("gol", "gs", "rp", "rseg", "rsba", "au", "assist",
-                 "amm", "esp", "qi", "fvm")
+                 "amm", "esp", "qi", "fvm", "sparito")
 
 # Questi invece stanno in tutti e due, e vince il piu' fresco: la quotazione
 # si muove col mercato, presenze e medie crescono a ogni giornata.
@@ -163,6 +163,15 @@ def main() -> int:
         for g in indice[chiave]:
             g["mult"] = dati.get("mult", 1.0)
             g["nota"] = dati.get("nota", "")
+
+    # Squadra e ruolo corretti a mano: l'export della lega e Fantacalcio.it a
+    # volte restano indietro di giorni sui trasferimenti, e all'asta un
+    # giocatore con la maglia sbagliata sballa giudizio e modificatore.
+    # Vedi tools/aggiorna_dati.py: correzioni_a_mano().
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from aggiorna_dati import correzioni_a_mano, applica_correzioni
+    for riga in applica_correzioni(giocatori, correzioni_a_mano()):
+        print(f"    {riga}")
 
     for g in giocatori:
         g.setdefault("mult", 1.0)

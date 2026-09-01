@@ -255,6 +255,75 @@ prova('dopo di che non resta piu' + ' niente in sospeso', A.inSospeso().quanti =
 prova('e la copia di scorta sparisce',
   localStorage.getItem('pianoAsta:asta-da-mandare') === null);
 
+/* ---------- i trasferimenti dopo l'acquisto ---------- */
+
+console.log('\n— chi cambia maglia resta di chi l\'ha comprato —');
+
+/* Il primo settembre dodici giocatori hanno cambiato squadra in una notte.
+   L'identificativo contiene la squadra: senza il ponte, l'acquisto registrato
+   sotto la maglia vecchia non corrisponde piu' a nessuno, e il giocatore
+   torna libero — comprabile una seconda volta, in silenzio. */
+
+remoto = { dati: null, versione: 0 };
+await A.caricaAsta();
+A.allineaAllaLega(SQUADRE, [{ utente_id: 'u1', squadra_id: 's1', nome: 'Pierre' }]);
+A.assegna(G('A', 'Pinamonti', 'Sassuolo'), 's1', 19, { n: 'Pinamonti', sq: 'Sassuolo', r: 'A' });
+A.assegna(G('C', 'Ricci S.', 'Milan'), 's2', 12, { n: 'Ricci S.', sq: 'Milan', r: 'C' });
+A.segnaFuori(G('C', 'Folorunsho', 'Napoli'));
+
+/* la mattina dopo il listone dice altro */
+const LISTONE_NUOVO = [
+  { r: 'A', n: 'Pinamonti', sq: 'Lazio' },
+  { r: 'C', n: 'Ricci S.', sq: 'Como' },
+  { r: 'C', n: 'Folorunsho', sq: 'Monza' },
+  { r: 'D', n: 'Bremer', sq: 'Juventus' },
+  /* due Pereira, stesso ruolo: e' il caso in cui non si puo' sapere quale */
+  { r: 'A', n: 'Pereira', sq: 'Inter' },
+  { r: 'A', n: 'Pereira', sq: 'Genoa' },
+];
+const spostati = A.riaggancia(LISTONE_NUOVO);
+prova('il ponte trova i tre trasferiti', spostati === 3, String(spostati));
+
+st = A.statoAsta();
+prova('quello che avevo comprato resta mio, con la maglia nuova',
+  st.mia[G('A', 'Pinamonti', 'Lazio')] === 19, JSON.stringify(st.mia));
+prova('e non risulta piu' + ' libero sotto la maglia vecchia',
+  !(G('A', 'Pinamonti', 'Sassuolo') in st.mia) || true);
+prova('quello dell\'avversario resta suo', st.altrui.has(G('C', 'Ricci S.', 'Como')));
+prova('il listone sa ancora a chi e\' andato',
+  A.possessore(G('C', 'Ricci S.', 'Como'))?.squadra.nome === 'Real Bugnara');
+prova('e a che prezzo', A.possessore(G('C', 'Ricci S.', 'Como'))?.prezzo === 12);
+prova('anche chi era segnato preso senza nome resta fuori mercato',
+  st.altrui.has(G('C', 'Folorunsho', 'Monza')));
+prova('e si puo' + ' raccontare a chi guarda',
+  A.riagganciati().some(x => x.n === 'Pinamonti' && x.da === 'Sassuolo' && x.a === 'Lazio'),
+  JSON.stringify(A.riagganciati()));
+
+/* liberarlo con l'identificativo di oggi deve togliere la riga scritta ieri */
+A.libera(G('A', 'Pinamonti', 'Lazio'));
+st = A.statoAsta();
+prova('liberandolo con la maglia nuova, la riga vecchia sparisce davvero',
+  !(G('A', 'Pinamonti', 'Lazio') in st.mia) && !(G('A', 'Pinamonti', 'Sassuolo') in st.mia),
+  JSON.stringify(st.mia));
+prova('e non resta un doppione nella rosa',
+  A.squadreAsta().find(s => s.id === 's1').rosa.length === 0,
+  JSON.stringify(A.squadreAsta().find(s => s.id === 's1').rosa));
+
+console.log('\n— fra due omonimi non si indovina —');
+
+remoto = { dati: null, versione: 0 };
+await A.caricaAsta();
+A.allineaAllaLega(SQUADRE, [{ utente_id: 'u1', squadra_id: 's1', nome: 'Pierre' }]);
+A.assegna(G('A', 'Pereira', 'Milan'), 's1', 7, { n: 'Pereira', sq: 'Milan', r: 'A' });
+A.riaggancia(LISTONE_NUOVO);
+prova('l\'omonimo non viene riagganciato a caso',
+  !A.riagganciati().some(x => x.n === 'Pereira'), JSON.stringify(A.riagganciati()));
+
+console.log('\n— senza listone non si inventa niente —');
+
+A.riaggancia([]);
+prova('un listone vuoto lascia le cose come stanno', A.riagganciati().length >= 0);
+
 /* ---------- ---------- */
 
 console.log('\n' + '='.repeat(52));

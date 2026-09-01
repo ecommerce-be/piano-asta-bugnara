@@ -8,11 +8,11 @@
    pagina "Rosa ideale", quindi le due pagine non possono contraddirsi. */
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, simulaModificatore,
-  RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=40';
-import { leggiCfg } from './cfg.js?v=40';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=40';
-import { esc } from './db.js?v=40';
+  RUOLI, NOME_RUOLO, CLASSE_VERDETTO, fuoriListone,
+} from './app.js?v=43';
+import { leggiCfg } from './cfg.js?v=43';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=43';
+import { esc } from './db.js?v=43';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -482,7 +482,7 @@ const corpoShort = document.querySelector('#short tbody');
  */
 function disegnaShortlist(r) {
   const comprati = cfg.squadre * cfg.slot[r];
-  const seRVono = players.filter(p => p.r === r && !p.fuori)
+  const seRVono = players.filter(p => p.r === r && !fuoriListone(p))
     .sort((a, b) => b.val - a.val)
     .slice(0, comprati);
 

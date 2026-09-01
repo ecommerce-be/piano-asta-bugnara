@@ -1,5 +1,5 @@
 {
- "_commento": "Coefficiente strategico per giocatore: >1 lo vuoi piu del mercato, <1 lascialo agli altri. La nota e il promemoria che leggi durante l asta. Modifica liberamente e rilancia tools/build_prices.py.",
+ "_commento": "Coefficiente strategico per giocatore: >1 lo vuoi piu del mercato, <1 lascialo agli altri. La nota e il promemoria che leggi durante l asta. Si possono correggere anche squadra e ruolo, per quando Fantacalcio.it resta indietro sui trasferimenti: aggiungi \"sq\": \"Como\" e/o \"r\": \"A\" dentro la voce del giocatore. Quella correzione vince su tutto - sull aggiornamento di ogni mattina e sul riexport dell Excel - e nel listone la squadra compare sottolineata, con scritto cosa dice ancora la fonte. Quando anche Fantacalcio.it si mette in pari l aggiornamento te lo dice e la riga si puo togliere. Modifica liberamente e rilancia tools/build_prices.py.",
  "giocatori": {
   "Svilar": {
    "mult": 2.1,
@@ -1037,8 +1037,9 @@
    "nota": "PANCHINATO alla 1ª per Piccoli. Non è titolare garantito."
   },
   "Nkunku": {
-   "mult": 1.35,
-   "nota": "5 RIGORI segnati nel 25/26 (record di A a pari merito). Se e lui il rigorista del Milan (10,4 rigori attesi) è l'affare dell'asta. Quotato 13."
+   "fuori": true,
+   "mult": 1.0,
+   "nota": "Ha lasciato la Serie A: e' passato in Germania. Non verra' chiamato all'asta."
   },
   "Colombo": {
    "mult": 1.4,

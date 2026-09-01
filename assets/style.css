@@ -114,6 +114,9 @@ tr:last-child td{border-bottom:none}
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .nm{font-weight:700}
 .sq{color:var(--ink3);font-size:.8rem;font-weight:400}
+/* squadra corretta a mano perché la fonte è rimasta indietro: si vede che
+   quel nome non arriva dal listone, e il perché sta nel title */
+.sq.amano{text-decoration:underline dotted;text-underline-offset:2px;cursor:help}
 .pill{display:inline-block;font-size:.63rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
   padding:.16rem .45rem;border-radius:2px;white-space:nowrap}
 .p-t{background:var(--acc-soft);color:var(--acc-ink)}

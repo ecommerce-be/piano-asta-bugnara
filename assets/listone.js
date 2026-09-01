@@ -3,19 +3,20 @@
 import {
   caricaDati, ricalcola, asta, AGGIORNATO_IL,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=40';
+  fuoriListone, percheFuori,
+} from './app.js?v=43';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=40';
+} from './db.js?v=43';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
   miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
   segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
-  alSalvataggio, inSospeso, ritentaOra, situazione,
-} from './astaLega.js?v=40';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=40';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=40';
+  alSalvataggio, inSospeso, ritentaOra, situazione, riagganciati,
+} from './astaLega.js?v=43';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=43';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=43';
 
 const { players, lega } = await caricaDati();
 
@@ -119,6 +120,11 @@ const segnale = p => {
 const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
 
 let filtroRuolo = 'ALL', soloMia = false, nascondiPresi = false, cerca = '';
+/* Chi ha lasciato la Serie A non e' un giocatore «da valutare»: e' rumore in
+   mezzo a cinquecento righe, e all'asta non verra' chiamato. Sta comunque nel
+   file — serve a riconoscerlo se qualcuno lo nomina — ma per vederlo bisogna
+   chiederlo. */
+let mostraFuori = false;
 let ordina = { k: 'max', dir: 'desc' };
 
 const corpo = document.querySelector('#big tbody');
@@ -207,7 +213,7 @@ function candidati(testo) {
   const s = testo.trim().toLowerCase();
   if (s.length < 2) return [];
   return players
-    .filter(p => !p.fuori && (p.n.toLowerCase().includes(s) || p.sq.toLowerCase().includes(s)))
+    .filter(p => !fuoriListone(p) && (p.n.toLowerCase().includes(s) || p.sq.toLowerCase().includes(s)))
     .sort((a, b) => {
       const pa = Boolean(possessore(asta.id(a))), pb = Boolean(possessore(asta.id(b)));
       return (pa - pb) || b.max - a.max;
@@ -389,6 +395,7 @@ function disegnaTabella() {
   const fascia = document.getElementById('fFascia').value;
 
   const righe = players.filter(p =>
+    (mostraFuori || !fuoriListone(p)) &&
     (filtroRuolo === 'ALL' || p.r === filtroRuolo) &&
     (!soloMia || stato[asta.id(p)] > 0) &&
     (!nascondiPresi || asta.disponibile(p, stato, altrui) || stato[asta.id(p)] > 0) &&
@@ -415,10 +422,10 @@ function disegnaTabella() {
        620px la tabella smette di essere una tabella e ogni riga diventa una
        scheda, e sono queste classi a dire a ogni cella dove andare a finire.
        Con :nth-child sarebbe bastato spostare una colonna per rompere tutto. */
-    return `<tr class="${cls}${p.fuori ? ' fuorilista' : ''}">
+    return `<tr class="${cls}${fuoriListone(p) ? ' fuorilista' : ''}">
       <td class="c-gioc"><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}${
-  p.fuori ? '<span class="ko g-lunga" title="Fantacalcio lo ha tolto dal listone: ceduto, svincolato o fuori rosa. All\'asta non verrà chiamato.">FUORI LISTA</span>' : ''}</span>
-        <span class="sq">${esc(p.sq)}</span></span></span></td>
+  fuoriListone(p) ? `<span class="ko g-lunga" title="${esc(percheFuori(p))}">${p.fuori ? 'FUORI LISTA' : 'NON PIÙ QUOTATO'}</span>` : ''}</span>
+        <span class="sq${p.sqFonte ? ' amano' : ''}"${p.sqFonte ? ` title="Squadra corretta a mano: Fantacalcio.it lo dà ancora al ${esc(p.sqFonte)}."` : ''}>${esc(p.sq)}</span></span></span></td>
       <td class="num mktc c-q" data-c="quot."><span>${p.q}</span></td>
       <td class="num mktc c-mkt" data-c="mercato"><span>${Math.round(p.mkt)}</span></td>
       <td class="num maxc c-max" data-c="tuo max"><span>${p.max}</span></td>
@@ -576,7 +583,7 @@ async function salva() {
 async function caricaTutto() {
   await pronto();
   try {
-    await caricaAsta();
+    await caricaAsta(players);
   } catch (e) {
     return statoSync('Non riesco a leggere l\'asta: ' + e.message);
   }
@@ -584,10 +591,19 @@ async function caricaTutto() {
   rileggiStato();
   aggiorna();
   const m = metaAsta();
-  statoSync(m.assente
+  /* Se qualcuno degli acquisti è stato riagganciato a una maglia nuova va
+     detto: chi guarda vede il nome accanto a una squadra diversa da quella
+     del giorno dell'asta, e senza una riga sembra un errore del sito. */
+  const spostati = riagganciati();
+  const trasferiti = spostati.length
+    ? ` ${spostati.length} ${spostati.length === 1 ? 'giocatore ha cambiato' : 'giocatori hanno cambiato'} squadra dopo l'acquisto (`
+      + spostati.slice(0, 3).map(x => `${x.n}: ${x.da} → ${x.a}`).join(', ')
+      + `${spostati.length > 3 ? ', …' : ''}): restano tuoi.`
+    : '';
+  statoSync((m.assente
     ? 'Non collegato: entra col tuo account per vedere e segnare l\'asta della lega.'
     : m.nuovo ? 'Asta ancora vuota: il primo acquisto che segni la apre.'
-      : `Ultimo movimento di ${m.da || 'qualcuno'}, ${quando(m.aggiornato)}.`);
+      : `Ultimo movimento di ${m.da || 'qualcuno'}, ${quando(m.aggiornato)}.`) + trasferiti);
   await proponiRecupero();
 }
 
@@ -650,6 +666,12 @@ document.getElementById('onlyTaken').onclick = e => {
 document.getElementById('hideGone').onclick = e => {
   nascondiPresi = !nascondiPresi;
   e.currentTarget.setAttribute('aria-pressed', String(nascondiPresi));
+  disegnaTabella();
+};
+
+document.getElementById('mostraFuori').onclick = e => {
+  mostraFuori = !mostraFuori;
+  e.currentTarget.setAttribute('aria-pressed', String(mostraFuori));
   disegnaTabella();
 };
 

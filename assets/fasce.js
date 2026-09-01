@@ -7,12 +7,12 @@
    numeri, cosi' invecchia insieme ai dati invece che contro. */
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
-  gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=40';
-import { valuta, titolariDi } from './consiglio.js?v=40';
-import { leggiCfg } from './cfg.js?v=40';
-import { esc } from './db.js?v=40';
-import { caricaAsta, statoAsta } from './astaLega.js?v=40';
+  gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO, fuoriListone,
+} from './app.js?v=43';
+import { valuta, titolariDi } from './consiglio.js?v=43';
+import { leggiCfg } from './cfg.js?v=43';
+import { esc } from './db.js?v=43';
+import { caricaAsta, statoAsta } from './astaLega.js?v=43';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -25,10 +25,11 @@ valuta(players, infortuni.per);
    entrare in una lega, l'asta e' vuota: la pagina funziona lo stesso, mostra
    tutti liberi. */
 let stato = {}, altrui = new Set();
-try { await caricaAsta(); ({ mia: stato, altrui } = statoAsta()); } catch { /* tutti liberi */ }
+try { await caricaAsta(players); ({ mia: stato, altrui } = statoAsta()); } catch { /* tutti liberi */ }
 const preso = id => stato[id] > 0 || altrui.has(id);
-/* chi e' fuori dal listone non e' «libero»: non e' proprio in vendita */
-const fuoriLista = p => Boolean(p.fuori);
+/* chi e' fuori dal listone non e' «libero»: non e' proprio in vendita.
+   Due fonti, stessa conseguenza: vedi fuoriListone() in app.js */
+const fuoriLista = fuoriListone;
 
 const prezzo = p => Math.max(1, Math.round(p.mkt));
 const num = (x, d = 2) => x.toFixed(d).replace('.', ',');

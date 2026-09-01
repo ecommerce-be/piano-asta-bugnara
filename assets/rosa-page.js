@@ -8,12 +8,12 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, simulaModificatore, badgeRuolo,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=40';
-import { pronto, collegato, esc } from './db.js?v=40';
-import { caricaAsta, salvaAsta, statoAsta, miaSquadra, libera as rimetti } from './astaLega.js?v=40';
-import { toast } from './ui.js?v=40';
-import { leggiCfg } from './cfg.js?v=40';
-import { valuta } from './consiglio.js?v=40';
+} from './app.js?v=43';
+import { pronto, collegato, esc } from './db.js?v=43';
+import { caricaAsta, salvaAsta, statoAsta, miaSquadra, libera as rimetti } from './astaLega.js?v=43';
+import { toast } from './ui.js?v=43';
+import { leggiCfg } from './cfg.js?v=43';
+import { valuta } from './consiglio.js?v=43';
 
 const { players, lega } = await caricaDati();
 
@@ -33,7 +33,7 @@ const info = valuta(players, infortuni.per);
 const perId = Object.fromEntries(players.map(p => [asta.id(p), p]));
 
 await pronto();
-try { await caricaAsta(); } catch { /* lo dice la pagina piu' sotto */ }
+try { await caricaAsta(players); } catch { /* lo dice la pagina piu' sotto */ }
 let { mia: stato } = statoAsta();
 
 let miei = [], mieiPerRuolo = {};

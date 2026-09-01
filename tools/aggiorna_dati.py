@@ -43,6 +43,7 @@ except ImportError:
 
 RADICE = Path(__file__).resolve().parent.parent
 PLAYERS = RADICE / "assets" / "data" / "players.json"
+OVERRIDES = RADICE / "data" / "overrides.json"
 APP = RADICE / "assets" / "app.js"
 
 PAGINE = {
@@ -450,7 +451,144 @@ RUOLI_VALIDI = {"P", "D", "C", "A"}
 MINIMO_RIGHE = 200
 
 
-def aggiorna_anagrafica(giocatori: list[dict], righe: list[dict]) -> list[str]:
+def correzioni_a_mano() -> dict[str, dict]:
+    """Le squadre e i ruoli scritti a mano in data/overrides.json.
+
+    PERCHE'. Il primo settembre Nkunku era andato via dal Milan da giorni e
+    aveva gia' segnato con la maglia nuova, ma la pagina delle quotazioni di
+    Fantacalcio.it lo dava ancora rossonero. Questo script copia quello che
+    legge: se la fonte e' ferma, il sito resta fermo con lei, e all'asta ti
+    ritrovi un attaccante con la squadra sbagliata — che vuol dire giudizio
+    sbagliato, modificatore sbagliato, tutto sbagliato.
+
+    Contro una fonte che sbaglia non c'e' automazione che tenga: serve poterlo
+    scrivere a mano una volta sola, in un posto che nessuno sovrascriva. Quel
+    posto e' data/overrides.json, lo stesso dove stanno gia' le note e i
+    coefficienti:
+
+        "Nkunku": { "sq": "Como", "mult": 1.35, "nota": "..." }
+
+    E c'e' il caso piu' netto: chi la Serie A l'ha lasciata del tutto. Nkunku
+    e' finito in Germania, e finche' Fantacalcio.it continua a quotarlo il
+    sito te lo propone come acquisto — con tanto di «affare dell'asta». Per
+    quello basta:
+
+        "Nkunku": { "fuori": true, "nota": "Passato in Germania." }
+
+    e sparisce da tutte le pagine: niente shortlist, niente rosa ideale,
+    niente chiamata rapida. Resta nel file, cosi' se qualcuno al tavolo lo
+    nomina lo si ritrova col pulsante «mostra chi non e' piu' in Serie A».
+
+    Da li' in poi la correzione vince su tutto: sull'aggiornamento di ogni
+    mattina e sul riexport dell'Excel. Quando anche Fantacalcio.it si mette in
+    pari la riga si puo' togliere, e non cambia niente.
+    """
+    try:
+        dati = json.loads(OVERRIDES.read_text(encoding="utf-8")).get("giocatori", {})
+    except (json.JSONDecodeError, OSError):
+        return {}
+    fissati = {}
+    for nome, d in dati.items():
+        if not isinstance(d, dict):
+            continue
+        sq = squadra_nostra(d.get("sq") or "") if d.get("sq") else None
+        r = (d.get("r") or "").strip().upper()[:1]
+        voce = {
+            **({"sq": sq} if sq else {}),
+            **({"r": r} if r in RUOLI_VALIDI else {}),
+            **({"fuori": bool(d["fuori"])} if "fuori" in d else {}),
+            # nota e coefficiente li scriveva solo tools/build_prices.py, che
+            # pero' vuole l'Excel esportato. Correggere una nota voleva dire
+            # riesportare il listone — e riesportare un file vecchio riportava
+            # indietro le squadre. Adesso li applica anche l'aggiornamento
+            # quotidiano: si cambia la riga, e domattina il sito e' a posto.
+            **({"nota": str(d["nota"])} if "nota" in d else {}),
+            **({"mult": float(d["mult"])} if isinstance(d.get("mult"), (int, float)) else {}),
+        }
+        if voce:
+            fissati[chiave_nome(nome)] = voce
+    return fissati
+
+
+def applica_correzioni(giocatori: list[dict], fissati: dict[str, dict]) -> list[str]:
+    """Riscrive squadra e ruolo dove li abbiamo corretti a mano.
+
+    Gira per ultima, dopo tutto il resto, cosi' e' l'ultima parola. Tiene da
+    parte in `sqFonte` quello che dice Fantacalcio.it: serve al sito per
+    spiegare la differenza a chi passa il mouse sulla squadra, e serve a noi
+    per accorgerci del giorno in cui la fonte si mette in pari.
+    """
+    fatte = []
+    for g in giocatori:
+        d = fissati.get(chiave_nome(g["n"]))
+        if not d:
+            g.pop("sqFonte", None)
+            continue
+        if "sq" in d and d["sq"] != g["sq"]:
+            g["sqFonte"] = g["sq"]
+            fatte.append(f"{g['n']}: {g['sq']} -> {d['sq']} (a mano)")
+            g["sq"] = d["sq"]
+        elif "sq" in d:
+            # la fonte si e' messa in pari: la riga in overrides.json non
+            # serve piu', ed e' giusto dirlo invece di lasciarla li' per anni
+            if g.pop("sqFonte", None):
+                fatte.append(f"{g['n']}: Fantacalcio.it dice {g['sq']} come noi, "
+                             "la correzione a mano si puo' togliere")
+        if "r" in d and d["r"] != g["r"]:
+            fatte.append(f"{g['n']}: ruolo {g['r']} -> {d['r']} (a mano)")
+            g["r"] = d["r"]
+        if "fuori" in d:
+            if d["fuori"] and not g.get("fuori"):
+                fatte.append(f"{g['n']}: fuori dal listone (a mano)")
+                g["fuori"] = True
+            elif not d["fuori"] and g.pop("fuori", None):
+                fatte.append(f"{g['n']}: rimesso nel listone (a mano)")
+        for campo in ("nota", "mult"):
+            if campo in d and g.get(campo) != d[campo]:
+                g[campo] = d[campo]
+                fatte.append(f"{g['n']}: {campo} riscritt{'a' if campo == 'nota' else 'o'} a mano")
+    return fatte
+
+
+def squadre_viste(righe: list[dict]) -> dict[str, str]:
+    """Chi gioca dove, secondo una pagina."""
+    fuori = {}
+    for r in righe:
+        sq = squadra_nostra(r.get("sq") or "")
+        if r.get("nome") and sq:
+            fuori[chiave_nome(r["nome"])] = sq
+    return fuori
+
+
+def discordanze(giocatori: list[dict], viste: dict[str, dict[str, str]]) -> list[str]:
+    """Le due pagine di Fantacalcio.it dicono la stessa squadra?
+
+    PERCHE'. Le quotazioni e le statistiche non si aggiornano insieme: la
+    pagina dei numeri sa gia' che uno ha segnato con la maglia nuova mentre il
+    listone delle quotazioni lo da' ancora alla vecchia. E' esattamente il
+    caso da cui e' nata questa funzione: Nkunku aveva gia' segnato altrove e
+    le quotazioni lo davano al Milan.
+
+    Non si sceglie quale delle due ha ragione — indovinare su una fonte che si
+    contraddice e' il modo migliore per scrivere una squadra sbagliata su
+    tutto il listone. Si dice e basta, con la riga gia' pronta da incollare in
+    data/overrides.json.
+    """
+    q, s = viste.get("quotazioni") or {}, viste.get("statistiche") or {}
+    if not q or not s:
+        return []
+    fuori = []
+    for g in giocatori:
+        k = chiave_nome(g["n"])
+        a, b = q.get(k), s.get(k)
+        if a and b and a != b:
+            fuori.append(f'{g["n"]}: quotazioni dice {a}, statistiche dice {b} '
+                         f'-> "{g["n"]}": {{ "sq": "{b}" }}')
+    return fuori
+
+
+def aggiorna_anagrafica(giocatori: list[dict], righe: list[dict],
+                        fissati: dict[str, dict] | None = None) -> list[str]:
     """Squadra, ruolo, e chi dal listone e' sparito.
 
     PERCHE' ESISTE. Fino a oggi questo script aggiornava solo numeri —
@@ -476,7 +614,17 @@ def aggiorna_anagrafica(giocatori: list[dict], righe: list[dict]) -> list[str]:
       - chi sparisce viene MARCATO, non cancellato. Se domani ricompare gli
         si toglie il marchio. Cancellare, con una pagina che oggi non va,
         vorrebbe dire perdere il listone.
+
+    DUE MARCHI DIVERSI, e non vanno confusi. `fuori` e' la colonna «Fuori
+    lista» dell'export della lega: lo dice LegheFantacalcio, ed e' la verita'
+    per la nostra asta. `sparito` e' il nostro: vuol dire che oggi in quella
+    pagina non l'abbiamo trovato. Il primo giorno li ho tenuti insieme e il
+    risultato e' stato che l'aggiornamento delle 8 ha cancellato tutte e
+    ventiquattro le marcature dell'export — perche' su Fantacalcio.it quei
+    giocatori sono ancora quotati — e sono tornati comprabili senza che
+    nessuno se ne accorgesse. Da qui in avanti ognuno tocca solo il suo.
     """
+    fissati = fissati or {}
     per_nome = indicizza(giocatori)
     con_squadra = [r for r in righe if squadra_nostra(r.get("sq") or "")]
 
@@ -496,14 +644,18 @@ def aggiorna_anagrafica(giocatori: list[dict], righe: list[dict]) -> list[str]:
     visti: set[int] = set()
 
     for riga in righe:
-        candidati = per_nome.get(chiave_nome(riga["nome"]))
+        chiave = chiave_nome(riga["nome"])
+        candidati = per_nome.get(chiave)
         if not candidati or len(candidati) > 1:
             continue                      # sconosciuto, oppure omonimi: non si indovina
         g = candidati[0]
         visti.add(id(g))
+        fisso = fissati.get(chiave, {})
 
         sq = squadra_nostra(riga.get("sq") or "")
-        if sq and sq != g["sq"]:
+        if sq and "sq" in fisso:
+            pass                          # squadra corretta a mano: comanda quella
+        elif sq and sq != g["sq"]:
             cambi.append(f"{g['n']}: {g['sq']} -> {sq}")
             # La nota e' un giudizio scritto a mano, e spesso nomina la squadra
             # («se e' lui il rigorista del Milan»). Quando uno si trasferisce
@@ -516,34 +668,38 @@ def aggiorna_anagrafica(giocatori: list[dict], righe: list[dict]) -> list[str]:
             g["sq"] = sq
 
         r = (riga.get("r") or "").strip().upper()[:1]
-        if r in RUOLI_VALIDI and r != g["r"]:
+        if r in RUOLI_VALIDI and "r" not in fisso and r != g["r"]:
             cambi.append(f"{g['n']}: ruolo {g['r']} -> {r}")
             g["r"] = r
 
-        if g.pop("fuori", None):
+        if g.pop("sparito", None):
             cambi.append(f"{g['n']}: torna nel listone")
 
-    # chi non compare piu' nella pagina delle quotazioni
+    # chi non compare piu' nella pagina delle quotazioni. Attenzione: `fuori`
+    # (la colonna dell'export) non si tocca ne' qui ne' sopra — e' roba della
+    # lega, e questo script non ne sa niente.
     spariti = []
     for g in giocatori:
-        if id(g) in visti or g.get("fuori"):
+        if id(g) in visti or g.get("sparito"):
             continue
         if len(per_nome.get(chiave_nome(g["n"]), [])) > 1:
             continue                      # omonimi: uno dei due c'era, non so quale
-        g["fuori"] = True
+        g["sparito"] = True
         spariti.append(g["n"])
 
     if cambi:
         print(f"    trasferimenti e correzioni ({len(cambi)}): " + "; ".join(cambi[:20])
               + (" …" if len(cambi) > 20 else ""))
     if spariti:
-        print(f"    non sono piu' nel listone ({len(spariti)}): " + ", ".join(spariti[:20])
-              + (" …" if len(spariti) > 20 else ""))
+        print(f"    non sono piu' nella pagina delle quotazioni ({len(spariti)}): "
+              + ", ".join(spariti[:20]) + (" …" if len(spariti) > 20 else ""))
     if da_rileggere:
         print("    NOTE DA RISCRIVERE a mano in data/overrides.json, nominano la squadra "
               f"vecchia ({len(da_rileggere)}): " + "; ".join(da_rileggere))
     fuori = sum(1 for g in giocatori if g.get("fuori"))
-    print(f"    fuori lista in tutto: {fuori} su {len(giocatori)}")
+    persi = sum(1 for g in giocatori if g.get("sparito"))
+    print(f"    fuori lista secondo l'export della lega: {fuori} su {len(giocatori)}")
+    print(f"    spariti dalle quotazioni di Fantacalcio.it: {persi}")
     return []
 
 
@@ -616,6 +772,11 @@ def main() -> int:
     totale = len(giocatori)
     quali = args.solo or list(PAGINE)
     problemi = []
+    fissati = correzioni_a_mano()
+    viste: dict[str, dict[str, str]] = {}
+    if fissati:
+        print(f"Correzioni a mano attive per {len(fissati)} giocatori "
+              "(data/overrides.json): su di loro comanda quel file, non la pagina.")
 
     for pagina in quali:
         url = PAGINE[pagina]
@@ -657,8 +818,25 @@ def main() -> int:
 
         # La pagina delle quotazioni e' l'unica che dice in che squadra gioca
         # uno oggi, ed e' l'elenco di chi e' ancora nel listone.
+        viste[pagina] = squadre_viste(righe)
+
         if pagina == "quotazioni":
-            problemi.extend(aggiorna_anagrafica(giocatori, righe))
+            problemi.extend(aggiorna_anagrafica(giocatori, righe, fissati))
+
+    # Le due pagine si contraddicono su qualcuno? Non si sceglie: si segnala.
+    litigi = [x for x in discordanze(giocatori, viste)
+              if chiave_nome(x.split(":")[0]) not in fissati]
+    if litigi:
+        print(f"\nSQUADRE DA GUARDARE ({len(litigi)}): le due pagine di Fantacalcio.it non")
+        print("dicono la stessa cosa. Controlla e, se serve, incolla la riga in")
+        print("data/overrides.json — da li' in poi comanda quella:")
+        for x in litigi[:20]:
+            print(f"  - {x}")
+
+    # Ultima parola alle correzioni scritte a mano: qualunque cosa abbiano
+    # detto le pagine, qui si rimette quello che sappiamo noi.
+    for riga in applica_correzioni(giocatori, fissati):
+        print(f"    {riga}")
 
     if problemi:
         print("\nNon aggiorno niente, questi punti non tornano:")

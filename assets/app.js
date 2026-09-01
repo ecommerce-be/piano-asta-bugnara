@@ -7,7 +7,7 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
 /* Impronta dei dati: cambia solo quando players.json cambia davvero.
    La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
    ha la versione vecchia in cache. NON toccare a mano. */
-export const VERSIONE_DATI = '40dac2157f';
+export const VERSIONE_DATI = 'ced9de8ec8';
 export const AGGIORNATO_IL = '2026-09-01';
 
 /**
@@ -50,6 +50,29 @@ export function gravita(voce) {
 
 /** La classe CSS che colora la pastiglia, per averla identica in ogni pagina. */
 export const classeGravita = v => 'g-' + (gravita(v) || 'ignota');
+
+/* ---------- chi non è comprabile, e perché ----------
+ *
+ * Due cose diverse che finiscono nello stesso posto, e vanno tenute distinte
+ * perché a dirle sono due fonti diverse:
+ *
+ *   p.fuori    la colonna «Fuori lista» dell'export di LegheFantacalcio. Lo
+ *              dice la nostra lega: all'asta quel nome non verrà chiamato.
+ *   p.sparito  l'aggiornamento delle 8 non l'ha trovato nella pagina delle
+ *              quotazioni di Fantacalcio.it. Più incerto — può essere andato
+ *              via davvero, o può essere la pagina che quel giorno era strana.
+ *
+ * Tenerli insieme è già costato caro una volta: l'aggiornamento automatico
+ * cancellava le ventiquattro marcature dell'export, perché su Fantacalcio.it
+ * quei giocatori erano ancora quotati, e tornavano comprabili in silenzio.
+ */
+export const fuoriListone = p => Boolean(p.fuori || p.sparito);
+
+export const percheFuori = p => p.fuori
+  ? 'Fuori lista nell\'export della lega: ceduto, svincolato o fuori rosa. All\'asta non verrà chiamato.'
+  : p.sparito
+    ? 'Non compare più nelle quotazioni di Fantacalcio.it. Resta qui per riconoscerlo se qualcuno lo nomina.'
+    : '';
 
 /** Carica listone + configurazione di lega. */
 export async function caricaDati(base = 'assets/data/') {

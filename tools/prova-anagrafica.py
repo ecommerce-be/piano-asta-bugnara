@@ -91,8 +91,8 @@ prova("chi ha cambiato squadra la cambia anche qui",
       chi(g, "Nkunku")["sq"] == "Como", chi(g, "Nkunku")["sq"])
 prova("chi non si e' mosso resta dov'era",
       chi(g, "Dimarco")["sq"] == "Inter" and chi(g, "Svilar")["sq"] == "Roma")
-prova("e nessuno finisce fuori lista", not any(x.get("fuori") for x in g),
-      str([x["n"] for x in g if x.get("fuori")][:5]))
+prova("e nessuno finisce fuori dal listone", not any(x.get("sparito") for x in g),
+      str([x["n"] for x in g if x.get("sparito")][:5]))
 
 print("\n— gli omonimi non si toccano, perche' non si puo' sapere quale —")
 
@@ -106,7 +106,7 @@ prova("i due omonimi restano dove stavano",
       bool(chi(g, "Esposito", "Inter")) and bool(chi(g, "Esposito", "Napoli")),
       str([x["sq"] for x in g if x["n"] == "Esposito"]))
 prova("e non vengono nemmeno segnati come spariti",
-      not any(x.get("fuori") for x in g if x["n"] == "Esposito"))
+      not any(x.get("sparito") for x in g if x["n"] == "Esposito"))
 
 print("\n— chi sparisce dal listone viene marcato, non cancellato —")
 
@@ -116,11 +116,11 @@ A.aggiorna_anagrafica(g, pagina(
     riga("Dimarco", "INT", "D"), riga("Svilar", "ROM", "P"),
     riga("Esposito", "INT", "A"), riga("Esposito", "NAP", "C"),
 ))                                      # Nkunku non c'e' piu'
-prova("chi non c'e' piu' e' marcato fuori lista", chi(g, "Nkunku").get("fuori") is True)
+prova("chi non c'e' piu' e' marcato sparito", chi(g, "Nkunku").get("sparito") is True)
 prova("ma resta nel file, non sparisce", len(g) == quanti)
 prova("e nessun altro viene marcato",
-      [x["n"] for x in g if x.get("fuori")] == ["Nkunku"],
-      str([x["n"] for x in g if x.get("fuori")][:5]))
+      [x["n"] for x in g if x.get("sparito")] == ["Nkunku"],
+      str([x["n"] for x in g if x.get("sparito")][:5]))
 
 print("\n— se ricompare, il marchio si toglie —")
 
@@ -128,7 +128,7 @@ A.aggiorna_anagrafica(g, pagina(
     riga("Nkunku", "COM", "A"), riga("Dimarco", "INT", "D"), riga("Svilar", "ROM", "P"),
     riga("Esposito", "INT", "A"), riga("Esposito", "NAP", "C"),
 ))
-prova("torna comprabile", not chi(g, "Nkunku").get("fuori"))
+prova("torna comprabile", not chi(g, "Nkunku").get("sparito"))
 prova("con la squadra nuova", chi(g, "Nkunku")["sq"] == "Como", chi(g, "Nkunku")["sq"])
 
 print("\n— se la pagina non si capisce, non si tocca NIENTE —")
@@ -143,7 +143,7 @@ problemi = A.aggiorna_anagrafica(g, pagina(
 prova("lo dice invece di indovinare", bool(problemi), str(problemi))
 prova("e il listone resta intatto",
       chi(g, "Nkunku")["sq"] == "Milan" and chi(g, "Dimarco")["sq"] == "Inter")
-prova("senza marcare nessuno come sparito", not any(x.get("fuori") for x in g))
+prova("senza marcare nessuno come sparito", not any(x.get("sparito") for x in g))
 
 print("\n— una squadra sola illeggibile non blocca le altre —")
 
@@ -156,7 +156,7 @@ A.aggiorna_anagrafica(g, pagina(
 ))
 prova("quello leggibile si aggiorna", chi(g, "Dimarco")["sq"] == "Como", chi(g, "Dimarco")["sq"])
 prova("quello illeggibile resta com'era", chi(g, "Nkunku")["sq"] == "Milan", chi(g, "Nkunku")["sq"])
-prova("e non viene scambiato per sparito", not chi(g, "Nkunku").get("fuori"))
+prova("e non viene scambiato per sparito", not chi(g, "Nkunku").get("sparito"))
 
 print("\n— anche il ruolo si corregge, se cambia —")
 
@@ -183,7 +183,94 @@ problemi = A.aggiorna_anagrafica(g, [
     riga("Dimarco", "INT", "D"), riga("Svilar", "ROM", "P"),
 ])
 prova("si rifiuta di lavorarci", bool(problemi), str(problemi))
-prova("e non marca mezzo listone come sparito", not any(x.get("fuori") for x in g))
+prova("e non marca mezzo listone come sparito", not any(x.get("sparito") for x in g))
+
+print("\n— il «Fuori lista» della lega non lo tocca nessuno —")
+
+# Il primo settembre e' successo davvero: l'aggiornamento delle 8 ha cancellato
+# tutte e ventiquattro le marcature dell'export, perche' su Fantacalcio.it quei
+# giocatori erano ancora quotati, e sono tornati comprabili in silenzio.
+g = listone()
+chi(g, "Svilar")["fuori"] = True          # lo dice l'export della lega
+A.aggiorna_anagrafica(g, pagina(
+    riga("Nkunku", "MIL", "A"), riga("Dimarco", "INT", "D"),
+    riga("Svilar", "ROM", "P"),           # su Fantacalcio.it e' ancora quotato
+    riga("Esposito", "INT", "A"), riga("Esposito", "NAP", "C"),
+))
+prova("resta fuori lista anche se la pagina lo quota", chi(g, "Svilar").get("fuori") is True)
+prova("e i due marchi restano distinti", not chi(g, "Svilar").get("sparito"))
+
+print("\n— la correzione a mano vince sulla pagina —")
+
+g = listone()
+fissati = {"nkunku": {"sq": "Como"}}
+A.aggiorna_anagrafica(g, pagina(
+    riga("Nkunku", "MIL", "A"),           # la fonte e' rimasta indietro
+    riga("Dimarco", "INT", "D"), riga("Svilar", "ROM", "P"),
+    riga("Esposito", "INT", "A"), riga("Esposito", "NAP", "C"),
+), fissati)
+prova("la pagina non riporta indietro chi e' stato corretto",
+      chi(g, "Nkunku")["sq"] == "Milan", chi(g, "Nkunku")["sq"])
+fatte = A.applica_correzioni(g, fissati)
+prova("e la correzione entra", chi(g, "Nkunku")["sq"] == "Como", chi(g, "Nkunku")["sq"])
+prova("tenendo da parte cosa dice la fonte", chi(g, "Nkunku").get("sqFonte") == "Milan",
+      str(chi(g, "Nkunku").get("sqFonte")))
+prova("e dicendolo", any("a mano" in x for x in fatte), str(fatte))
+
+print("\n— quando la fonte si mette in pari, lo dice —")
+
+fatte = A.applica_correzioni(g, fissati)     # secondo giro: ormai e' gia' Como
+prova("la correzione non si ripete", not any("-> Como" in x for x in fatte), str(fatte))
+prova("e avvisa che la riga si puo' togliere",
+      any("si puo' togliere" in x for x in fatte), str(fatte))
+
+print("\n— anche il ruolo si puo' fissare a mano —")
+
+g = listone()
+fissati = {"nkunku": {"r": "C"}}
+A.aggiorna_anagrafica(g, pagina(
+    riga("Nkunku", "MIL", "A"), riga("Dimarco", "INT", "D"), riga("Svilar", "ROM", "P"),
+    riga("Esposito", "INT", "A"), riga("Esposito", "NAP", "C"),
+), fissati)
+A.applica_correzioni(g, fissati)
+prova("comanda il file, non la pagina", chi(g, "Nkunku")["r"] == "C", chi(g, "Nkunku")["r"])
+
+print("\n— chi ha lasciato la Serie A si toglie a mano —")
+
+# Nkunku e' andato in Germania e Fantacalcio.it continua a quotarlo: il sito
+# lo proponeva come «affare dell'asta» con la nota che parlava del Milan.
+g = listone()
+fissati = {"nkunku": {"fuori": True, "nota": "Passato in Germania.", "mult": 1.0}}
+A.aggiorna_anagrafica(g, pagina(
+    riga("Nkunku", "MIL", "A"), riga("Dimarco", "INT", "D"), riga("Svilar", "ROM", "P"),
+    riga("Esposito", "INT", "A"), riga("Esposito", "NAP", "C"),
+), fissati)
+fatte = A.applica_correzioni(g, fissati)
+prova("esce dal listone", chi(g, "Nkunku").get("fuori") is True)
+prova("e resta nel file, non viene cancellato", bool(chi(g, "Nkunku")))
+prova("con la nota riscritta", chi(g, "Nkunku")["nota"] == "Passato in Germania.",
+      str(chi(g, "Nkunku").get("nota")))
+prova("e nessun altro ne risente", not any(x.get("fuori") for x in g if x["n"] != "Nkunku"))
+
+# e si puo' anche rimettere dentro, se torna
+fissati = {"nkunku": {"fuori": False}}
+A.applica_correzioni(g, fissati)
+prova("se torna, si rimette dentro", not chi(g, "Nkunku").get("fuori"))
+
+print("\n— due pagine che si contraddicono si segnalano, non si indovinano —")
+
+g = listone()
+viste = {
+    "quotazioni": {"nkunku": "Milan", "dimarco": "Inter"},
+    "statistiche": {"nkunku": "Como", "dimarco": "Inter"},
+}
+detto = A.discordanze(g, viste)
+prova("il disaccordo salta fuori", len(detto) == 1, str(detto))
+prova("con la riga gia' pronta da incollare",
+      '"sq": "Como"' in detto[0] and "Nkunku" in detto[0], str(detto))
+prova("e chi e' d'accordo non compare", all("Dimarco" not in x for x in detto), str(detto))
+prova("con una pagina sola non si dice niente",
+      A.discordanze(g, {"quotazioni": viste["quotazioni"]}) == [])
 
 print("\n" + "=" * 52)
 if ko:
