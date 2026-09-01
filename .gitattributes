@@ -1,0 +1,11 @@
+# I file di testo stanno nel repository con fine riga LF, sempre.
+#
+# Senza questa regola un file scritto su Windows (CRLF) e lo stesso file
+# riscritto dall'aggiornamento automatico, che gira su Linux (LF), risultano
+# diversi riga per riga: un cambio di due righe si presenta come "286 righe
+# modificate" e quello vero non lo vedi piu'. E' successo con assets/app.js.
+* text=auto eol=lf
+
+# questi sono binari: git non deve toccarli
+*.png binary
+*.xlsx binary
