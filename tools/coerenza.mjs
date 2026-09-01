@@ -112,28 +112,40 @@ const nota = t => problemi.push(t);
      puo' rovinare il listone in silenzio: ha il suo banco di prova, e gira
      insieme al resto. */
   {
-    /* Su Windows l'eseguibile si chiama `python`, non `python3`: cercando solo
-       `python3` queste prove venivano SALTATE in silenzio proprio sul computer
-       da cui si fa il push, e coerenza diceva «tutto a posto» avendone
-       controllato una parte. Si provano i nomi possibili, in ordine. */
-    const lancia = comando => new Promise(ok => {
-      execFile(comando, [fileURLToPath(new URL('prova-anagrafica.py', import.meta.url))],
-        (err, out) => ok({ ko: Boolean(err), out: String(out), assente: Boolean(err?.code === 'ENOENT') }));
+    /* Trovare python non e' banale come sembra, e non trovarlo costa caro:
+       queste prove venivano SALTATE in silenzio proprio sul computer da cui si
+       fa il push, e coerenza diceva «tutto a posto» avendone controllata meta'.
+
+       Su Windows `python3` di solito ESISTE ma e' il segnaposto del Microsoft
+       Store: parte, non stampa niente ed esce con errore. Cercare l'eseguibile
+       per nome quindi non basta — bisogna guardare se ha davvero risposto. */
+    const script = fileURLToPath(new URL('prova-anagrafica.py', import.meta.url));
+    const CANDIDATI = [['python3'], ['python'], ['py', '-3'], ['py']];
+    const lancia = ([cmd, ...prima]) => new Promise(ok => {
+      execFile(cmd, [...prima, script], (err, out, errOut) => ok({
+        cmd: [cmd, ...prima].join(' '),
+        ko: Boolean(err),
+        out: String(out || '') + String(errOut || ''),
+      }));
     });
+
     let esito = null;
-    for (const comando of ['python3', 'python', 'py']) {
-      esito = await lancia(comando);
-      if (!esito.assente) break;
+    for (const c of CANDIDATI) {
+      const r = await lancia(c);
+      if (/prove su \d+|ATTENZIONE|FALLITO|Traceback/.test(r.out)) { esito = r; break; }
+      if (!esito) esito = r;      // teniamo il primo, per poterlo raccontare
     }
+
     const conta = esito.out.match(/(\d+) prove su (\d+)/);
-    if (esito.ko && /ATTENZIONE|FALLITO/.test(esito.out)) {
-      nota('le prove su squadre e ruoli non passano — lancia: python tools/prova-anagrafica.py');
-    } else if (esito.assente) {
-      console.log('  (prove su squadre e ruoli saltate: non trovo python)');
-    } else if (esito.ko) {
-      nota(`le prove su squadre e ruoli non sono partite: ${esito.out.trim().split('\n').pop()}`);
+    if (/ATTENZIONE|FALLITO|Traceback/.test(esito.out)) {
+      const coda = esito.out.trim().split('\n').slice(-3).join(' / ');
+      nota(`le prove su squadre e ruoli non passano (${esito.cmd}): ${coda}`);
+    } else if (conta && !esito.ko) {
+      console.log(`  prove su squadre e ruoli: ${conta[1]}/${conta[2]}`);
     } else {
-      console.log(`  prove su squadre e ruoli: ${conta ? conta[1] + '/' + conta[2] : 'passate'}`);
+      console.log('  (prove su squadre e ruoli saltate: non trovo un python che risponda —');
+      console.log('   provati ' + CANDIDATI.map(c => c.join(' ')).join(', ')
+        + '. Su Windows «python3» spesso e\' solo il segnaposto del Microsoft Store.)');
     }
   }
 

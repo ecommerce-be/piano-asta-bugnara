@@ -2,12 +2,12 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=46';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=46';
-import { leggiCfg, salvaPiano } from './cfg.js?v=46';
-import { esc } from './db.js?v=46';
-import { toast } from './ui.js?v=46';
-import { pronto, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=46';
+} from './app.js?v=47';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=47';
+import { leggiCfg, salvaPiano } from './cfg.js?v=47';
+import { esc } from './db.js?v=47';
+import { toast } from './ui.js?v=47';
+import { pronto, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=47';
 
 const { players, lega } = await caricaDati();
 const letto = await leggiCfg(lega);
