@@ -408,6 +408,14 @@ const nomi = [...new Set(listone.map(p => p.n))]
 
 const fuga = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/* Le date scritte a mano invecchiano come i nomi, e in modo piu' subdolo:
+   nessuno rilegge il footer. Nel listone c'era «infortuni aggiornati al 25
+   agosto 2026», battuto a macchina, e cinque giorni dopo diceva il falso su
+   quanto fossero freschi i dati — che all'asta e' esattamente il genere di
+   bugia che ti fa fidare di una statistica vecchia di una giornata. */
+const MESI = 'gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre';
+const DATE_A_MANO = new RegExp(`\\b\\d{1,2}\\s+(${MESI})\\s+\\d{4}|\\b20\\d\\d-\\d{2}-\\d{2}\\b`, 'gi');
+
 for (const pagina of PAGINE) {
   const sorgente = await fs.readFile(new URL('../' + pagina, import.meta.url), 'utf8');
   /* solo il testo visibile: fuori i tag, gli attributi e i commenti */
@@ -417,6 +425,11 @@ for (const pagina of PAGINE) {
   const trovati = nomi.filter(n => new RegExp(`(^|[\\s"'«(])${fuga(n)}([\\s.,;:!?"'»)]|$)`).test(corpo));
   if (trovati.length) {
     nota(`[${pagina}] nomi di giocatori scritti nell'HTML: ${trovati.join(', ')} — invecchieranno`);
+  }
+  const date = [...new Set(corpo.match(DATE_A_MANO) || [])];
+  if (date.length) {
+    nota(`[${pagina}] date scritte a mano nell'HTML: ${date.join(', ')} — `
+       + 'invecchiano da sole, vanno generate da AGGIORNATO_IL');
   }
 }
 

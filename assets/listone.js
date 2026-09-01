@@ -1,21 +1,21 @@
 /* Pagina "Listone e asta live": parametri di lega, filtri, tracker crediti,
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
-  caricaDati, ricalcola, asta,
+  caricaDati, ricalcola, asta, AGGIORNATO_IL,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=38';
+} from './app.js?v=39';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=38';
+} from './db.js?v=39';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
   miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
   segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
   alSalvataggio, inSospeso, ritentaOra, situazione,
-} from './astaLega.js?v=38';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=38';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=38';
+} from './astaLega.js?v=39';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=39';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=39';
 
 const { players, lega } = await caricaDati();
 
@@ -742,6 +742,26 @@ osservaAsta(r => {
   aggiorna();
   statoSync(`${r.da || 'Qualcuno'} ha appena segnato un movimento.`);
 });
+
+/* Quanto sono vecchi i numeri che stai guardando: scritto dal file dei dati,
+   non a mano. Nel footer c'era «infortuni aggiornati al 25 agosto 2026»,
+   battuto a macchina, e cinque giorni dopo mentiva — proprio la cosa che
+   all'asta ti fa fidare di una statistica vecchia di una giornata. */
+{
+  const el = document.getElementById('dataDati');
+  if (el && AGGIORNATO_IL) {
+    const giorni = Math.floor((Date.now() - new Date(AGGIORNATO_IL)) / 86400000);
+    const quando = new Date(AGGIORNATO_IL)
+      .toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+    const eta = giorni <= 0 ? 'oggi stesso' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
+    el.innerHTML = giorni >= 2
+      ? `<strong style="color:var(--warn)">Quotazioni, statistiche e infortuni sono aggiornati al
+         ${esc(quando)}, cioè ${eta}</strong>: se nel frattempo si è giocato, questi numeri non
+         tengono conto dell'ultima giornata. L'aggiornamento gira da solo ogni mattina alle 8; per
+         lanciarlo subito, su GitHub → Actions → «Aggiorna dati giocatori» → Run workflow.`
+      : `Quotazioni, statistiche e infortuni aggiornati al ${esc(quando)}, ${eta}.`;
+  }
+}
 
 riempiForm();
 aggiorna();
