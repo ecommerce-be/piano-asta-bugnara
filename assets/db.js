@@ -25,7 +25,7 @@ let sessione = null;
 export async function avvia() {
   if (cfg) return cfg;
   try {
-    const r = await fetch('assets/data/supabase.json?v=48?t=' + Date.now());
+    const r = await fetch('assets/data/supabase.json?v=51?t=' + Date.now());
     cfg = await r.json();
   } catch {
     cfg = {};
@@ -471,8 +471,23 @@ export function quando(iso) {
     : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ' alle ' + ora;
 }
 
+/* Chi ha gia' una barra montata, e chi vuole essere avvisato.
+ *
+ * Serve da quando piu' sezioni stanno nella stessa pagina sotto forma di
+ * schede: fantasquadre, la lega e le impostazioni la montavano ognuna per
+ * conto suo, e tre barre nella stessa pagina vuol dire tre campi con lo
+ * stesso identificativo — il browser ne trova uno solo, e l'accesso smette
+ * di funzionare. Adesso la prima chiamata monta, le altre si limitano ad
+ * aggiungere il loro richiamo. */
+const barreMontate = new WeakMap();
+
 export function montaAccesso(contenitore, alCambio) {
   if (!contenitore) return;
+  const gia = barreMontate.get(contenitore);
+  if (gia) { if (alCambio) gia.add(alCambio); return; }
+  const richiami = new Set(alCambio ? [alCambio] : []);
+  barreMontate.set(contenitore, richiami);
+  const avvisaTutti = () => { for (const f of richiami) { try { f(); } catch { /* uno rotto non ferma gli altri */ } } };
 
   const disegna = (errore = '', modo = 'entra') => {
     if (!configurato()) {
@@ -499,10 +514,10 @@ export function montaAccesso(contenitore, alCambio) {
         ${s ? `<span class="pill p-t">${esc(s.nome)}</span>`
     : l ? '<span class="pill p-l">nessuna squadra</span>' : ''}
         ${!l ? '<span style="color:var(--warn);font-size:.8rem">non sei in nessuna lega</span>' : ''}
-        <a class="chip" href="lega.html" style="text-decoration:none">la mia lega</a>
+        <a class="chip" href="altro.html#lega" style="text-decoration:none">la mia lega</a>
         <button class="chip" id="esci" style="margin-left:auto">esci</button></div>`;
       contenitore.querySelector('#esci').onclick = () => {
-        esci(); contesto = null; contestoCaricato = false; disegna(); contestoCambiato(); alCambio?.();
+        esci(); contesto = null; contestoCaricato = false; disegna(); contestoCambiato(); avvisaTutti();
       };
       return;
     }
@@ -539,7 +554,7 @@ export function montaAccesso(contenitore, alCambio) {
            di chi sono */
         try { await caricaContesto(); } catch { /* lo dira' la pagina */ }
         disegna();
-        alCambio?.();
+        avvisaTutti();
       } catch (err) {
         disegna(err.message, modo);
       }

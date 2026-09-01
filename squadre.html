@@ -10,29 +10,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=48">
+<link rel="stylesheet" href="assets/style.css?v=51">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="48">
+<meta name="versione" content="51">
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
+  <a class="brand" href="listone.html"><span class="dot"></span>Piano d'Asta</a>
   <nav class="nav">
-    <a href="./">La guida</a>
-    <a href="listone.html">Listone e asta live</a>
-    <a href="fasce.html">Fasce</a>
-    <a href="rosaideale.html">Rosa ideale</a>
-    <a href="bozza.html">Bozza</a>
-    <a href="rosa.html">La mia rosa</a>
-    <a href="fantasquadre.html">Fantasquadre</a>
+    <a href="listone.html">Asta e listone</a>
+    <a href="rosa.html">La mia squadra</a>
     <a href="squadre.html" aria-current="page">Serie A</a>
-    <a href="infortunati.html">Infortunati</a>
-    <a href="impostazioni.html">Impostazioni</a>
-    <a href="lega.html">La mia lega</a>
+    <a href="altro.html">Altro</a>
   </nav>
   <div id="tema"></div>
 </div></div>
@@ -114,8 +107,8 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
   </footer>
 </div>
 
-<script type="module" src="assets/squadre.js?v=48"></script>
-<script type="module" src="assets/menu.js?v=48"></script>
-<script type="module" src="assets/theme.js?v=48"></script>
+<script type="module" src="assets/squadre.js?v=51"></script>
+<script type="module" src="assets/menu.js?v=51"></script>
+<script type="module" src="assets/theme.js?v=51"></script>
 </body>
 </html>

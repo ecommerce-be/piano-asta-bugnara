@@ -9,10 +9,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, simulaModificatore,
   RUOLI, NOME_RUOLO, CLASSE_VERDETTO, fuoriListone,
-} from './app.js?v=48';
-import { leggiCfg } from './cfg.js?v=48';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=48';
-import { esc } from './db.js?v=48';
+} from './app.js?v=51';
+import { leggiCfg } from './cfg.js?v=51';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=51';
+import { esc } from './db.js?v=51';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -81,7 +81,7 @@ html('occhiello', {
       : `Hai scelto la strategia <strong>tutto sull'attacco</strong>: il modificatore resta attivo ma pesa
          poco nelle scelte, e i crediti vanno dove si producono bonus. Il piano qui sotto è tarato su
          questo — se vuoi vedere l'altra faccia, prova la strategia «modificatore di difesa» nelle
-         <a href="impostazioni.html">impostazioni</a>.`,
+         <a href="altro.html#impostazioni">impostazioni</a>.`,
   centrocampo:
     `Hai scelto di puntare sul <strong>centrocampo</strong>: nel listone Classic decine di trequartisti ed
      esterni offensivi sono classificati come centrocampisti, quindi quegli slot comprano attaccanti veri a
@@ -239,7 +239,7 @@ const quota = r => Math.round(cfg.piano[r] / Math.max(1, pianoTot) * 100);
 
 testo('pianoTit', `Come spendere i ${cfg.crediti}`);
 html('pianoIntro', `La ripartizione qui sotto è quella salvata nelle
-  <a href="impostazioni.html">impostazioni</a>, tarata sul tuo formato: ${cfg.squadre} squadre,
+  <a href="altro.html#impostazioni">impostazioni</a>, tarata sul tuo formato: ${cfg.squadre} squadre,
   ${slotTot} slot, modificatore ${modAttivo ? 'attivo' : 'spento'}. Se la cambi lì, questa pagina la segue.`);
 
 /* Il consiglio per reparto non e' un testo fisso: descrive cosa ha fatto
@@ -264,7 +264,7 @@ html('pianoNota', pianoTot === cfg.crediti
      successivo — mai al contrario. E i crediti che avanzano non sono sprecati: restano disponibili per
      svincoli e riparazione, dove venti crediti a gennaio comprano un titolare vero.`
   : `<strong style="color:var(--warn)">Attenzione: il piano somma a ${pianoTot} invece di ${cfg.crediti}.</strong>
-     Correggilo nelle <a href="impostazioni.html">impostazioni</a>, altrimenti i tetti del listone sono tarati male.`);
+     Correggilo nelle <a href="altro.html#impostazioni">impostazioni</a>, altrimenti i tetti del listone sono tarati male.`);
 
 /* ---------- la rosa consigliata ---------- */
 
@@ -291,9 +291,9 @@ html('rosaIntro1', !modAttivo
          mancante quasi sparisce. Costa uno slot offensivo, e la rosa qui sotto tiene conto dello scambio.`);
 
 html('rosaIntro2', `La rosa qui sotto non è una lista scritta a mano: la compone il
-  <a href="rosaideale.html">consigliere</a> con la strategia <strong>${esc(strategia.nome)}</strong>,
+  <a href="rosa.html#ideale">consigliere</a> con la strategia <strong>${esc(strategia.nome)}</strong>,
   provando migliaia di scambi finché non trova la combinazione che rende di più con
-  ${cfg.crediti} crediti. Cambia modulo o strategia nelle <a href="impostazioni.html">impostazioni</a>
+  ${cfg.crediti} crediti. Cambia modulo o strategia nelle <a href="altro.html#impostazioni">impostazioni</a>
   e questa pagina si riscrive.`);
 
 /* grafico: il modulo scelto contro le alternative permesse dalla lega */
@@ -411,7 +411,7 @@ html('bivi', `<p><strong>Tre cose da tenere a mente, lette su questa rosa.</stro
   <p style="margin-top:.6rem"><b>Chi è fermo adesso.</b>
     ${fermi.length
       ? `${fermi.length} in rosa: ${fermi.map(p => esc(p.n)).join(', ')}. I prezzi qui sopra ne tengono già
-         conto — vedi la pagina <a href="infortunati.html">infortunati</a> per i tempi di rientro.`
+         conto — vedi la pagina <a href="altro.html#infortunati">infortunati</a> per i tempi di rientro.`
       : 'Nessuno dei consigliati è infortunato o squalificato in questo momento.'}</p>`);
 
 /* ---------- regole operative: i numeri che cambiano ---------- */
@@ -453,7 +453,7 @@ html('comeCostruito', `<strong>Come è stato costruito.</strong> Quotazioni dal 
   ${slotTot * cfg.squadre} giocatori che verranno acquistati, con una curva sulle quotazioni e uno split di
   reparto di ${RUOLI.map(r => (cfg.quotaMercato[r] * 100).toFixed(1).replace('.0', '').replace('.', ','))
     .join(' / ')} per cento, che è come descrivi la tua lega nelle
-  <a href="impostazioni.html">impostazioni</a>. I punti attesi tengono conto dei voti veri di questa
+  <a href="altro.html#impostazioni">impostazioni</a>. I punti attesi tengono conto dei voti veri di questa
   stagione per il ${Math.round(info.peso * 100)}% — ${info.giornate} ${info.giornate === 1 ? 'giornata giocata' : 'giornate giocate'} — e per il resto della fascia del giocatore.`);
 
 /* ---------- shortlist per reparto ---------- */

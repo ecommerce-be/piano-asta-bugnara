@@ -1,16 +1,16 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=48';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=51';
 import {
   pronto, configurato, collegato, squadra, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=48';
+} from './db.js?v=51';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, documento, metaAsta,
   allineaAllaLega, assegna as aggiudica, libera as rimetti,
-} from './astaLega.js?v=48';
-import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=48';
-import { leggiCfg } from './cfg.js?v=48';
+} from './astaLega.js?v=51';
+import { chiediCampi, conferma as chiediConferma, autosalva, toast } from './ui.js?v=51';
+import { leggiCfg } from './cfg.js?v=51';
 
 const { players, lega } = await caricaDati();
 
@@ -102,7 +102,7 @@ async function salva(automatico = false) {
 }
 
 function disegnaBarra() {
-  const b = document.getElementById('barra');
+  const b = document.getElementById('barra-fs');
   b.className = 'savebar' + (statoBarra ? ' ' + statoBarra : sporca ? ' sporca' : '');
   b.innerHTML = `<span class="dot"></span>
     <span class="msg">${sporca ? 'Salvo fra un istante… ' : ''}${esc(messaggio)}</span>
@@ -198,7 +198,7 @@ function disegnaRiepilogo() {
   const presi = dati.squadre.reduce((a, s) => a + (s.rosa || []).length, 0);
   const spesoTot = dati.squadre.reduce((a, s) => a + speso(s), 0);
   const monte = cfg.crediti * dati.squadre.length;
-  document.getElementById('totali').innerHTML = `
+  document.getElementById('totali-fs').innerHTML = `
     <div class="lcell"><div class="k">Squadre</div><div class="n">${dati.squadre.length}<small> / ${cfg.squadre}</small></div></div>
     <div class="lcell"><div class="k">Giocatori assegnati</div><div class="n">${presi}</div></div>
     <div class="lcell"><div class="k">Crediti già spesi</div><div class="n">${spesoTot}<small> / ${monte}</small></div></div>

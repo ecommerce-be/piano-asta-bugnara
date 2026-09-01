@@ -4,130 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Impostazioni — Piano d'Asta Bugnara</title>
-<meta name="description" content="Le regole della lega: crediti, squadre, slot per ruolo, carattere del mercato e piano di spesa.">
-<meta name="color-scheme" content="light dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=48">
-<script>
-try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
-</script>
-<meta name="versione" content="48">
+<!-- Questa pagina non esiste piu' come pagina: adesso e' una scheda dentro
+     altro.html#impostazioni. Il file resta perche' l'indirizzo puo' essere nei segnalibri di
+     qualcuno della lega, o in un messaggio mandato mesi fa: un collegamento
+     morto e' peggio di un rimando. -->
+<link rel="canonical" href="altro.html#impostazioni">
+<meta http-equiv="refresh" content="0; url=altro.html#impostazioni">
+<script>location.replace('altro.html#impostazioni');</script>
+<meta name="versione" content="51">
 </head>
-<body>
-
-<div class="topbar"><div class="inner">
-  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
-  <nav class="nav">
-    <a href="./">La guida</a>
-    <a href="listone.html">Listone e asta live</a>
-    <a href="fasce.html">Fasce</a>
-    <a href="rosaideale.html">Rosa ideale</a>
-    <a href="bozza.html">Bozza</a>
-    <a href="rosa.html">La mia rosa</a>
-    <a href="fantasquadre.html">Fantasquadre</a>
-    <a href="squadre.html">Serie A</a>
-    <a href="infortunati.html">Infortunati</a>
-    <a href="impostazioni.html" aria-current="page">Impostazioni</a>
-    <a href="lega.html">La mia lega</a>
-  </nav>
-  <div id="tema"></div>
-</div></div>
-
-<div class="wrap">
-
-  <section style="padding-bottom:1.2rem">
-    <p class="eyebrow">Impostazioni</p>
-    <h2>Le regole della lega</h2>
-    <p class="lede" style="max-width:74ch">Questa pagina contiene due cose con due proprietari diversi. Le <strong>regole della lega</strong> — crediti, quante squadre, slot, carattere del mercato — valgono per tutti quelli che giocano quell'asta, altrimenti ognuno ragionerebbe su un budget diverso. Il <strong>tuo piano</strong> — come dividi i crediti, con che modulo e con che strategia — è della tua squadra, e nessun altro lo legge. I due pulsanti in fondo salvano le due cose separatamente.</p>
-  </section>
-
-  <div id="accesso" style="margin-bottom:16px"></div>
-  <div id="barra" class="savebar" style="margin-bottom:20px"></div>
-
-  <div class="panel" style="margin-bottom:22px">
-    <h3 class="sez">La lega</h3>
-    <div class="cfg">
-      <div class="fld"><label for="crediti">Crediti a squadra</label><input id="crediti" type="number" min="50" max="5000" step="1"></div>
-      <div class="fld"><label for="squadre">Quante squadre</label><input id="squadre" type="number" min="2" max="20" step="1"></div>
-      <div class="fld"><label for="modAttivo">Modificatore di difesa</label>
-        <select id="modAttivo"><option value="1">Attivo</option><option value="0">Non attivo</option></select></div>
-    </div>
-    <p class="spiega">Il monte crediti della lega è <strong id="monte"></strong>: è la cifra che tutti insieme spenderete all'asta, ed è da lì che il sito ricava quanto costerà davvero ogni giocatore.</p>
-  </div>
-
-  <div class="panel" style="margin-bottom:22px">
-    <h3 class="sez">Come giochi</h3>
-    <div class="cfg">
-      <div class="fld"><label for="moduloPref">Modulo preferito</label><select id="moduloPref"></select></div>
-      <div class="fld" style="grid-column:span 2"><label for="strategiaPref">Strategia</label><select id="strategiaPref"></select></div>
-    </div>
-    <p class="spiega">Questa scelta non resta qui: <a href="./">la guida</a>, il <a href="listone.html">listone</a> e la <a href="rosaideale.html">rosa ideale</a> la seguono, così le tre pagine non ti dicono più cose diverse. <span id="notaModulo"></span></p>
-  </div>
-
-  <div class="panel" style="margin-bottom:22px">
-    <h3 class="sez">Quanti giocatori per reparto</h3>
-    <div class="cfg">
-      <div class="fld"><label for="sP">Portieri</label><input id="sP" type="number" min="1" max="6" step="1"></div>
-      <div class="fld"><label for="sD">Difensori</label><input id="sD" type="number" min="3" max="14" step="1"></div>
-      <div class="fld"><label for="sC">Centrocampisti</label><input id="sC" type="number" min="3" max="14" step="1"></div>
-      <div class="fld"><label for="sA">Attaccanti</label><input id="sA" type="number" min="1" max="10" step="1"></div>
-    </div>
-    <p class="spiega">In tutto <strong id="slotTot"></strong> giocatori a testa.</p>
-  </div>
-
-  <div class="panel" style="margin-bottom:22px">
-    <h3 class="sez">Carattere del mercato</h3>
-    <div class="cfg">
-      <div class="fld"><label for="qP">Quota portieri %</label><input id="qP" type="number" min="1" max="60" step="0.5"></div>
-      <div class="fld"><label for="qD">Quota difensori %</label><input id="qD" type="number" min="1" max="60" step="0.5"></div>
-      <div class="fld"><label for="qC">Quota centrocampisti %</label><input id="qC" type="number" min="1" max="60" step="0.5"></div>
-      <div class="fld"><label for="qA">Quota attaccanti %</label><input id="qA" type="number" min="1" max="80" step="0.5"></div>
-    </div>
-    <div class="controls" style="border-bottom:0">
-      <span class="idlab" style="align-self:center">Com'è fatta la tua lega</span>
-      <button class="chip" data-mercato="attacco">Impazzisce per gli attaccanti</button>
-      <button class="chip" data-mercato="equilibrata">Equilibrata</button>
-      <button class="chip" data-mercato="difesa">Spende anche dietro</button>
-    </div>
-    <p class="spiega">Quanto del monte crediti finisce in ogni reparto. Attenzione: descrive <em>gli avversari</em>, non te — quindi non dipende dal tuo modulo. Se la tua lega impazzisce per gli attaccanti, alza la quota A e il sito ti dirà che i difensori costeranno poco, che è esattamente l'occasione da sfruttare. <span id="avvisoQuote"></span></p>
-  </div>
-
-  <div class="panel" style="margin-bottom:22px">
-    <h3 class="sez">Il tuo piano di spesa</h3>
-    <div class="cfg">
-      <div class="fld"><label for="pP">Portieri</label><input id="pP" type="number" min="1" step="1"></div>
-      <div class="fld"><label for="pD">Difensori</label><input id="pD" type="number" min="1" step="1"></div>
-      <div class="fld"><label for="pC">Centrocampisti</label><input id="pC" type="number" min="1" step="1"></div>
-      <div class="fld"><label for="pA">Attaccanti</label><input id="pA" type="number" min="1" step="1"></div>
-    </div>
-    <div class="controls" style="border-bottom:0">
-      <button class="btn ghost" id="calcolaPiano">Calcola il piano per questo modulo</button>
-      <span class="firma" id="esitoPiano" style="align-self:center"></span>
-    </div>
-    <p class="spiega">Come vuoi dividere i <strong id="tuoiCrediti"></strong> crediti. Da qui esce il <em>tuo max</em> del listone, cioè il tetto oltre il quale non rilanci. Il pulsante qui sopra non usa una tabella scritta a mano: fa comporre al consigliere la rosa migliore per il modulo e la strategia che hai scelto, e ti riporta quanto ha speso per reparto. Con un 4-3-3 finiranno più crediti in attacco, con un 5-3-2 dietro — non perché lo dice una regola, ma perché è lì che i punti costano meno. <span id="avvisoPiano"></span></p>
-  </div>
-
-  <div class="controls panel" style="border-radius:4px;margin-bottom:22px">
-    <button class="btn" id="salva">Salva le regole della lega</button>
-    <button class="btn" id="salvaPiano">Salva il mio piano</button>
-    <button class="chip" id="ricarica">Ricarica</button>
-    <button class="chip" id="reset">Torna ai valori di partenza</button>
-    <span class="firma" id="origine" style="margin-left:auto;align-self:center"></span>
-  </div>
-
-  <div id="anteprima" class="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:22px"></div>
-  <p class="spiega" style="padding:0">Anteprima dell'effetto sui prezzi: quanto costeranno i giocatori più cari di ogni reparto con questi numeri.</p>
-
-  <footer>
-    <p>Le impostazioni si salvano nel database condiviso, come le fantasquadre. Finché non entri col tuo account puoi guardarle e provarle, ma il pulsante di salvataggio resta spento — e quello che modifichi vale solo in questo browser.</p>
-  </footer>
-</div>
-
-<script type="module" src="assets/impostazioni.js?v=48"></script>
-<script type="module" src="assets/menu.js?v=48"></script>
-<script type="module" src="assets/theme.js?v=48"></script>
+<body style="font-family:system-ui,sans-serif;padding:2rem">
+<p>Questa pagina si è spostata: <a href="altro.html#impostazioni">Impostazioni</a>.</p>
 </body>
 </html>

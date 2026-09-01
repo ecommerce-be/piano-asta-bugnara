@@ -2,12 +2,12 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=48';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=48';
-import { leggiCfg, salvaPiano } from './cfg.js?v=48';
-import { esc } from './db.js?v=48';
-import { toast } from './ui.js?v=48';
-import { pronto, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=48';
+} from './app.js?v=51';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=51';
+import { leggiCfg, salvaPiano } from './cfg.js?v=51';
+import { esc } from './db.js?v=51';
+import { toast } from './ui.js?v=51';
+import { pronto, collegato, leggi as leggiDb, scrivi as scriviDb, utente } from './db.js?v=51';
 
 const { players, lega } = await caricaDati();
 const letto = await leggiCfg(lega);
@@ -32,7 +32,7 @@ try {
 
 /* ---------- controlli ---------- */
 
-const selModulo = document.getElementById('modulo');
+const selModulo = document.getElementById('modulo-ideale');
 selModulo.innerHTML = lega.moduli.map(m => `<option${m === modulo ? ' selected' : ''}>${m}</option>`).join('');
 document.getElementById('rischio').value = rischio;
 
@@ -103,7 +103,7 @@ function disegna() {
   } else box.style.display = 'none';
 
   const punti = r.puntiTitolari + r.puntiModificatore;
-  document.getElementById('totali').innerHTML = `
+  document.getElementById('totali-ideale').innerHTML = `
     <div class="lcell"><div class="k">Spesi</div><div class="n">${r.costo}<small> / ${cfg.crediti} cr</small></div></div>
     <div class="lcell"><div class="k">Punti sopra una rosa da un credito</div><div class="n">${Math.round(punti)}</div></div>
     <div class="lcell${r.puntiModificatore > 0 ? '' : ' over'}"><div class="k">Di cui dal modificatore</div>
@@ -111,7 +111,7 @@ function disegna() {
     ${RUOLI.map(x => `<div class="lcell" data-r="${x}"><div class="k">${NOME_RUOLO[x]}</div>
       <div class="n">${r.reparti[x].spesa}<small> cr · ${Math.round(r.reparti[x].spesa / r.costo * 100)}%</small></div></div>`).join('')}`;
 
-  document.getElementById('reparti').innerHTML = RUOLI.map(x => {
+  document.getElementById('reparti-ideale').innerHTML = RUOLI.map(x => {
     const lista = r.rosa[x];
     const nTit = titolari[x];
     const righe = lista.map((p, i) => {

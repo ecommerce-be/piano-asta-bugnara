@@ -27,6 +27,10 @@ RIF_HTML = re.compile(r'((?:src|href)=")(assets/[\w./-]+\.(?:js|css))(?:\?v=\d+)
 # import ... from './x.js'   e   fetch('assets/data/x.json')
 RIF_IMPORT = re.compile(r"((?:from|import)\s*\(?\s*')(\./[\w./-]+\.js)(?:\?v=\d+)?(')")
 RIF_DATI = re.compile(r"(fetch\(\s*')(assets/data/[\w./-]+\.json)(?:\?v=\d+)?((?:'|\?))")
+# data-modulo="fasce.js?v=48": il modulo di una scheda, caricato solo quando
+# la si apre. Senza questa riga restava indietro di una versione a ogni marcatura,
+# e coerenza segnalava (giustamente) file a versioni diverse.
+RIF_SCHEDA = re.compile(r'(data-modulo=")([\w./-]+\.js)(?:\?v=\d+)?(")')
 RIF_META = re.compile(r'<meta name="versione" content="\d+">\n?')
 
 
@@ -46,6 +50,7 @@ def main() -> int:
         t = f.read_text(encoding="utf-8")
         originale = t
         t = RIF_HTML.sub(rf"\g<1>\g<2>?v={nuova}\g<3>", t)
+        t = RIF_SCHEDA.sub(rf"\g<1>\g<2>?v={nuova}\g<3>", t)
         t = RIF_META.sub("", t)
         t = t.replace("</head>", f'<meta name="versione" content="{nuova}">\n</head>', 1)
         if t != originale:

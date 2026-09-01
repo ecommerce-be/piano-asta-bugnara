@@ -1,9 +1,9 @@
 /* Pagina "Impostazioni": le regole della lega, condivise nel database. */
-import { caricaDati, caricaInfortuni, ricalcola, RUOLI, NOME_RUOLO } from './app.js?v=48';
-import { leggiCfg, salvaCfg, salvaPiano, unisci } from './cfg.js?v=48';
-import { pronto, collegato, inLega, squadra, montaAccesso, esc, quando } from './db.js?v=48';
-import { toast, conferma as chiediConferma } from './ui.js?v=48';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=48';
+import { caricaDati, caricaInfortuni, ricalcola, RUOLI, NOME_RUOLO } from './app.js?v=51';
+import { leggiCfg, salvaCfg, salvaPiano, unisci } from './cfg.js?v=51';
+import { pronto, collegato, inLega, squadra, montaAccesso, esc, quando } from './db.js?v=51';
+import { toast, conferma as chiediConferma } from './ui.js?v=51';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=51';
 
 const { players, lega } = await caricaDati();
 
@@ -81,7 +81,7 @@ selModulo.addEventListener('change', () => { cfg.modulo = selModulo.value; aggio
 selStrategia.addEventListener('change', () => { cfg.strategia = selStrategia.value; aggiorna(); });
 
 function disegnaBarra() {
-  const b = document.getElementById('barra');
+  const b = document.getElementById('barra-imp');
   b.className = 'savebar' + (statoBarra ? ' ' + statoBarra : '');
   b.innerHTML = `<span class="dot"></span><span class="msg">${esc(messaggio)}</span>`;
   const puoiLega = collegato() && inLega();

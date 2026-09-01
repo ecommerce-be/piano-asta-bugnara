@@ -28,7 +28,7 @@
 import {
   pronto, configurato, collegato, inLega, lega, squadra, utente,
   leggi, scrivi, osserva,
-} from './db.js?v=48';
+} from './db.js?v=51';
 
 export const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [], fuori: {}, liberati: {} };

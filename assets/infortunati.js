@@ -4,10 +4,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo,
   giorniAlRientro, gravita, classeGravita, RUOLI,
-} from './app.js?v=48';
-import { esc } from './db.js?v=48';
-import { leggiCfg } from './cfg.js?v=48';
-import { caricaAsta, statoAsta } from './astaLega.js?v=48';
+} from './app.js?v=51';
+import { esc } from './db.js?v=51';
+import { leggiCfg } from './cfg.js?v=51';
+import { caricaAsta, statoAsta } from './astaLega.js?v=51';
 
 const { players, lega } = await caricaDati();
 
@@ -79,7 +79,7 @@ function riga(v) {
 
 function disegna() {
   const lista = filtrate();
-  const box = document.getElementById('elenco');
+  const box = document.getElementById('elenco-inf');
 
   if (!voci.length) {
     /* Due cause diverse, e il consiglio giusto e' l'opposto nei due casi.
@@ -128,7 +128,7 @@ function disegnaTotali(lista) {
   const inf = voci.filter(v => v.tipo === 'infortunio');
   const lunghi = inf.filter(v => gravita(v) === 'lunga');
   const miei = voci.filter(mio);
-  document.getElementById('totali').innerHTML = `
+  document.getElementById('totali-inf').innerHTML = `
     <div class="lcell"><div class="k">Fermi in tutto</div><div class="n">${voci.length}<small> · ${lista.length} mostrati</small></div></div>
     <div class="lcell"><div class="k">Per infortunio</div><div class="n">${inf.length}</div></div>
     <div class="lcell${lunghi.length ? ' over' : ''}"><div class="k">Stop lunghi<small> oltre 6 settimane</small></div><div class="n">${lunghi.length}</div></div>
@@ -146,7 +146,7 @@ selSquadra.addEventListener('change', () => {
   try { localStorage.setItem('pianoAsta:squadra', selSquadra.value); } catch { /* ignora */ }
   disegna();
 });
-document.getElementById('q').addEventListener('input', e => { cerca = e.target.value; disegna(); });
+document.getElementById('q-inf').addEventListener('input', e => { cerca = e.target.value; disegna(); });
 
 document.querySelectorAll('.chip[data-t]').forEach(c => c.onclick = () => {
   filtro = c.dataset.t;

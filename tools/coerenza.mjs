@@ -17,8 +17,30 @@ import { playwright, chromium, spiegazione } from './playwright.mjs';
 
 const BASE = process.argv[2] || 'http://localhost:8123/';
 
-const PAGINE = ['index.html', 'listone.html', 'fasce.html', 'lega.html', 'rosaideale.html', 'bozza.html', 'rosa.html',
-  'fantasquadre.html', 'squadre.html', 'infortunati.html', 'impostazioni.html'];
+/* Le quattro pagine vere. Le altre otto (fasce.html, lega.html, index.html…)
+   restano come rimandi, perche' quegli indirizzi possono essere nei segnalibri
+   di qualcuno della lega: si controllano a parte, piu' sotto. */
+const PAGINE = ['listone.html', 'rosa.html', 'squadre.html', 'altro.html'];
+const VOCI_MENU = PAGINE.length;
+
+/* Ogni scheda dentro le pagine a linguette: si aprono una per una, perche' il
+   loro modulo si carica solo quando la si guarda. */
+const SCHEDE = [
+  ['rosa.html', ['rosa', 'bozza', 'ideale']],
+  ['altro.html', ['guida', 'fasce', 'infortunati', 'fantasquadre', 'lega', 'impostazioni']],
+];
+
+/* Gli indirizzi vecchi e dove devono portare. */
+const RIMANDI = {
+  'index.html': 'altro.html#guida',
+  'fasce.html': 'altro.html#fasce',
+  'infortunati.html': 'altro.html#infortunati',
+  'fantasquadre.html': 'altro.html#fantasquadre',
+  'lega.html': 'altro.html#lega',
+  'impostazioni.html': 'altro.html#impostazioni',
+  'bozza.html': 'rosa.html#bozza',
+  'rosaideale.html': 'rosa.html#ideale',
+};
 
 /* rumore di fondo del banco di prova, non difetti del sito: in locale non c'e'
    ne' rete verso i font ne' il database */
@@ -97,7 +119,10 @@ const nota = t => problemi.push(t);
     const tutto = [...pagine, ...sorgenti].join('\n');
     const orfani = moduli.filter(n => {
       /* citato da una pagina come <script src>, o importato da un altro modulo */
-      const usato = new RegExp(`(src="assets/${n.replace('.', '\\.')}|from\\s*'\\./${n.replace('.', '\\.')})`);
+      const e = n.replace('.', '\\.');
+      /* citato come <script src>, importato da un altro modulo, oppure
+         dichiarato come modulo di una scheda (data-modulo="fasce.js?v=N") */
+      const usato = new RegExp(`(src="assets/${e}|from\\s*'\\./${e}|data-modulo="${e})`);
       return !usato.test(tutto);
     });
     if (orfani.length) {
@@ -279,13 +304,47 @@ for (const pagina of PAGINE) {
   const p = await apri(pagina);
   const t = await p.locator('body').innerText();
   testi[pagina] = t;
-  const voci = await p.locator('.menupanel a').count();
-  const bottone = await p.locator('.menubtn .dove').textContent().catch(() => '');
+  const voci = await p.locator('nav.nav a').count();
   if (t.trim().length < 400) nota(`[${pagina}] la pagina è praticamente vuota`);
-  if (voci !== PAGINE.length) nota(`[${pagina}] il menu ha ${voci} voci invece di ${PAGINE.length}`);
-  console.log(`  ${pagina.padEnd(20)} ${t.length} caratteri · menu "${bottone}" con ${voci} voci`);
+  if (voci !== VOCI_MENU) nota(`[${pagina}] il menu ha ${voci} voci invece di ${VOCI_MENU}`);
+  console.log(`  ${pagina.padEnd(14)} ${t.length} caratteri · ${voci} voci di menu`);
   await p.close();
 }
+
+/* ---------- 1-bis. ogni scheda si apre e ha dentro qualcosa ----------
+ *
+ * Il modulo di una scheda si carica solo quando la si apre: un errore dentro
+ * non si vede finche' qualcuno non ci clicca. Qui ci si clicca. */
+
+console.log('\n— le schede si aprono —');
+for (const [pagina, nomi] of SCHEDE) {
+  for (const nome of nomi) {
+    const p = await apri(`${pagina}#${nome}`);
+    const sez = p.locator(`#s-${nome}`);
+    const visibile = await sez.isVisible().catch(() => false);
+    const testo = visibile ? (await sez.innerText()).trim() : '';
+    const linguetta = await p.locator(`.schede [data-scheda="${nome}"]`).getAttribute('aria-selected');
+    if (!visibile) nota(`[${pagina}#${nome}] la scheda non si apre`);
+    else if (testo.length < 200) nota(`[${pagina}#${nome}] la scheda è vuota (${testo.length} caratteri)`);
+    else if (linguetta !== 'true') nota(`[${pagina}#${nome}] la linguetta non risulta selezionata`);
+    else console.log(`  ${(pagina + '#' + nome).padEnd(26)} ${testo.length} caratteri`);
+    testi[`${pagina}#${nome}`] = testo;
+    await p.close();
+  }
+}
+
+/* ---------- 1-ter. gli indirizzi vecchi portano ancora da qualche parte ---------- */
+
+console.log('\n— i vecchi indirizzi non sono morti —');
+for (const [vecchio, dove] of Object.entries(RIMANDI)) {
+  const p = await ctx.newPage();
+  await p.goto(BASE + vecchio, { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const finito = p.url().replace(BASE, '');
+  if (finito !== dove) nota(`[${vecchio}] doveva portare a ${dove}, invece è finito su ${finito}`);
+  await p.close();
+}
+if (!problemi.length) console.log(`  tutti e ${Object.keys(RIMANDI).length} portano dove devono`);
 
 /* ---------- 1-bis. tutto entra nello schermo del telefono ----------
  *
@@ -337,7 +396,7 @@ console.log('\n— tutto entra nello schermo del telefono —');
 /* ---------- 2. i numeri di lega coincidono ovunque ---------- */
 
 console.log('\n— gli stessi numeri su tutte le pagine —');
-const imp = await apri('impostazioni.html');
+const imp = await apri('altro.html#impostazioni');
 const atteso = {
   crediti: Number(await imp.locator('#crediti').inputValue()),
   squadre: Number(await imp.locator('#squadre').inputValue()),
@@ -357,7 +416,7 @@ if (pianoTot !== atteso.crediti) nota(`il piano di spesa somma a ${pianoTot} inv
 
 /* La guida e' quella che prima mentiva di piu': deve nominare il modulo giusto,
    i crediti giusti e il numero di slot giusto. */
-const guida = testi['index.html'];
+const guida = testi['altro.html#guida'];
 for (const [che, valore] of [['crediti', atteso.crediti], ['modulo', atteso.modulo], ['slot', slotTot]]) {
   if (!guida.includes(String(valore))) nota(`la guida non nomina mai ${che} = ${valore}`);
 }
@@ -394,14 +453,14 @@ if (!difensivo() && titolo.includes('in difesa')) {
 /* ---------- 3. la guida e la rosa ideale propongono la stessa rosa ---------- */
 
 console.log('\n— guida e consigliere dicono la stessa cosa —');
-const gp = await apri('index.html');
+const gp = await apri('altro.html#guida');
 const rosaGuida = await gp.locator('#rosaBody .nm').evaluateAll(e => e.map(x => x.textContent.trim()));
 const spesaGuida = (await gp.locator('#rosaNota').innerText()).match(/(\d+)\s*crediti/)?.[1];
 await gp.close();
 
-const rp = await apri('rosaideale.html');
+const rp = await apri('rosa.html#ideale');
 const rosaCons = await rp.locator('.idrow .nm').evaluateAll(e => e.map(x => x.textContent.replace(/(KO|SQ)$/, '').trim()));
-const spesaCons = (await rp.locator('#totali').innerText()).match(/(\d+)\s*\/\s*\d+\s*cr/)?.[1];
+const spesaCons = (await rp.locator('#totali-ideale').innerText()).match(/(\d+)\s*\/\s*\d+\s*cr/)?.[1];
 await rp.close();
 
 console.log(`  guida: ${rosaGuida.length} giocatori, ${spesaGuida} crediti`);
@@ -432,7 +491,7 @@ if (spesaGuida && spesaCons && spesaGuida !== spesaCons) {
 
 console.log('\n— «chi comprare» non si riempie di giocatori da un credito —');
 {
-  const g = await apri('index.html');
+  const g = await apri('altro.html#guida');
   const schede = await g.locator('#tabs button').count();
   for (let i = 0; i < schede; i++) {
     const nome = (await g.locator('#tabs button').nth(i).textContent()).split('·')[0].trim();
@@ -471,6 +530,22 @@ console.log('\n— «chi comprare» non si riempie di giocatori da un credito �
 }
 
 /* ---------- 4. nessun nome di giocatore inchiodato nell'HTML ---------- */
+
+/* Anche i CONTEGGI invecchiano: «tutti i 540 giocatori» e' rimasto scritto a
+   mano finche' il listone non e' passato a 568, e nessuno se n'era accorto. */
+{
+  const { readFile } = await import('node:fs/promises');
+  const radice = new URL('../', import.meta.url);
+  const quanti = JSON.parse(await readFile(new URL('assets/data/players.json', radice), 'utf8')).length;
+  const vecchi = [500, 520, 540, 560, 580, 600].filter(n => n !== quanti);
+  for (const [pagina, testo] of Object.entries(testi)) {
+    for (const n of vecchi) {
+      if (new RegExp(`\\b${n}\\s+giocatori`).test(testo)) {
+        nota(`[${pagina}] dice «${n} giocatori» ma nel listone sono ${quanti}: e' un numero scritto a mano`);
+      }
+    }
+  }
+}
 
 console.log('\n— niente nomi scritti a mano nelle pagine —');
 const fs = await import('node:fs/promises');
@@ -533,14 +608,14 @@ const DIFENSIVE = ['si vince in difesa', 'denaro gratis'];
 for (const m of MODULI_DA_PROVARE) {
   for (const s of STRATEGIE_DA_PROVARE) {
     const scelta = await ctx.newPage();
-    await scelta.goto(BASE + 'rosaideale.html', { waitUntil: 'domcontentloaded' });
+    await scelta.goto(BASE + 'rosa.html#ideale', { waitUntil: 'domcontentloaded' });
     await scelta.waitForTimeout(2400);
-    await scelta.selectOption('#modulo', m);
+    await scelta.selectOption('#modulo-ideale', m);
     await scelta.locator(`#strategie button[data-s="${s}"]`).click();
     await scelta.waitForTimeout(1600);
     await scelta.close();
 
-    const g = await apri('index.html');
+    const g = await apri('altro.html#guida');
     const t = await g.locator('body').innerText();
     const titolo = t.split('\n').find(r => r.includes('La tua asta si vince')) || '';
 

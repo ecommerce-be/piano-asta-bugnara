@@ -9,7 +9,16 @@
 
 const nav = document.querySelector('nav.nav');
 
-if (nav && !nav.dataset.tendina) {
+/* Quante voci meritano una tendina.
+ *
+ * Con undici sezioni la tendina era necessaria: in fila occupavano tutta la
+ * testata e su schermo stretto andavano a capo. Con quattro non lo e' piu' —
+ * anzi, nascondere quattro voci dietro un pulsante aggiunge un clic a ogni
+ * spostamento. Sopra questa soglia si ripiega, sotto restano in fila; sul
+ * telefono ci pensa il foglio di stile, che le fa scorrere. */
+const TROPPE = 5;
+
+if (nav && !nav.dataset.tendina && nav.querySelectorAll('a').length > TROPPE) {
   const voci = [...nav.querySelectorAll('a')];
   const corrente = voci.find(a => a.getAttribute('aria-current') === 'page');
   const etichetta = corrente ? corrente.textContent.trim() : 'Vai a…';

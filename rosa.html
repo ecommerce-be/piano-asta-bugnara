@@ -3,46 +3,54 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>La mia rosa — Piano d'Asta Bugnara</title>
+<title>La mia squadra — Piano d'Asta Bugnara</title>
 <meta name="description" content="La rosa costruita all'asta, l'undici titolare e quanto rende il modificatore di difesa con i tuoi difensori.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=48">
+<link rel="stylesheet" href="assets/style.css?v=51">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="48">
+<meta name="versione" content="51">
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
+  <a class="brand" href="listone.html"><span class="dot"></span>Piano d'Asta</a>
   <nav class="nav">
-    <a href="./">La guida</a>
-    <a href="listone.html">Listone e asta live</a>
-    <a href="fasce.html">Fasce</a>
-    <a href="rosaideale.html">Rosa ideale</a>
-    <a href="bozza.html">Bozza</a>
-    <a href="rosa.html" aria-current="page">La mia rosa</a>
-    <a href="fantasquadre.html">Fantasquadre</a>
+    <a href="listone.html">Asta e listone</a>
+    <a href="rosa.html" aria-current="page">La mia squadra</a>
     <a href="squadre.html">Serie A</a>
-    <a href="infortunati.html">Infortunati</a>
-    <a href="impostazioni.html">Impostazioni</a>
-    <a href="lega.html">La mia lega</a>
+    <a href="altro.html">Altro</a>
   </nav>
   <div id="tema"></div>
 </div></div>
+<div class="wide">
+  <section style="padding-bottom:.6rem">
+    <p class="eyebrow">La mia squadra</p>
+    <h2>Quello che hai, quello che stai pensando, quello che ti conviene</h2>
+    <p class="lede" style="max-width:74ch">Tre modi di guardare la stessa squadra: quella che hai comprato, quella che stai pensando, e quella che comporrei io col tuo budget.</p>
+  </section>
+  <div id="accesso" style="margin-bottom:18px"></div>
 
+  <div class="schede" role="tablist" aria-label="La mia squadra">
+    <button type="button" role="tab" data-scheda="rosa" aria-selected="true">La mia rosa</button>
+    <button type="button" role="tab" data-scheda="bozza">Bozza</button>
+    <button type="button" role="tab" data-scheda="ideale">Rosa ideale</button>
+  </div>
+</div>
+
+<section class="scheda" id="s-rosa" role="tabpanel" aria-label="La mia rosa" data-modulo="rosa-page.js?v=51">
 <div class="wide">
 
   <section style="padding-bottom:1.4rem">
     <p class="eyebrow">La mia rosa</p>
     <h2>Quello che hai comprato</h2>
-    <p class="lede" style="max-width:70ch">Si aggiorna da sola man mano che segni gli acquisti nel <a href="listone.html">listone</a> o li assegni dalle <a href="fantasquadre.html">fantasquadre</a>. La ✕ accanto a un giocatore lo toglie da qui e anche dalla tua fantasquadra condivisa.</p>
+    <p class="lede" style="max-width:70ch">Si aggiorna da sola man mano che segni gli acquisti nel <a href="listone.html">listone</a> o li assegni dalle <a href="altro.html#fantasquadre">fantasquadre</a>. La ✕ accanto a un giocatore lo toglie da qui e anche dalla tua fantasquadra condivisa.</p>
   </section>
 
   <div class="ledger" id="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:24px"></div>
@@ -85,9 +93,92 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
     <p>La rosa vive nel browser, insieme allo stato dell'asta; la fantasquadra invece sta nel database e la vede anche Aurelio. Se un giocatore risulta tuo qui ma non è registrato nella tua fantasquadra, te lo segnalo con <span class="orfano">non registrato</span>. Se cambi computer, esporta l'asta dal <a href="listone.html">listone</a> e reimportala di là.</p>
   </footer>
 </div>
+</section>
+<section class="scheda" id="s-bozza" role="tabpanel" aria-label="Bozza" data-modulo="bozza.js?v=51" hidden>
+<div class="wide">
+  <section style="padding-bottom:1.2rem">
+    <p class="eyebrow">Bozza condivisa</p>
+    <h2>La rosa ideale, costruita in due</h2>
+    <p class="lede" style="max-width:72ch">Questa pagina non vive nel tuo browser: sta in un database condiviso. Tu e Aurelio entrate col vostro account e vedete la stessa cosa, con scritto accanto a ogni giocatore chi l'ha messo e quando.</p>
+      </section>
 
-<script type="module" src="assets/rosa-page.js?v=48"></script>
-<script type="module" src="assets/menu.js?v=48"></script>
-<script type="module" src="assets/theme.js?v=48"></script>
+  <div class="tool" style="margin-bottom:2rem">
+    <div class="ledger" id="totali-bozza"></div>
+    <div class="aggiungi">
+      <input type="search" id="cerca" placeholder="Cerca un giocatore da aggiungere alla bozza…" aria-label="Cerca giocatore" style="flex:1 1 260px">
+      <div class="sugg" id="sugg"></div>
+    </div>
+    <div id="barra" class="savebar"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start" id="reparti-bozza"></div>
+
+  <footer>
+    <p>Il prezzo che scrivi è quello che <em>pensate</em> di dover pagare, non quello pagato davvero: per l'asta vera c'è il <a href="listone.html">listone</a>, che resta locale e istantaneo. Se un prezzo supera il tuo tetto diventa rosso.</p>
+    <p>La pagina si riallinea da sola ogni dodici secondi: se il tuo socio salva mentre sei qui, te lo dice. E se salvate nello stesso momento, chi arriva secondo non sovrascrive il primo — le due versioni vengono unite tenendo la modifica più recente per ogni giocatore.</p>
+  </footer>
+</div>
+</section>
+<section class="scheda" id="s-ideale" role="tabpanel" aria-label="Rosa ideale" data-modulo="rosaideale.js?v=51" hidden>
+<div class="wide">
+
+  <section style="padding-bottom:1.2rem">
+    <p class="eyebrow">Consigliere</p>
+    <h2>La rosa che comprerei io</h2>
+    <p class="lede" style="max-width:74ch">Scegli il modulo e come vuoi giocartela: il sito mette insieme i 28 giocatori che rendono di più con i tuoi crediti, e ti dice a che prezzo puntarli. Non è un oracolo — è il ragionamento che faresti tu con la lista in mano, fatto su tutto il listone invece che sui venti giocatori che ricordi.</p>
+  </section>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3 class="sez">Come giochi</h3>
+    <div class="controls" style="border:0">
+      <label for="modulo-ideale" class="idlab" style="align-self:center">Modulo</label>
+      <select id="modulo-ideale" style="flex:0 1 130px"></select>
+      <label for="rischio" class="idlab" style="align-self:center;margin-left:.6rem">Infortunati</label>
+      <select id="rischio" style="flex:0 1 230px">
+        <option value="tutti">Considerali, scontati per le assenze</option>
+        <option value="lunghi">Escludi chi rientra oltre sei settimane</option>
+        <option value="nessuno">Escludi chiunque sia fermo</option>
+      </select>
+      <button class="chip" id="ricalcola" style="margin-left:auto">Ricalcola</button>
+    </div>
+    <h3 class="sez">Strategia</h3>
+    <div class="strat" id="strategie"></div>
+    <p class="spiega">Modulo e strategia sono gli stessi delle <a href="altro.html#impostazioni">impostazioni</a>: cambiarli qui li cambia anche là, e <a href="altro.html#guida">la guida</a> si riscrive di conseguenza. <span class="firma" id="statoScelta"></span></p>
+  </div>
+
+  <div id="avvisoModulo" class="savebar" style="margin-bottom:16px;display:none"></div>
+
+  <div id="totali-ideale" class="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:20px"></div>
+
+  <div class="ideale" id="reparti-ideale"></div>
+
+  <div class="controls panel" style="border-radius:4px;margin:20px 0">
+    <button class="btn" id="inBozza">Porta questa rosa nella Bozza</button>
+    <span class="firma" id="statoBozza" style="align-self:center"></span>
+  </div>
+
+  <section>
+    <p class="eyebrow">Quanto pesa la strategia</p>
+    <h2>Cosa cambia davvero se cambi idea</h2>
+    <p class="lede" style="max-width:74ch">Molti nomi tornano qualunque strategia scegli, e la prima
+      impressione è che il sito non ti stia ascoltando. È il contrario: quelli sono i giocatori che
+      convengono in ogni caso. Qui li separo da quelli che compri <em>solo</em> per la scelta che hai fatto.</p>
+    <div id="confronto"></div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Come ci arriva</p>
+    <h2>Il ragionamento, in chiaro</h2>
+    <div id="spiegazione"></div>
+  </section>
+
+  <footer>
+    <p>I prezzi obiettivo sono quelli del modello di mercato: quanto quel giocatore dovrebbe costare in una lega come la vostra, con le quote impostate nelle <a href="altro.html#impostazioni">impostazioni</a>. All'asta vera qualcuno pagherà di più e qualcuno di meno — è per questo che serve un piano, non una lista.</p>
+  </footer>
+</div>
+</section>
+<script type="module" src="assets/schede.js?v=51"></script>
+<script type="module" src="assets/menu.js?v=51"></script>
+<script type="module" src="assets/theme.js?v=51"></script>
 </body>
 </html>

@@ -1,12 +1,12 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=48';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=51';
 import {
   pronto, configurato, collegato, inLega, squadra, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
-} from './db.js?v=48';
-import { autosalva, conferma as chiediConferma } from './ui.js?v=48';
-import { leggiCfg } from './cfg.js?v=48';
+} from './db.js?v=51';
+import { autosalva, conferma as chiediConferma } from './ui.js?v=51';
+import { leggiCfg } from './cfg.js?v=51';
 
 /* La bozza e' il TUO piano: sta nel documento di squadra, e il database la
    mostra solo a chi gestisce quella squadra. Il `true` in fondo a leggi(),
@@ -137,7 +137,7 @@ function disegnaBarra() {
 /* ---------- disegno ---------- */
 
 function disegna() {
-  const box = document.getElementById('reparti');
+  const box = document.getElementById('reparti-bozza');
   let totale = 0;
 
   box.innerHTML = RUOLI.map(r => {
@@ -166,7 +166,7 @@ function disegna() {
   }).join('');
 
   const slotTot = RUOLI.reduce((a, r) => a + cfg.slot[r], 0);
-  document.getElementById('totali').innerHTML = `
+  document.getElementById('totali-bozza').innerHTML = `
     <div class="lcell"><div class="k">Giocatori</div><div class="n">${bozza.giocatori.length}<small> / ${slotTot}</small></div></div>
     <div class="lcell${totale > cfg.crediti ? ' over' : ''}"><div class="k">Totale previsto</div>
       <div class="n">${totale}<small> / ${cfg.crediti} cr</small></div></div>
@@ -215,7 +215,7 @@ document.addEventListener('click', e => { if (!e.target.closest('.aggiungi')) su
 
 /* ---------- modifica e rimozione ---------- */
 
-const reparti = document.getElementById('reparti');
+const reparti = document.getElementById('reparti-bozza');
 
 reparti.addEventListener('change', e => {
   if (!e.target.dataset.prezzo) return;

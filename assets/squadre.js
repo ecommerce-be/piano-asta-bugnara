@@ -1,9 +1,9 @@
 /* Pagina "Serie A": si sceglie una squadra e si vede la rosa completa a listone,
    con le statistiche disponibili e lo stato di ciascun giocatore all'asta. */
-import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=48';
-import { pronto, esc } from './db.js?v=48';
-import { leggiCfg } from './cfg.js?v=48';
-import { caricaAsta, statoAsta, squadreAsta } from './astaLega.js?v=48';
+import { caricaDati, ricalcola, asta, badgeRuolo, caricaInfortuni, classeGravita, AGGIORNATO_IL, RUOLI, NOME_RUOLO, CLASSE_VERDETTO } from './app.js?v=51';
+import { pronto, esc } from './db.js?v=51';
+import { leggiCfg } from './cfg.js?v=51';
+import { caricaAsta, statoAsta, squadreAsta } from './astaLega.js?v=51';
 
 const { players, lega } = await caricaDati();
 

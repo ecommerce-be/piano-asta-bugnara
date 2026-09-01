@@ -4,97 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rosa ideale — Piano d'Asta Bugnara</title>
-<meta name="description" content="Scegli modulo e strategia, e il sito compone i 28 giocatori da comprare con i prezzi obiettivo.">
-<meta name="color-scheme" content="light dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=48">
-<script>
-try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
-</script>
-<meta name="versione" content="48">
+<!-- Questa pagina non esiste piu' come pagina: adesso e' una scheda dentro
+     rosa.html#ideale. Il file resta perche' l'indirizzo puo' essere nei segnalibri di
+     qualcuno della lega, o in un messaggio mandato mesi fa: un collegamento
+     morto e' peggio di un rimando. -->
+<link rel="canonical" href="rosa.html#ideale">
+<meta http-equiv="refresh" content="0; url=rosa.html#ideale">
+<script>location.replace('rosa.html#ideale');</script>
+<meta name="versione" content="51">
 </head>
-<body>
-
-<div class="topbar"><div class="inner">
-  <a class="brand" href="./"><span class="dot"></span>Piano d'Asta</a>
-  <nav class="nav">
-    <a href="./">La guida</a>
-    <a href="listone.html">Listone e asta live</a>
-    <a href="fasce.html">Fasce</a>
-    <a href="rosaideale.html" aria-current="page">Rosa ideale</a>
-    <a href="bozza.html">Bozza</a>
-    <a href="rosa.html">La mia rosa</a>
-    <a href="fantasquadre.html">Fantasquadre</a>
-    <a href="squadre.html">Serie A</a>
-    <a href="infortunati.html">Infortunati</a>
-    <a href="impostazioni.html">Impostazioni</a>
-    <a href="lega.html">La mia lega</a>
-  </nav>
-  <div id="tema"></div>
-</div></div>
-
-<div class="wide">
-
-  <section style="padding-bottom:1.2rem">
-    <p class="eyebrow">Consigliere</p>
-    <h2>La rosa che comprerei io</h2>
-    <p class="lede" style="max-width:74ch">Scegli il modulo e come vuoi giocartela: il sito mette insieme i 28 giocatori che rendono di più con i tuoi crediti, e ti dice a che prezzo puntarli. Non è un oracolo — è il ragionamento che faresti tu con la lista in mano, fatto su tutti i 540 giocatori invece che sui venti che ricordi.</p>
-  </section>
-
-  <div class="panel" style="margin-bottom:16px">
-    <h3 class="sez">Come giochi</h3>
-    <div class="controls" style="border:0">
-      <label for="modulo" class="idlab" style="align-self:center">Modulo</label>
-      <select id="modulo" style="flex:0 1 130px"></select>
-      <label for="rischio" class="idlab" style="align-self:center;margin-left:.6rem">Infortunati</label>
-      <select id="rischio" style="flex:0 1 230px">
-        <option value="tutti">Considerali, scontati per le assenze</option>
-        <option value="lunghi">Escludi chi rientra oltre sei settimane</option>
-        <option value="nessuno">Escludi chiunque sia fermo</option>
-      </select>
-      <button class="chip" id="ricalcola" style="margin-left:auto">Ricalcola</button>
-    </div>
-    <h3 class="sez">Strategia</h3>
-    <div class="strat" id="strategie"></div>
-    <p class="spiega">Modulo e strategia sono gli stessi delle <a href="impostazioni.html">impostazioni</a>: cambiarli qui li cambia anche là, e <a href="./">la guida</a> si riscrive di conseguenza. <span class="firma" id="statoScelta"></span></p>
-  </div>
-
-  <div id="avvisoModulo" class="savebar" style="margin-bottom:16px;display:none"></div>
-
-  <div id="totali" class="ledger" style="border:1px solid var(--line);border-radius:4px;margin-bottom:20px"></div>
-
-  <div class="ideale" id="reparti"></div>
-
-  <div class="controls panel" style="border-radius:4px;margin:20px 0">
-    <button class="btn" id="inBozza">Porta questa rosa nella Bozza</button>
-    <span class="firma" id="statoBozza" style="align-self:center"></span>
-  </div>
-
-  <section>
-    <p class="eyebrow">Quanto pesa la strategia</p>
-    <h2>Cosa cambia davvero se cambi idea</h2>
-    <p class="lede" style="max-width:74ch">Molti nomi tornano qualunque strategia scegli, e la prima
-      impressione è che il sito non ti stia ascoltando. È il contrario: quelli sono i giocatori che
-      convengono in ogni caso. Qui li separo da quelli che compri <em>solo</em> per la scelta che hai fatto.</p>
-    <div id="confronto"></div>
-  </section>
-
-  <section>
-    <p class="eyebrow">Come ci arriva</p>
-    <h2>Il ragionamento, in chiaro</h2>
-    <div id="spiegazione"></div>
-  </section>
-
-  <footer>
-    <p>I prezzi obiettivo sono quelli del modello di mercato: quanto quel giocatore dovrebbe costare in una lega come la vostra, con le quote impostate nelle <a href="impostazioni.html">impostazioni</a>. All'asta vera qualcuno pagherà di più e qualcuno di meno — è per questo che serve un piano, non una lista.</p>
-  </footer>
-</div>
-
-<script type="module" src="assets/rosaideale.js?v=48"></script>
-<script type="module" src="assets/menu.js?v=48"></script>
-<script type="module" src="assets/theme.js?v=48"></script>
+<body style="font-family:system-ui,sans-serif;padding:2rem">
+<p>Questa pagina si è spostata: <a href="rosa.html#ideale">Rosa ideale</a>.</p>
 </body>
 </html>
