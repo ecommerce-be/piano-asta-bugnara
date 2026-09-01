@@ -114,7 +114,13 @@ COLONNE = {
     "rp": ["rp", "rigoriparati", "parati"],
     "rseg": ["r+", "rigorisegnati", "rigoriseg"],
     "rsba": ["r-", "rigorisbagliati", "rigorisbag"],
-    "au": ["au", "autogol", "autoreti"],
+    # Sulla pagina delle statistiche i rigori stanno in UNA colonna sola,
+    # intitolata "Rig", con dentro "segnati / sbagliati": «5 / 1». Cercavamo
+    # "R+" e "R-" separate, non le trovavamo mai, e nel listone le due colonne
+    # dei rigori restavano vuote per tutti e 568 — sembravano zeri, e in una
+    # lega dove il rigorista vale mezza asta non e' un dettaglio.
+    "rig": ["rig", "rigori", "rigorisegnatisbagliati"],
+    "au": ["au", "aut", "autogol", "autoreti", "autogoal"],
     "assist": ["ass", "assist", "asst"],
     "amm": ["amm", "ammonizioni", "gialli", "cartellinigialli"],
     "esp": ["esp", "espulsioni", "rossi", "cartellinirossi"],
@@ -164,6 +170,16 @@ def sembra_nome(s: str) -> bool:
 
 def squadra_nostra(s: str) -> str | None:
     return SQUADRE.get(chiave_intestazione(s))
+
+
+def rigori(s: str) -> tuple[int | None, int | None]:
+    """«5 / 1» -> (5, 1): rigori segnati e rigori sbagliati, da una cella sola."""
+    n = re.findall(r"-?\d+", str(s))
+    if len(n) >= 2:
+        return int(n[0]), int(n[1])
+    if len(n) == 1:
+        return int(n[0]), None
+    return None, None
 
 
 def numero(s: str) -> float | None:
@@ -335,6 +351,12 @@ def leggi_tabelle(html: str, campi_attesi: list[str]) -> tuple[list[dict], dict]
                 grezzo = celle[i]
                 if campo in ("sq", "r"):
                     d[campo] = grezzo
+                elif campo == "rig":
+                    segnati, sbagliati = rigori(grezzo)
+                    if segnati is not None:
+                        d["rseg"] = segnati
+                    if sbagliati is not None:
+                        d["rsba"] = sbagliati
                 else:
                     v = numero(grezzo)
                     if v is not None:
@@ -378,8 +400,8 @@ def anatomia(html: str, campione: str = "Malen") -> None:
         print(f"    [{i}] {segni} — {len(righe)} righe totali, {n_corpo} nel tbody")
         for j, r in enumerate(righe[:3]):
             celle = testo_celle(r)
-            testo = " | ".join(c[:18] for c in celle[:14])
-            print(f"        riga {j}: {len(celle)} celle · {testo[:150]}")
+            testo = " | ".join(c[:18] for c in celle[:24])
+            print(f"        riga {j}: {len(celle)} celle · {testo[:320]}")
 
     # dove sta davvero il nome di un giocatore?
     pos = [m.start() for m in re.finditer(re.escape(campione), html)]

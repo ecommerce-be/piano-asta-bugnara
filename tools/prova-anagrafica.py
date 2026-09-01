@@ -235,6 +235,48 @@ A.aggiorna_anagrafica(g, pagina(
 A.applica_correzioni(g, fissati)
 prova("comanda il file, non la pagina", chi(g, "Nkunku")["r"] == "C", chi(g, "Nkunku")["r"])
 
+print("\n— i rigori stanno in una colonna sola, «segnati / sbagliati» —")
+
+# Copia fedele dell'intestazione vera di fantacalcio.it/statistiche-serie-a
+# (diagnosi del 1 settembre): il nome sta nella quarta cella, e i rigori sono
+# una colonna «Rig» col valore «5 / 1» dentro. Cercando "R+" e "R-" separate
+# non le trovavamo mai, e nel listone quelle due colonne restavano vuote per
+# tutti — sembravano zeri.
+INTEST = ["Calciatore", "", "", "", "Sq", "PV", "MV", "FM", "Gol", "GS",
+          "Rig", "RP", "Ass", "Amm", "Esp", "Au"]
+
+
+def pagina_statistiche(*giocatori):
+    def riga(celle):
+        return "<tr>" + "".join(f"<td>{c}</td>" for c in celle) + "</tr>"
+    corpo = [riga(["", "", "", g[0], *g[1:]]) for g in giocatori]
+    # serve un minimo di righe perche' la tabella venga presa sul serio
+    corpo += [riga(["", "", "", f"Tale{i}", "ATA", "1", "6", "6", "0", "0",
+                    "0 / 0", "0", "0", "0", "0", "0"]) for i in range(30)]
+    return "<table>" + riga(INTEST) + "".join(corpo) + "</table>"
+
+
+html = pagina_statistiche(
+    ("Malen", "ROM", "2", "8,25", "15,5", "5", "0", "3 / 1", "0", "0", "1", "0", "0"),
+    ("Svilar", "ROM", "2", "6,5", "6,5", "0", "1", "0 / 0", "2", "0", "0", "0", "1"),
+)
+righe, diag = A.leggi_tabelle(html, A.ATTESI["statistiche"])
+prima = righe[0]
+prova("la colonna Rig viene riconosciuta", "rig" in diag["colonne_riconosciute"],
+      str(diag.get("colonne_riconosciute")))
+prova("i rigori segnati escono", prima.get("rseg") == 3, str(prima.get("rseg")))
+prova("e anche quelli sbagliati", prima.get("rsba") == 1, str(prima.get("rsba")))
+prova("«0 / 0» resta zero, non sparisce",
+      righe[1].get("rseg") == 0 and righe[1].get("rsba") == 0, str(righe[1]))
+prova("gli autogol si leggono", "au" in prima, str(sorted(prima)))
+prova("e i rigori parati non si confondono con quelli segnati",
+      prima.get("rp") == 0 and righe[1].get("rp") == 2, str([prima.get("rp"), righe[1].get("rp")]))
+prova("il nome resta quello giusto anche con tre celle vuote davanti",
+      prima["nome"] == "Malen", prima["nome"])
+prova("e nessuno dei campi attesi manca piu'",
+      not [c for c in A.ATTESI["statistiche"] if not any(c in r for r in righe)],
+      str([c for c in A.ATTESI["statistiche"] if not any(c in r for r in righe)]))
+
 print("\n— chi ha lasciato la Serie A si toglie a mano —")
 
 # Nkunku e' andato in Germania e Fantacalcio.it continua a quotarlo: il sito

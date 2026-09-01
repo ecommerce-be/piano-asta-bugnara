@@ -15,8 +15,8 @@ import {
   caricaContesto, mieLeghe, creaLega, entraInLega, scegliSquadra, cambiaLega,
   creaSquadra, rinominaSquadra,
   lega, squadra, squadreDellaLega, membriDellaLega, sonoAdmin, inLega,
-} from './db.js?v=43';
-import { toast, conferma as chiediConferma } from './ui.js?v=43';
+} from './db.js?v=45';
+import { toast, conferma as chiediConferma } from './ui.js?v=45';
 
 await avvia();
 

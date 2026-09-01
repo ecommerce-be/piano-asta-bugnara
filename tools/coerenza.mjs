@@ -168,6 +168,34 @@ const nota = t => problemi.push(t);
     + (fuori.length ? ` — ${fuori.slice(0, 4).map(p => p.n).join(', ')}…` : ''));
   if (giorni > 7) nota(`il listone non si aggiorna da ${giorni} giorni: lancia python3 tools/aggiorna_dati.py`);
   if (!inf.voci?.length) nota('l\'infermeria è vuota: la pagina Infortunati non mostrerà niente');
+
+  /* Una colonna vuota per TUTTI non si nota guardando il sito: la tabella c'è,
+     l'intestazione c'è, e le celle bianche sembrano «nessun rigore segnato».
+     Invece vuol dire che quella colonna Fantacalcio.it non ce la sta dando —
+     o l'ha rinominata, e i sinonimi in COLONNE non la riconoscono più. Va
+     detto, perché è esattamente il tipo di buco che resta lì per mesi. */
+  const NOMI = {
+    q: 'quotazione', qi: 'quot. iniziale', fvm: 'FVM', pg: 'presenze', mv: 'media voto',
+    fm: 'fantamedia', gol: 'gol', gs: 'gol subiti', rp: 'rigori parati',
+    rseg: 'rigori segnati', rsba: 'rigori sbagliati', au: 'autogol',
+    assist: 'assist', amm: 'ammonizioni', esp: 'espulsioni',
+  };
+  const players = JSON.parse(testoPlayers);
+  const pieno = c => players.filter(p => p[c] != null).length;
+  const vuote = Object.keys(NOMI).filter(c => pieno(c) === 0);
+  const parziali = Object.keys(NOMI).filter(c => pieno(c) > 0 && pieno(c) < players.length);
+  console.log('  colonne piene su tutti: '
+    + Object.keys(NOMI).filter(c => pieno(c) === players.length).map(c => NOMI[c]).join(', '));
+  if (parziali.length) {
+    console.log('  colonne parziali: ' + parziali.map(c => `${NOMI[c]} ${pieno(c)}/${players.length}`).join(', '));
+  }
+  if (vuote.length) {
+    console.log(`  ATTENZIONE — colonne vuote per tutti e ${players.length}: `
+      + vuote.map(c => NOMI[c]).join(', '));
+    console.log('    nel listone quelle celle restano bianche e sembrano uno zero. Per capire se');
+    console.log('    Fantacalcio.it le ha rinominate:  python tools/aggiorna_dati.py --diagnosi');
+    console.log('    e guarda la riga «campi aggiornati» della pagina statistiche.');
+  }
 }
 
 /* ═══════════ da qui in poi serve un browser vero ═══════════

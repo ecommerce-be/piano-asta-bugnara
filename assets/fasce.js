@@ -8,11 +8,11 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO, fuoriListone,
-} from './app.js?v=43';
-import { valuta, titolariDi } from './consiglio.js?v=43';
-import { leggiCfg } from './cfg.js?v=43';
-import { esc } from './db.js?v=43';
-import { caricaAsta, statoAsta } from './astaLega.js?v=43';
+} from './app.js?v=45';
+import { valuta, titolariDi } from './consiglio.js?v=45';
+import { leggiCfg } from './cfg.js?v=45';
+import { esc } from './db.js?v=45';
+import { caricaAsta, statoAsta } from './astaLega.js?v=45';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
