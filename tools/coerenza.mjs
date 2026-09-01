@@ -108,6 +108,24 @@ const nota = t => problemi.push(t);
     }
   }
 
+  /* La parte di aggiorna_dati.py che riscrive squadra e ruolo e' l'unica che
+     puo' rovinare il listone in silenzio: ha il suo banco di prova, e gira
+     insieme al resto. */
+  {
+    const esito = await new Promise(ok => {
+      execFile('python3', [fileURLToPath(new URL('prova-anagrafica.py', import.meta.url))],
+        (err, out) => ok({ ko: Boolean(err), out: String(out) }));
+    });
+    const conta = esito.out.match(/(\d+) prove su (\d+)/);
+    if (esito.ko && /ATTENZIONE|FALLITO/.test(esito.out)) {
+      nota('le prove su squadre e ruoli non passano — lancia: python3 tools/prova-anagrafica.py');
+    } else if (esito.ko) {
+      console.log('  (prove su squadre e ruoli saltate: manca python3)');
+    } else {
+      console.log(`  prove su squadre e ruoli: ${conta ? conta[1] + '/' + conta[2] : 'passate'}`);
+    }
+  }
+
   console.log('\n— tutti i file alla stessa versione —');
   const pagine = PAGINE;
   const versioni = new Map();
@@ -145,6 +163,9 @@ const nota = t => problemi.push(t);
   const eta = giorni === 0 ? 'oggi' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
   console.log(`  listone: ${JSON.parse(testoPlayers).length} giocatori, aggiornato il ${quando} (${eta})`);
   console.log(`  infermeria: ${inf.voci?.length ?? 0} fermi, aggiornata il ${inf.aggiornato || '—'}`);
+  const fuori = JSON.parse(testoPlayers).filter(p => p.fuori);
+  console.log(`  fuori lista: ${fuori.length} (ceduti, svincolati, fuori rosa)`
+    + (fuori.length ? ` — ${fuori.slice(0, 4).map(p => p.n).join(', ')}…` : ''));
   if (giorni > 7) nota(`il listone non si aggiorna da ${giorni} giorni: lancia python3 tools/aggiorna_dati.py`);
   if (!inf.voci?.length) nota('l\'infermeria è vuota: la pagina Infortunati non mostrerà niente');
 }

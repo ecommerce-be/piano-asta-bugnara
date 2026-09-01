@@ -442,6 +442,111 @@ def applica(giocatori: list[dict], righe: list[dict], campi: list[str]) -> tuple
     return agganciati, ignorati
 
 
+# ------------------------------------------------- anagrafica: squadra e ruolo
+
+RUOLI_VALIDI = {"P", "D", "C", "A"}
+
+# sotto questa soglia la pagina non e' il listone e non ci si fida
+MINIMO_RIGHE = 200
+
+
+def aggiorna_anagrafica(giocatori: list[dict], righe: list[dict]) -> list[str]:
+    """Squadra, ruolo, e chi dal listone e' sparito.
+
+    PERCHE' ESISTE. Fino a oggi questo script aggiornava solo numeri —
+    quotazioni, presenze, gol, cartellini — e la squadra la leggeva soltanto
+    per distinguere gli omonimi. Risultato: chi cambiava maglia restava al
+    club di agosto per sempre, e la nota scritta a mano invecchiava con lui
+    («se e' lui il rigorista del Milan», quando il Milan l'aveva gia'
+    lasciato). All'asta un giocatore con la squadra sbagliata non e' un
+    dettaglio: sballa il modificatore, il giudizio, tutto.
+
+    Stessa cosa per chi la Serie A la lascia del tutto: nessuno lo toglieva,
+    e restava li' comprabile.
+
+    LE PROTEZIONI, perche' qui si puo' fare molto danno. Scrivere una squadra
+    sbagliata su 540 giocatori e' peggio che non scrivere niente:
+
+      - la squadra si tocca solo se la sigla della pagina corrisponde a una
+        delle venti che conosciamo; se non la riconosciamo, si lascia stare;
+      - se la pagina non e' leggibile per almeno nove giocatori su dieci,
+        non si tocca niente: vuol dire che e' cambiata e va guardata a mano;
+      - gli omonimi si saltano: senza la squadra vecchia non c'e' modo di
+        sapere quale dei due si e' trasferito, e indovinare e' peggio;
+      - chi sparisce viene MARCATO, non cancellato. Se domani ricompare gli
+        si toglie il marchio. Cancellare, con una pagina che oggi non va,
+        vorrebbe dire perdere il listone.
+    """
+    per_nome = indicizza(giocatori)
+    con_squadra = [r for r in righe if squadra_nostra(r.get("sq") or "")]
+
+    # Una pagina con quattro righe non e' il listone: e' un frammento, o un
+    # errore. Toccare l'anagrafica partendo da li' vorrebbe dire marcare come
+    # spariti cinquecento giocatori che invece ci sono.
+    if len(righe) < MINIMO_RIGHE:
+        return [f"la pagina ha solo {len(righe)} righe, troppo poche per essere il "
+                f"listone (ne servono almeno {MINIMO_RIGHE}): non tocco squadre e ruoli"]
+
+    if len(con_squadra) < len(righe) * 0.9:
+        return [f"squadre riconosciute solo in {len(con_squadra)} righe su {len(righe)}: "
+                "non tocco squadre e ruoli"]
+
+    cambi: list[str] = []
+    da_rileggere: list[str] = []
+    visti: set[int] = set()
+
+    for riga in righe:
+        candidati = per_nome.get(chiave_nome(riga["nome"]))
+        if not candidati or len(candidati) > 1:
+            continue                      # sconosciuto, oppure omonimi: non si indovina
+        g = candidati[0]
+        visti.add(id(g))
+
+        sq = squadra_nostra(riga.get("sq") or "")
+        if sq and sq != g["sq"]:
+            cambi.append(f"{g['n']}: {g['sq']} -> {sq}")
+            # La nota e' un giudizio scritto a mano, e spesso nomina la squadra
+            # («se e' lui il rigorista del Milan»). Quando uno si trasferisce
+            # quella frase diventa falsa, e nessuno se ne accorge rileggendo il
+            # listone. Qui lo sappiamo con certezza — il trasferimento e'
+            # appena successo — quindi lo si dice, e la si riscrive a mano in
+            # data/overrides.json.
+            if g["sq"].lower() in (g.get("nota") or "").lower():
+                da_rileggere.append(f"{g['n']} (la nota parla ancora del {g['sq']})")
+            g["sq"] = sq
+
+        r = (riga.get("r") or "").strip().upper()[:1]
+        if r in RUOLI_VALIDI and r != g["r"]:
+            cambi.append(f"{g['n']}: ruolo {g['r']} -> {r}")
+            g["r"] = r
+
+        if g.pop("fuori", None):
+            cambi.append(f"{g['n']}: torna nel listone")
+
+    # chi non compare piu' nella pagina delle quotazioni
+    spariti = []
+    for g in giocatori:
+        if id(g) in visti or g.get("fuori"):
+            continue
+        if len(per_nome.get(chiave_nome(g["n"]), [])) > 1:
+            continue                      # omonimi: uno dei due c'era, non so quale
+        g["fuori"] = True
+        spariti.append(g["n"])
+
+    if cambi:
+        print(f"    trasferimenti e correzioni ({len(cambi)}): " + "; ".join(cambi[:20])
+              + (" …" if len(cambi) > 20 else ""))
+    if spariti:
+        print(f"    non sono piu' nel listone ({len(spariti)}): " + ", ".join(spariti[:20])
+              + (" …" if len(spariti) > 20 else ""))
+    if da_rileggere:
+        print("    NOTE DA RISCRIVERE a mano in data/overrides.json, nominano la squadra "
+              f"vecchia ({len(da_rileggere)}): " + "; ".join(da_rileggere))
+    fuori = sum(1 for g in giocatori if g.get("fuori"))
+    print(f"    fuori lista in tutto: {fuori} su {len(giocatori)}")
+    return []
+
+
 # ------------------------------------------------- impronta per la cache
 
 def marca_dati(testo_json: str) -> None:
@@ -548,6 +653,12 @@ def main() -> int:
                   + (" …" if len(ignorati) > 12 else ""))
         if quota < SOGLIA:
             problemi.append(f"{pagina}: agganciato solo il {quota:.0%}, sotto la soglia del {SOGLIA:.0%}")
+            continue
+
+        # La pagina delle quotazioni e' l'unica che dice in che squadra gioca
+        # uno oggi, ed e' l'elenco di chi e' ancora nel listone.
+        if pagina == "quotazioni":
+            problemi.extend(aggiorna_anagrafica(giocatori, righe))
 
     if problemi:
         print("\nNon aggiorno niente, questi punti non tornano:")

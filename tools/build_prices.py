@@ -46,6 +46,13 @@ def leggi_listone(path: Path) -> list[dict]:
             "r": d["R."],
             "q": int(d["QUOT."] or 1),
         }
+        # "Fuori lista" e' la colonna con cui Fantacalcio segna chi non fa piu'
+        # parte del listone: ceduto all'estero, svincolato, fuori rosa. Erano
+        # ventiquattro e finivano nel sito come giocatori normali, comprabili
+        # all'asta. Adesso restano nel file — servono a riconoscerli se qualcuno
+        # li nomina — ma sono marcati, e il sito non li propone piu' a nessuno.
+        if str(d.get("Fuori lista") or "").strip():
+            g["fuori"] = True
         # Statistiche gia' presenti nell'export del listone: presenze con voto,
         # media voto, fantamedia. Si aggiornano riesportando lo stesso file.
         for chiave, colonna in (("pg", "PGv"), ("mv", "MV"), ("fm", "FM")):
@@ -59,11 +66,88 @@ def leggi_listone(path: Path) -> list[dict]:
     return giocatori
 
 
+# Campi che nel listone Excel NON ci sono: li aggiunge l'aggiornamento
+# quotidiano leggendo Fantacalcio.it. Ricostruendo dal file esportato
+# andrebbero persi tutti, e il sito tornerebbe indietro di giorni.
+SOLO_DAL_SITO = ("gol", "gs", "rp", "rseg", "rsba", "au", "assist",
+                 "amm", "esp", "qi", "fvm")
+
+# Questi invece stanno in tutti e due, e vince il piu' fresco: la quotazione
+# si muove col mercato, presenze e medie crescono a ogni giornata.
+IN_ENTRAMBI = ("q", "pg", "mv", "fm")
+
+
+def conserva_statistiche(giocatori: list[dict]) -> None:
+    """Non far tornare indietro i dati quando si ricostruisce dal listone.
+
+    Il motivo per cui uno riesporta il listone e' quasi sempre uno solo: i
+    trasferimenti. Il file Excel e' l'unica fonte che sa chi e' passato dove,
+    chi e' arrivato e chi e' uscito dalla Serie A. Ma di suo contiene poco —
+    nome, squadra, ruolo, quotazione, presenze e medie — mentre gol, assist,
+    cartellini, rigori e FVM li mette ogni mattina tools/aggiorna_dati.py
+    leggendo Fantacalcio.it.
+
+    Ricostruire alla cieca vorrebbe dire perdere tutto il secondo gruppo, e
+    riportare indietro il primo se l'export che hai sottomano e' di qualche
+    giorno fa. Cioe' rovinare i dati proprio nel momento in cui li stai
+    sistemando. Quindi:
+
+      - le colonne che solo il sito conosce si riportano sempre dentro;
+      - quotazione, presenze e medie si prendono dal listone SOLO se
+        l'export e' piu' recente di quello che abbiamo gia'. Lo si capisce
+        dal totale delle presenze: quelle non tornano mai indietro.
+
+    Su chi c'e', in che squadra e in che ruolo decide comunque il listone
+    esportato, sempre: e' l'unica cosa che sa dei trasferimenti.
+    """
+    if not USCITA.exists():
+        return
+    try:
+        vecchi = json.loads(USCITA.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return
+
+    per_nome: dict[str, dict] = {}
+    for g in vecchi:
+        per_nome.setdefault(normalizza(g["n"]), g)
+
+    presenze = lambda lista: sum(float(g.get("pg") or 0) for g in lista)
+    export_vecchio = presenze(giocatori) < presenze(vecchi)
+
+    if export_vecchio:
+        print("    ATTENZIONE: l'export del listone e' piu' vecchio dei dati che hai gia'.")
+        print("    Tengo squadre, ruoli e chi e' fuori lista dall'export (e' lui che sa dei")
+        print("    trasferimenti), ma quotazioni, presenze e medie le lascio come stanno:")
+        print("    riesporta il listone da LegheFantacalcio per aggiornare anche quelle.")
+
+    ripresi = 0
+    for g in giocatori:
+        vecchio = per_nome.get(normalizza(g["n"]))
+        if not vecchio:
+            continue
+        preso = False
+        for campo in SOLO_DAL_SITO:
+            if campo in vecchio and campo not in g:
+                g[campo] = vecchio[campo]
+                preso = True
+        if export_vecchio:
+            for campo in IN_ENTRAMBI:
+                if campo in vecchio:
+                    g[campo] = vecchio[campo]
+                    preso = True
+        if preso:
+            ripresi += 1
+
+    if ripresi:
+        print(f"    dati tenuti dal file precedente per {ripresi} giocatori")
+
+
 def main() -> int:
     if not LISTONE.exists():
         sys.exit(f"Listone non trovato: {LISTONE}")
 
     giocatori = leggi_listone(LISTONE)
+    conserva_statistiche(giocatori)
     overrides = json.loads(OVERRIDES.read_text(encoding="utf-8"))["giocatori"]
 
     indice: dict[str, list[dict]] = {}

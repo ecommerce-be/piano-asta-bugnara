@@ -9,10 +9,10 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, simulaModificatore,
   RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=39';
-import { leggiCfg } from './cfg.js?v=39';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=39';
-import { esc } from './db.js?v=39';
+} from './app.js?v=40';
+import { leggiCfg } from './cfg.js?v=40';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=40';
+import { esc } from './db.js?v=40';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -482,7 +482,7 @@ const corpoShort = document.querySelector('#short tbody');
  */
 function disegnaShortlist(r) {
   const comprati = cfg.squadre * cfg.slot[r];
-  const seRVono = players.filter(p => p.r === r)
+  const seRVono = players.filter(p => p.r === r && !p.fuori)
     .sort((a, b) => b.val - a.val)
     .slice(0, comprati);
 

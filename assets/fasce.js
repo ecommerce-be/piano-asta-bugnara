@@ -8,11 +8,11 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=39';
-import { valuta, titolariDi } from './consiglio.js?v=39';
-import { leggiCfg } from './cfg.js?v=39';
-import { esc } from './db.js?v=39';
-import { caricaAsta, statoAsta } from './astaLega.js?v=39';
+} from './app.js?v=40';
+import { valuta, titolariDi } from './consiglio.js?v=40';
+import { leggiCfg } from './cfg.js?v=40';
+import { esc } from './db.js?v=40';
+import { caricaAsta, statoAsta } from './astaLega.js?v=40';
 
 const { players, lega } = await caricaDati();
 const { cfg } = await leggiCfg(lega);
@@ -27,6 +27,8 @@ valuta(players, infortuni.per);
 let stato = {}, altrui = new Set();
 try { await caricaAsta(); ({ mia: stato, altrui } = statoAsta()); } catch { /* tutti liberi */ }
 const preso = id => stato[id] > 0 || altrui.has(id);
+/* chi e' fuori dal listone non e' «libero»: non e' proprio in vendita */
+const fuoriLista = p => Boolean(p.fuori);
 
 const prezzo = p => Math.max(1, Math.round(p.mkt));
 const num = (x, d = 2) => x.toFixed(d).replace('.', ',');
@@ -142,6 +144,7 @@ function sensoFascia(f, n, comprati, slot) {
 function filtra(lista) {
   const s = cerca.trim().toLowerCase();
   return lista.filter(p =>
+    !fuoriLista(p) &&
     (!soloLiberi || !preso(asta.id(p))) &&
     (!s || p.n.toLowerCase().includes(s) || p.sq.toLowerCase().includes(s)));
 }

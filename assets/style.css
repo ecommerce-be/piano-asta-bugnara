@@ -415,6 +415,11 @@ tr.altrui td:last-child,tr.altrui td:nth-last-child(2){opacity:1}
   .scroller{max-height:none !important;overflow-x:visible}
 }
 
+/* Chi Fantacalcio ha tolto dal listone resta visibile — se qualcuno lo nomina
+   devi poterlo cercare — ma si vede a colpo d'occhio che non e' in vendita. */
+#big tr.fuorilista{opacity:.45}
+#big tr.fuorilista .maxc{text-decoration:line-through}
+
 /* ===== chiamata rapida =====
    E' la cosa che si usa di piu' durante l'asta, quindi sta in cima e si vede.
    Tutto in colonna sotto i 620px: al tavolo il telefono lo tieni in verticale

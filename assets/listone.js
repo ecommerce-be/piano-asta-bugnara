@@ -3,19 +3,19 @@
 import {
   caricaDati, ricalcola, asta, AGGIORNATO_IL,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
-} from './app.js?v=39';
+} from './app.js?v=40';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=39';
+} from './db.js?v=40';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
   miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
   segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
   alSalvataggio, inSospeso, ritentaOra, situazione,
-} from './astaLega.js?v=39';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=39';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=39';
+} from './astaLega.js?v=40';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=40';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=40';
 
 const { players, lega } = await caricaDati();
 
@@ -207,7 +207,7 @@ function candidati(testo) {
   const s = testo.trim().toLowerCase();
   if (s.length < 2) return [];
   return players
-    .filter(p => p.n.toLowerCase().includes(s) || p.sq.toLowerCase().includes(s))
+    .filter(p => !p.fuori && (p.n.toLowerCase().includes(s) || p.sq.toLowerCase().includes(s)))
     .sort((a, b) => {
       const pa = Boolean(possessore(asta.id(a))), pb = Boolean(possessore(asta.id(b)));
       return (pa - pb) || b.max - a.max;
@@ -415,8 +415,9 @@ function disegnaTabella() {
        620px la tabella smette di essere una tabella e ogni riga diventa una
        scheda, e sono queste classi a dire a ogni cella dove andare a finire.
        Con :nth-child sarebbe bastato spostare una colonna per rompere tutto. */
-    return `<tr class="${cls}">
-      <td class="c-gioc"><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}</span>
+    return `<tr class="${cls}${p.fuori ? ' fuorilista' : ''}">
+      <td class="c-gioc"><span class="gioc">${badgeRuolo(p.r)}<span class="testo"><span class="nm">${esc(p.n)}${segnale(p)}${
+  p.fuori ? '<span class="ko g-lunga" title="Fantacalcio lo ha tolto dal listone: ceduto, svincolato o fuori rosa. All\'asta non verrà chiamato.">FUORI LISTA</span>' : ''}</span>
         <span class="sq">${esc(p.sq)}</span></span></span></td>
       <td class="num mktc c-q" data-c="quot."><span>${p.q}</span></td>
       <td class="num mktc c-mkt" data-c="mercato"><span>${Math.round(p.mkt)}</span></td>

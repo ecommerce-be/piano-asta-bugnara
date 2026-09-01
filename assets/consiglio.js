@@ -7,7 +7,7 @@
      3. COMPOSIZIONE quali 28 comprare, dato il budget e una strategia.
 
    Nessuna dipendenza esterna: gira nel browser in qualche decimo di secondo. */
-import { asta, simulaModificatore, RUOLI } from './app.js?v=39';
+import { asta, simulaModificatore, RUOLI } from './app.js?v=40';
 
 const GIORNATE = 38;
 
@@ -308,9 +308,13 @@ export function componiRosa({ players, cfg, modulo, strategia = 'totale', tab,
   const titolari = titolariDi(modulo);
   const budget = cfg.crediti;
 
+  /* `p.fuori` sono quelli che Fantacalcio ha tolto dal listone — ceduti
+     all'estero, svincolati, fuori rosa. Restano nel file per riconoscerli se
+     qualcuno li nomina, ma comporci una rosa sopra vorrebbe dire consigliarti
+     giocatori che all'asta non verranno mai chiamati. */
   const perRuolo = {};
   for (const r of RUOLI) {
-    perRuolo[r] = players.filter(p => p.r === r && !esclusi.has(asta.id(p)))
+    perRuolo[r] = players.filter(p => p.r === r && !p.fuori && !esclusi.has(asta.id(p)))
       .sort((a, b) => b.val - a.val);
   }
 
