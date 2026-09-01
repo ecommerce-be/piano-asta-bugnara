@@ -324,6 +324,47 @@ console.log('\n— senza listone non si inventa niente —');
 A.riaggancia([]);
 prova('un listone vuoto lascia le cose come stanno', A.riagganciati().length >= 0);
 
+console.log('\n— azzerare le prove prima dell\'asta vera —');
+
+/* si riparte davvero da zero: niente database e niente copia di scorta
+   rimasta in canna dalle prove di prima */
+remoto = { dati: null, versione: 0 };
+localStorage.removeItem('pianoAsta:asta-da-mandare');
+await A.caricaAsta();
+A.allineaAllaLega(SQUADRE, [{ utente_id: 'u1', squadra_id: 's1', nome: 'Pierre' }]);
+A.assegna(BREMER, 's1', 22, { n: 'Bremer', sq: 'Juventus', r: 'D' });
+A.assegna(MALEN, 's2', 40, { n: 'Malen', sq: 'Roma', r: 'A' });
+A.segnaFuori(ORSOLINI);
+
+let conto = A.quantiMovimenti();
+prova('prima di azzerare li conta tutti', conto.totale === 3, JSON.stringify(conto));
+prova('e dice di chi sono', conto.perSquadra.length === 2 && conto.senzaNome === 1,
+  JSON.stringify(conto));
+
+const tolti = A.azzeraAsta();
+prova('li toglie tutti', tolti === 3, String(tolti));
+st = A.statoAsta();
+prova('nessuno risulta piu' + ' preso',
+  Object.keys(st.mia).length === 0 && st.altrui.size === 0, JSON.stringify(st.mia));
+prova('e le rose sono vuote',
+  A.squadreAsta().every(s => s.rosa.length === 0));
+prova('il conto torna a zero', A.quantiMovimenti().totale === 0);
+
+/* la prova che conta: chi stava salvando una versione con dentro gli acquisti
+   non li deve far ricomparire con l'unione */
+const vecchio = {
+  squadre: [
+    { id: 's1', nome: 'Hertha Vernello', rosa: [{ id: BREMER, n: 'Bremer', sq: 'Juventus', r: 'D', prezzo: 22, il: '2020-01-01T00:00:00.000Z' }], tolti: {} },
+    { id: 's2', nome: 'Real Bugnara', rosa: [{ id: MALEN, n: 'Malen', sq: 'Roma', r: 'A', prezzo: 40, il: '2020-01-01T00:00:00.000Z' }], tolti: {} },
+  ],
+  fuori: { [ORSOLINI]: '2020-01-01T00:00:00.000Z' },
+  liberati: {},
+};
+const dopoUnione = A.fondi(vecchio, A.documento());
+prova('e l\'unione con una copia vecchia non li resuscita',
+  dopoUnione.squadre.every(s => s.rosa.length === 0),
+  JSON.stringify(dopoUnione.squadre.map(s => s.rosa.length)));
+
 /* ---------- ---------- */
 
 console.log('\n' + '='.repeat(52));

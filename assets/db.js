@@ -25,7 +25,7 @@ let sessione = null;
 export async function avvia() {
   if (cfg) return cfg;
   try {
-    const r = await fetch('assets/data/supabase.json?v=47?t=' + Date.now());
+    const r = await fetch('assets/data/supabase.json?v=48?t=' + Date.now());
     cfg = await r.json();
   } catch {
     cfg = {};

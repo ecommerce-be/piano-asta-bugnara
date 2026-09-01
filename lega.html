@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=47">
+<link rel="stylesheet" href="assets/style.css?v=48">
 <script>
 /* stampa il tema salvato prima del primo disegno, cosi non lampeggia il bianco */
 try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.documentElement.dataset.theme=t}catch(e){}
 </script>
-<meta name="versione" content="47">
+<meta name="versione" content="48">
 </head>
 <body>
 
@@ -55,14 +55,20 @@ try{var t=localStorage.getItem('pianoAsta:tema');if(t&&t!=='auto')document.docum
     <div id="chiCe"></div>
   </section>
 
+  <section id="sezAzzera" hidden>
+    <p class="eyebrow">Prima dell'asta vera</p>
+    <h2>Azzerare le prove</h2>
+    <div id="azzera"></div>
+  </section>
+
   <footer>
     <p><strong>Una squadra, più persone.</strong> Se giocate in due sulla stessa fantasquadra, fatevi un account a testa e sceglietela entrambi: vedrete e potrete modificare le stesse cose, e le vostre modifiche si uniscono invece di sovrascriversi.</p>
     <p><strong>Il codice della lega</strong> è l'unica cosa che serve per entrare: chi ce l'ha diventa membro, chi non ce l'ha non vede nulla. Se lo passi in giro, passalo a chi vuoi davvero dentro — per toglierne uno, per ora, si fa da Supabase.</p>
   </footer>
 </div>
 
-<script type="module" src="assets/lega.js?v=47"></script>
-<script type="module" src="assets/menu.js?v=47"></script>
-<script type="module" src="assets/theme.js?v=47"></script>
+<script type="module" src="assets/lega.js?v=48"></script>
+<script type="module" src="assets/menu.js?v=48"></script>
+<script type="module" src="assets/theme.js?v=48"></script>
 </body>
 </html>

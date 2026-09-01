@@ -4,19 +4,19 @@ import {
   caricaDati, ricalcola, asta, AGGIORNATO_IL,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
   fuoriListone, percheFuori,
-} from './app.js?v=47';
+} from './app.js?v=48';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=47';
+} from './db.js?v=48';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
   miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
   segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
   alSalvataggio, inSospeso, ritentaOra, situazione, riagganciati,
-} from './astaLega.js?v=47';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=47';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=47';
+} from './astaLega.js?v=48';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=48';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=48';
 
 const { players, lega } = await caricaDati();
 

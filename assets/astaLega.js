@@ -28,7 +28,7 @@
 import {
   pronto, configurato, collegato, inLega, lega, squadra, utente,
   leggi, scrivi, osserva,
-} from './db.js?v=47';
+} from './db.js?v=48';
 
 export const CHIAVE = 'fantasquadre';
 const VUOTO = { squadre: [], fuori: {}, liberati: {} };
@@ -564,6 +564,53 @@ export function svuota(idSquadra) {
   tocca(s);
   daMandare();
   return quanti;
+}
+
+/**
+ * Azzera l'asta di tutta la lega: rose vuote, nessuno piu' segnato preso.
+ *
+ * PERCHE'. Prima dell'asta vera nel documento restano gli acquisti delle
+ * prove — e partire con crediti gia' spesi e giocatori gia' assegnati e' il
+ * modo migliore per accorgersene a meta' serata. «Svuota la mia rosa» non
+ * basta: pulisce solo la propria, e le prove le fa chi organizza su tutte.
+ *
+ * Si tolgono lasciando le lapidi, come per ogni rimozione: se un altro
+ * computer sta salvando in questo momento una versione che quegli acquisti
+ * ce li ha ancora, l'unione non li fa ricomparire.
+ */
+export function azzeraAsta() {
+  const il = adesso();
+  let quanti = 0;
+  for (const s of dati.squadre) {
+    if (!s.rosa.length) continue;
+    for (const g of s.rosa) {
+      s.tolti[g.id] = il;
+      dati.liberati[g.id] = il;
+      quanti++;
+    }
+    s.rosa = [];
+    tocca(s);
+  }
+  for (const gid of Object.keys(dati.fuori)) {
+    if (eFuori(gid)) quanti++;
+    delete dati.fuori[gid];
+    dati.liberati[gid] = il;
+  }
+  if (quanti) daMandare();
+  return quanti;
+}
+
+/** Quanti movimenti ci sono in tutto, e di chi: serve a dirlo prima di azzerare. */
+export function quantiMovimenti() {
+  const perSquadra = dati.squadre
+    .filter(s => s.rosa.length)
+    .map(s => ({ nome: s.nome || 'senza nome', presi: s.rosa.length }));
+  const senzaNome = Object.keys(dati.fuori).filter(eFuori).length;
+  return {
+    perSquadra,
+    senzaNome,
+    totale: perSquadra.reduce((a, s) => a + s.presi, 0) + senzaNome,
+  };
 }
 
 /**

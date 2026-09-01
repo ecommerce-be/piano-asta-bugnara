@@ -15,8 +15,9 @@ import {
   caricaContesto, mieLeghe, creaLega, entraInLega, scegliSquadra, cambiaLega,
   creaSquadra, rinominaSquadra,
   lega, squadra, squadreDellaLega, membriDellaLega, sonoAdmin, inLega,
-} from './db.js?v=47';
-import { toast, conferma as chiediConferma } from './ui.js?v=47';
+} from './db.js?v=48';
+import { toast, conferma as chiediConferma } from './ui.js?v=48';
+import { caricaAsta, quantiMovimenti, azzeraAsta, salvaAsta } from './astaLega.js?v=48';
 
 await avvia();
 
@@ -81,6 +82,7 @@ function disegna() {
 
   collega();
   disegnaChiCe();
+  disegnaAzzera();      // non si aspetta: legge l'asta e si disegna da sola
 }
 
 function disegnaLega() {
@@ -167,6 +169,68 @@ function disegnaChiCe() {
     <p class="spiega" style="padding:.6rem 0 0">${squadre.length} squadre, ${membri.length}
       ${membri.length === 1 ? 'persona' : 'persone'}. Le squadre senza nessuno esistono lo stesso: servono a
       registrare chi si aggiudica cosa all'asta anche se quel fantallenatore non usa il sito.</p>`;
+}
+
+/* ---------- azzerare l'asta prima di quella vera ----------
+ *
+ * Fino a ieri l'unico modo di ripulire era «Svuota la mia rosa», nel listone,
+ * che pulisce solo la propria: le prove pero' le fa chi organizza, e le fa su
+ * tutte le squadre. Cosi' il giorno dell'asta ci si ritrova crediti gia'
+ * spesi e giocatori gia' assegnati, e ce ne si accorge a meta' serata.
+ *
+ * Lo vede solo chi ha creato la lega, dice esattamente cosa sta per
+ * cancellare, e chiede conferma. Non e' un gesto da fare per sbaglio.
+ */
+let inCorsoAzzera = false;
+
+async function disegnaAzzera() {
+  const box = document.getElementById('azzera');
+  const sez = document.getElementById('sezAzzera');
+  if (!box || inCorsoAzzera) return;
+  const mostra = v => { if (sez) sez.hidden = !v; };
+  if (!inLega() || !sonoAdmin()) { box.innerHTML = ''; mostra(false); return; }
+
+  inCorsoAzzera = true;
+  let m = null;
+  try { await caricaAsta(); m = quantiMovimenti(); }
+  catch { box.innerHTML = ''; mostra(false); return; }
+  finally { inCorsoAzzera = false; }
+  mostra(true);
+
+  if (!m.totale) {
+    box.innerHTML = `<p class="spiega">L'asta della lega è vuota: nessun acquisto registrato.
+      Siete pronti per quella vera.</p>`;
+    return;
+  }
+
+  const righe = m.perSquadra.map(s => `${esc(s.nome)}: ${s.presi}`).join(' · ')
+    + (m.senzaNome ? ` · ${m.senzaNome} segnati presi senza dire da chi` : '');
+
+  box.innerHTML = `<p class="spiega">Nell'asta della lega ci sono <strong>${m.totale}</strong>
+      ${m.totale === 1 ? 'aggiudicazione' : 'aggiudicazioni'} — ${righe}.
+      Se sono le prove, toglile prima di cominciare: se no si parte con crediti già spesi.</p>
+    <button class="btn pericolo" id="btnAzzera">Azzera l'asta di tutta la lega</button>`;
+
+  document.getElementById('btnAzzera').onclick = async () => {
+    const ok = await chiediConferma({
+      titolo: 'Azzerare l\'asta di tutta la lega?',
+      testo: `Vengono tolte tutte e ${m.totale} le aggiudicazioni, da ogni squadra, `
+        + 'e ognuno torna con i crediti interi. Lo vedranno tutti quelli della lega, subito. '
+        + 'Non si torna indietro.',
+      ok: 'Sì, azzera',
+      pericolo: true,
+    });
+    if (!ok) return;
+    try {
+      const quanti = azzeraAsta();
+      await salvaAsta();
+      toast(`${quanti} aggiudicazioni tolte: l'asta riparte da zero.`);
+    } catch (e) {
+      errore = e.message;
+    }
+    disegna();
+    disegnaAzzera();
+  };
 }
 
 /* ---------- comandi ---------- */
