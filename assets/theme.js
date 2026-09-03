@@ -43,9 +43,15 @@ export function montaInterruttore(contenitore) {
 /* Monta l'interruttore ovunque ci sia il segnaposto. */
 montaInterruttore(document.getElementById('tema'));
 
-/* Mostra la versione accanto al logo: se il browser sta servendo un file vecchio,
-   il numero non corrisponde e te ne accorgi subito. */
-const v = document.querySelector('meta[name="versione"]')?.content;
+/* Mostra accanto al logo l'impronta del file che il browser sta servendo.
+ *
+ * Prima era un numero scritto in ogni pagina (`<meta name="versione">`), uguale
+ * per tutto il sito: per cambiarlo bisognava rimarcare trentadue file a ogni
+ * modifica. Adesso ogni file porta l'impronta del proprio contenuto, e questo
+ * modulo la legge dal PROPRIO indirizzo — `theme.js?v=a3f1c9`. È letteralmente
+ * «la versione del file che ti è arrivato», che è quello che quel numero
+ * voleva dire; e non c'è più niente da tenere allineato a mano. */
+const v = new URL(import.meta.url).searchParams.get('v');
 const marchio = document.querySelector('.brand');
 if (v && marchio && !marchio.querySelector('.ver')) {
   const s = document.createElement('span');

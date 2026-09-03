@@ -750,6 +750,35 @@ def marca_dati(testo_json: str) -> None:
     print(f"    impronta dati {impronta}, aggiornato il {oggi}")
 
 
+def marca_controllo() -> None:
+    """Scrive in app.js il giorno in cui l'aggiornamento e' andato a buon fine.
+
+    PERCHE' ESISTE, ed e' una distinzione che serve davvero.
+
+    `AGGIORNATO_IL` dice quando i dati sono CAMBIATI l'ultima volta. Se un
+    giorno Fantacalcio.it non ha niente di nuovo, quella data resta indietro —
+    correttamente — ma chi guarda legge «aggiornato due giorni fa» e non ha
+    modo di sapere se e' perche' non e' cambiato niente o perche'
+    l'aggiornamento automatico e' morto. Sono due situazioni opposte: una va
+    bene, l'altra e' un guasto da riparare prima dell'asta.
+
+    Quindi ce n'e' una seconda: `CONTROLLATO_IL`, che viene riscritta ogni
+    volta che il lavoro arriva in fondo, anche quando non c'e' niente da
+    cambiare. Cosi' «verificato oggi, ultimi cambiamenti due giorni fa» si
+    distingue da «nessuno controlla da due giorni», e la riga cambia ogni
+    giorno: e' la prova che il meccanismo e' vivo.
+    """
+    oggi = datetime.date.today().isoformat()
+    t = APP.read_text(encoding="utf-8")
+    t, n = re.subn(r"(export const CONTROLLATO_IL = ')[^']*(';)",
+                   rf"\g<1>{oggi}\g<2>", t, count=1)
+    if not n:
+        print("    ATTENZIONE: non trovo CONTROLLATO_IL in app.js.")
+        return
+    APP.write_text(t, encoding="utf-8")
+    print(f"    controllato oggi, {oggi}")
+
+
 def aggiorna_infortuni(diagnosi: bool = False) -> None:
     """Aggiorna anche l'infermeria, subito dopo il listone.
 
@@ -876,10 +905,12 @@ def main() -> int:
     dopo = json.dumps(giocatori, ensure_ascii=False, sort_keys=True)
     if prima == dopo:
         print("\nStatistiche e quotazioni identiche a ieri: players.json resta com'era.")
+        marca_controllo()
     else:
         compatto = json.dumps(giocatori, ensure_ascii=False, separators=(",", ":"))
         PLAYERS.write_text(compatto, encoding="utf-8")
         marca_dati(compatto)
+        marca_controllo()
         con_stat = sum(1 for g in giocatori if g.get("gol") is not None)
         print(f"\nScritto {PLAYERS.relative_to(RADICE)} — {totale} giocatori, "
               f"{con_stat} con gol/assist/cartellini.")

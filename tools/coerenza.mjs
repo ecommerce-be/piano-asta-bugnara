@@ -174,26 +174,45 @@ const nota = t => problemi.push(t);
     }
   }
 
-  console.log('\n— tutti i file alla stessa versione —');
-  const pagine = PAGINE;
-  const versioni = new Map();
-  for (const n of [...pagine, ...moduli.map(m => 'assets/' + m)]) {
-    const t = await readFile(new URL(n, radice), 'utf8');
-    for (const m of t.matchAll(/\?v=(\d+)/g)) {
-      if (!versioni.has(m[1])) versioni.set(m[1], []);
-      if (!versioni.get(m[1]).includes(n)) versioni.get(m[1]).push(n);
+  /* Ogni riferimento deve portare l'impronta VERA del file che nomina.
+   *
+   * Prima si controllava che tutti i file avessero lo stesso numero di
+   * versione. Con le impronte per file quel controllo non ha più senso — i
+   * numeri sono tutti diversi di proposito — e al suo posto ce n'è uno più
+   * forte: che `listone.js?v=2e05ff15` corrisponda davvero al contenuto di
+   * `listone.js` oggi. Se qualcuno modifica un file e si dimentica di
+   * rilanciare versione.py, il browser continuerebbe a servire la copia
+   * vecchia dalla cache, e qui si vede subito.
+   *
+   * Il conto lo sa fare versione.py: qui lo si lancia in sola lettura. */
+  console.log('\n— ogni file porta l\'impronta giusta —');
+  {
+    const script = fileURLToPath(new URL('versione.py', import.meta.url));
+    const CANDIDATI = [['python3'], ['python'], ['py', '-3'], ['py']];
+    const lancia = ([cmd, ...prima]) => new Promise(ok => {
+      execFile(cmd, [...prima, script, '--controlla'], (err, out, errOut) => ok({
+        cmd: [cmd, ...prima].join(' '),
+        out: String(out || '') + String(errOut || ''),
+      }));
+    });
+    let esito = null;
+    for (const c of CANDIDATI) {
+      const r = await lancia(c);
+      if (/impronte|Traceback|Ciclo/.test(r.out)) { esito = r; break; }
+      if (!esito) esito = r;
     }
-    const meta = t.match(/<meta name="versione" content="(\d+)">/);
-    if (meta && !t.includes(`?v=${meta[1]}`)) {
-      nota(`[${n}] dichiara versione ${meta[1]} ma carica file di un'altra versione`);
+    if (/Tutte le impronte sono aggiornate/.test(esito.out)) {
+      console.log('  ' + esito.out.trim().split('\n')[0].toLowerCase());
+    } else if (/impronte non più valide/.test(esito.out)) {
+      const quali = esito.out.split('\n').filter(r => r.startsWith('  - ')).map(r => r.slice(4));
+      nota(`${quali.length} file portano impronte scadute (${quali.slice(0, 4).join(', ')}`
+         + `${quali.length > 4 ? '…' : ''}): chi ha il sito in cache vedrebbe i file vecchi `
+         + '— lancia python tools/versione.py');
+    } else if (/Ciclo/.test(esito.out)) {
+      nota('c\'è un ciclo di import fra i moduli: ' + esito.out.trim().split('\n')[0]);
+    } else {
+      console.log('  (controllo saltato: non trovo un python che risponda)');
     }
-  }
-  if (versioni.size === 1) {
-    console.log(`  tutti a v=${[...versioni.keys()][0]}`);
-  } else {
-    const dettaglio = [...versioni.entries()]
-      .map(([v, dove]) => `v=${v} (${dove.length} file: ${dove.slice(0, 3).join(', ')}${dove.length > 3 ? '…' : ''})`);
-    nota(`versioni diverse fra i file: ${dettaglio.join(' · ')} — lancia python3 tools/versione.py`);
   }
 
   console.log('\n— i dati del listone —');
@@ -202,6 +221,7 @@ const nota = t => problemi.push(t);
   const impronta = createHash('sha1').update(testoPlayers, 'utf8').digest('hex').slice(0, 10);
   const dichiarata = app.match(/VERSIONE_DATI = '([^']*)'/)?.[1];
   const quando = app.match(/AGGIORNATO_IL = '([^']*)'/)?.[1];
+  const controllato = app.match(/CONTROLLATO_IL = '([^']*)'/)?.[1];
   if (dichiarata !== impronta) {
     nota(`l'impronta dei dati in app.js è ${dichiarata} ma players.json vale ${impronta}: `
        + 'chi ha già aperto il sito continuerebbe a vedere il listone vecchio — lancia python3 tools/aggiorna_dati.py');
@@ -214,7 +234,22 @@ const nota = t => problemi.push(t);
   const fuori = JSON.parse(testoPlayers).filter(p => p.fuori);
   console.log(`  fuori lista: ${fuori.length} (ceduti, svincolati, fuori rosa)`
     + (fuori.length ? ` — ${fuori.slice(0, 4).map(p => p.n).join(', ')}…` : ''));
-  if (giorni > 7) nota(`il listone non si aggiorna da ${giorni} giorni: lancia python3 tools/aggiorna_dati.py`);
+  /* Due date, due domande diverse: «i dati sono cambiati?» e «qualcuno e'
+     andato a guardare?». Un listone fermo da tre giorni va benissimo se
+     l'aggiornamento gira lo stesso ogni mattina; e' quando smette di girare
+     che bisogna accorgersene, e prima dell'asta, non durante. */
+  if (controllato) {
+    const g = Math.floor((Date.now() - new Date(controllato)) / 86400000);
+    const e = g === 0 ? 'oggi' : g === 1 ? 'ieri' : `${g} giorni fa`;
+    console.log(`  ultimo controllo automatico: ${controllato} (${e})`);
+    if (g >= 2) {
+      nota(`l'aggiornamento automatico non gira da ${g} giorni (ultimo controllo ${controllato}): `
+         + 'guarda su GitHub, scheda Actions → Aggiorna dati giocatori');
+    }
+  } else {
+    nota('manca CONTROLLATO_IL in app.js: non si puo\' sapere se l\'aggiornamento automatico gira');
+  }
+  if (giorni > 7) nota(`i dati non cambiano da ${giorni} giorni: se non e' plausibile, guarda le Actions`);
   if (!inf.voci?.length) nota('l\'infermeria è vuota: la pagina Infortunati non mostrerà niente');
 
   /* Una colonna vuota per TUTTI non si nota guardando il sito: la tabella c'è,

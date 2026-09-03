@@ -1,4 +1,4 @@
-﻿# Un comando solo per rimettersi in pari e controllare che sia tutto a posto.
+﻿﻿# Un comando solo per rimettersi in pari e controllare che sia tutto a posto.
 #
 #     .\tools\aggiorna.ps1              porta a casa gli aggiornamenti e controlla
 #     .\tools\aggiorna.ps1 -Apri        apre anche il listone nel browser
@@ -71,10 +71,21 @@ if ($app -match "AGGIORNATO_IL = '([^']+)'") {
     $quando = [datetime]::Parse($Matches[1])
     $giorni = [int]((Get-Date).Date - $quando.Date).TotalDays
     $eta = switch ($giorni) { 0 { 'oggi' } 1 { 'ieri' } default { "$giorni giorni fa" } }
-    Write-Host "  listone aggiornato il $($quando.ToString('dd/MM/yyyy')) ($eta)"
-    if ($giorni -ge 2) {
-        Write-Host '  Se ti sembra vecchio, guarda su GitHub: scheda Actions → Aggiorna dati giocatori.' -ForegroundColor Yellow
-        Write-Host '  Puoi anche lanciarlo a mano da lì con «Run workflow».' -ForegroundColor Yellow
+    Write-Host "  dati cambiati l'ultima volta il $($quando.ToString('dd/MM/yyyy')) ($eta)"
+}
+
+# Le due date rispondono a due domande diverse: «i dati sono cambiati?» e
+# «qualcuno è andato a guardare?». La seconda è quella che dice se
+# l'aggiornamento automatico è vivo, ed è quella che conta prima dell'asta.
+if ($app -match "CONTROLLATO_IL = '([^']+)'") {
+    $ctrl = [datetime]::Parse($Matches[1])
+    $gg = [int]((Get-Date).Date - $ctrl.Date).TotalDays
+    $etaC = switch ($gg) { 0 { 'oggi' } 1 { 'ieri' } default { "$gg giorni fa" } }
+    Write-Host "  ultimo controllo automatico: $($ctrl.ToString('dd/MM/yyyy')) ($etaC)"
+    if ($gg -ge 2) {
+        Write-Host "  ATTENZIONE: l'aggiornamento automatico non gira da $gg giorni." -ForegroundColor Yellow
+        Write-Host '  Guarda su GitHub: scheda Actions → Aggiorna dati giocatori,' -ForegroundColor Yellow
+        Write-Host '  e se serve lancialo a mano con «Run workflow».' -ForegroundColor Yellow
     }
 }
 

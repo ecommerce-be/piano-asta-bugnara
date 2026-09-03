@@ -1,22 +1,22 @@
 /* Pagina "Listone e asta live": parametri di lega, filtri, tracker crediti,
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
-  caricaDati, ricalcola, asta, AGGIORNATO_IL,
+  caricaDati, ricalcola, asta, AGGIORNATO_IL, CONTROLLATO_IL,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
   fuoriListone, percheFuori,
-} from './app.js?v=52';
+} from './app.js?v=d304c59d';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
-} from './db.js?v=52';
+} from './db.js?v=6824e6b7';
 import {
   caricaAsta, salvaAsta, accetta, osservaAsta, statoAsta, possessore,
   miaSquadra, squadreAsta, allineaAllaLega, assegna as aggiudica, libera as rimetti,
   segnaFuori, svuota, metaAsta, daRecuperare, recupera, scordaVecchi,
   alSalvataggio, inSospeso, ritentaOra, situazione, riagganciati,
-} from './astaLega.js?v=52';
-import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=52';
-import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=52';
+} from './astaLega.js?v=c262ae13';
+import { chiediCampi, conferma as chiediConferma, avvisa } from './ui.js?v=2606df5a';
+import { leggiCfg as leggiCfgCondivisa } from './cfg.js?v=7661d252';
 
 const { players, lega } = await caricaDati();
 
@@ -777,12 +777,23 @@ osservaAsta(r => {
     const quando = new Date(AGGIORNATO_IL)
       .toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
     const eta = giorni <= 0 ? 'oggi stesso' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
-    el.innerHTML = giorni >= 2
-      ? `<strong style="color:var(--warn)">Quotazioni, statistiche e infortuni sono aggiornati al
-         ${esc(quando)}, cioè ${eta}</strong>: se nel frattempo si è giocato, questi numeri non
-         tengono conto dell'ultima giornata. L'aggiornamento gira da solo ogni mattina alle 8; per
-         lanciarlo subito, su GitHub → Actions → «Aggiorna dati giocatori» → Run workflow.`
-      : `Quotazioni, statistiche e infortuni aggiornati al ${esc(quando)}, ${eta}.`;
+    /* Due date, due cose diverse. «Cambiati due giorni fa» non è un guasto: può
+       voler dire che in due giorni non è successo niente. Il guasto è quando
+       nessuno CONTROLLA più — e quello lo dice CONTROLLATO_IL. Confonderle
+       vuol dire o spaventarsi per niente, o fidarsi di numeri morti. */
+    const gCtrl = CONTROLLATO_IL
+      ? Math.floor((Date.now() - new Date(CONTROLLATO_IL)) / 86400000) : null;
+    const fermo = gCtrl === null || gCtrl >= 2;
+
+    el.innerHTML = fermo
+      ? `<strong style="color:var(--warn)">L'aggiornamento automatico non gira
+         ${gCtrl === null ? 'più' : `da ${gCtrl} giorni`}</strong>: questi numeri sono fermi al
+         ${esc(quando)} e potrebbero non tenere conto dell'ultima giornata. Su GitHub →
+         Actions → «Aggiorna dati giocatori» → Run workflow per rimetterlo in moto.`
+      : giorni >= 2
+        ? `Verificato ${gCtrl === 0 ? 'oggi' : 'ieri'}: quotazioni, statistiche e infortuni non
+           cambiano dal ${esc(quando)} (${eta}), perché da allora non è cambiato niente.`
+        : `Quotazioni, statistiche e infortuni aggiornati al ${esc(quando)}, ${eta}.`;
   }
 }
 
