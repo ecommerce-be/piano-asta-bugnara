@@ -54,8 +54,24 @@ if ($sporco) {
     exit 1
 }
 
+# Le due copie (i due profili Windows) si incontrano solo su GitHub, e ci si
+# arriva anche da un'altra strada: modificando un file direttamente dal sito —
+# il workflow, per esempio, che da qui non si può scrivere. In quel caso i due
+# rami hanno ognuno un commit che l'altro non ha, `pull --ff-only` si rifiuta,
+# e il push viene respinto con un messaggio che non dice cosa fare.
+# Qui si guarda prima com'è messa la situazione, e si sceglie di conseguenza.
 $prima = git rev-parse HEAD
-git -c core.editor=true pull --ff-only
+git fetch --quiet origin
+$indietro = [int](git rev-list --count "HEAD..@{u}" 2>$null)
+$avanti = [int](git rev-list --count "@{u}..HEAD" 2>$null)
+
+if ($indietro -gt 0 -and $avanti -gt 0) {
+    Write-Host "  i due rami si sono separati ($avanti commit tuoi, $indietro su GitHub): li unisco." -ForegroundColor Yellow
+    git -c core.editor=true pull --no-rebase --no-edit
+} elseif ($indietro -gt 0) {
+    git -c core.editor=true pull --ff-only
+}
+
 $dopo = git rev-parse HEAD
 
 if ($prima -eq $dopo) {
@@ -63,6 +79,13 @@ if ($prima -eq $dopo) {
 } else {
     Write-Host '  arrivati:' -ForegroundColor Green
     git --no-optional-locks log --oneline "$prima..$dopo" | ForEach-Object { Write-Host "    $_" }
+}
+
+# Commit fatti e mai pubblicati: è il modo più facile di credere che una cosa
+# sia online quando non lo è.
+$daPubblicare = [int](git rev-list --count "@{u}..HEAD" 2>$null)
+if ($daPubblicare -gt 0) {
+    Write-Host "  hai $daPubblicare commit non ancora su GitHub: ricordati «git push»." -ForegroundColor Yellow
 }
 
 # che eta' hanno i dati, detto in chiaro
