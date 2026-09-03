@@ -1,8 +1,30 @@
+# Aggiorna da solo il listone leggendo le pagine pubbliche di Fantacalcio.it.
+#
+# Gira tre volte al giorno, rigenera assets/data/players.json e fa commit solo
+# se qualcosa e' davvero cambiato. Se la pagina di partenza cambia struttura, lo
+# script esce con errore e questo lavoro fallisce: GitHub ti manda una mail e
+# il sito resta con i dati buoni del giorno prima invece di svuotarsi.
+#
+# Puoi anche lanciarlo a mano: scheda Actions -> "Aggiorna dati giocatori" ->
+# "Run workflow". Con "diagnosi" a true non scrive niente e racconta solo cosa
+# ha trovato nelle pagine: utile quando qualcosa non torna.
+
 name: Aggiorna dati giocatori
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    # TRE volte al giorno, e MAI a un orario tondo.
+    #
+    # Il cron di GitHub non e' una sveglia: e' una coda condivisa da tutto il
+    # mondo, servita quando c'e' posto. A ':00' — e in particolare alle 6:00
+    # UTC — ci si mette mezzo pianeta, e un lavoro puo' partire con un'ora di
+    # ritardo o saltare del tutto quel giro.
+    #
+    # Tre corse a orari sfalsati fanno si' che perderne una non si veda. Sono
+    # sedici secondi l'una, e su un repository pubblico i minuti non si pagano.
+    - cron: '17 5 * * *'
+    - cron: '23 10 * * *'
+    - cron: '41 16 * * *'
   workflow_dispatch:
     inputs:
       diagnosi:
@@ -10,6 +32,7 @@ on:
         type: boolean
         default: false
 
+# serve per poter fare commit sul repository
 permissions:
   contents: write
 
@@ -36,6 +59,25 @@ jobs:
         run: |
           python tools/aggiorna_dati.py \
             ${{ inputs.diagnosi && '--diagnosi' || '' }}
+
+      # Il controllo che dice se il meccanismo e' VIVO.
+      #
+      # Prima, quando non era cambiato niente, non si committava e non restava
+      # traccia: dal di fuori «nessun commit oggi» voleva dire tanto «tutto a
+      # posto, non e' cambiato nulla» quanto «e' morto tutto», e non c'era modo
+      # di distinguerli senza aprire i log. Adesso lo script riscrive comunque
+      # CONTROLLATO_IL in app.js, quindi un commit c'e' SEMPRE — piccolo, di una
+      # riga — ed e' la prova che qualcuno e' passato di qui oggi.
+      - name: Controlla che la data del controllo sia di oggi
+        if: ${{ !inputs.diagnosi }}
+        run: |
+          oggi=$(date -u +%Y-%m-%d)
+          scritto=$(sed -n "s/.*CONTROLLATO_IL = '\\([^']*\\)'.*/\\1/p" assets/app.js)
+          if [ "$scritto" != "$oggi" ]; then
+            echo "::error::CONTROLLATO_IL dice '$scritto' invece di '$oggi': l'aggiornamento non e' arrivato in fondo."
+            exit 1
+          fi
+          echo "Controllato oggi ($oggi)."
 
       - name: Fai commit se qualcosa e' cambiato
         if: ${{ !inputs.diagnosi }}
