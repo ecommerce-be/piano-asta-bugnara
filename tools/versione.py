@@ -26,7 +26,10 @@ MODULI = sorted((RADICE / "assets").glob("*.js"))
 RIF_HTML = re.compile(r'((?:src|href)=")(assets/[\w./-]+\.(?:js|css))(?:\?v=\d+)?(")')
 # import ... from './x.js'   e   fetch('assets/data/x.json')
 RIF_IMPORT = re.compile(r"((?:from|import)\s*\(?\s*')(\./[\w./-]+\.js)(?:\?v=\d+)?(')")
-RIF_DATI = re.compile(r"(fetch\(\s*')(assets/data/[\w./-]+\.json)(?:\?v=\d+)?((?:'|\?))")
+# Solo se l'indirizzo finisce li': uno che ha gia' una query sua
+# (…supabase.json?t=…) si marcava da solo con «?v=51?t=», due punti
+# interrogativi, cioe' un indirizzo scritto male.
+RIF_DATI = re.compile(r"(fetch\(\s*')(assets/data/[\w./-]+\.json)(?:\?v=\d+)?(')")
 # data-modulo="fasce.js?v=48": il modulo di una scheda, caricato solo quando
 # la si apre. Senza questa riga restava indietro di una versione a ogni marcatura,
 # e coerenza segnalava (giustamente) file a versioni diverse.
