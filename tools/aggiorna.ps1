@@ -1,4 +1,4 @@
-﻿﻿# Un comando solo per rimettersi in pari e controllare che sia tutto a posto.
+﻿# Un comando solo per rimettersi in pari e controllare che sia tutto a posto.
 #
 #     .\tools\aggiorna.ps1              porta a casa gli aggiornamenti e controlla
 #     .\tools\aggiorna.ps1 -Apri        apre anche il listone nel browser
