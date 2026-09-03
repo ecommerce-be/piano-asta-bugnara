@@ -60,6 +60,10 @@ jobs:
           python tools/aggiorna_dati.py \
             ${{ inputs.diagnosi && '--diagnosi' || '' }}
 
+      - name: Rimarca le impronte dei file cambiati
+        if: ${{ !inputs.diagnosi }}
+        run: python tools/versione.py
+
       # Il controllo che dice se il meccanismo e' VIVO.
       #
       # Prima, quando non era cambiato niente, non si committava e non restava
