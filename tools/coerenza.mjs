@@ -198,18 +198,24 @@ const nota = t => problemi.push(t);
     let esito = null;
     for (const c of CANDIDATI) {
       const r = await lancia(c);
-      if (/impronte|Traceback|Ciclo/.test(r.out)) { esito = r; break; }
+      if (/IMPRONTE:|Traceback|Ciclo/.test(r.out)) { esito = r; break; }
       if (!esito) esito = r;
     }
-    if (/Tutte le impronte sono aggiornate/.test(esito.out)) {
-      console.log('  ' + esito.out.trim().split('\n')[0].toLowerCase());
-    } else if (/impronte non più valide/.test(esito.out)) {
-      const quali = esito.out.split('\n').filter(r => r.startsWith('  - ')).map(r => r.slice(4));
-      nota(`${quali.length} file portano impronte scadute (${quali.slice(0, 4).join(', ')}`
-         + `${quali.length > 4 ? '…' : ''}): chi ha il sito in cache vedrebbe i file vecchi `
+    /* Si guarda la riga fatta per essere letta da un programma, non la frase
+       discorsiva: quella ha gli accenti, e gli accenti fra Python su Windows e
+       Node non sopravvivono al viaggio. */
+    const marchio = esito.out.match(/IMPRONTE: (ok|(\d+) scadute)/);
+    if (marchio && marchio[1] === 'ok') {
+      console.log(`  tutte a posto (${esito.out.match(/\((\d+) file\)/)?.[1] || '?'} file)`);
+    } else if (marchio) {
+      const quali = esito.out.split('\n').filter(r => r.startsWith('  - ')).map(r => r.slice(4).trim());
+      nota(`${marchio[2]} file portano impronte scadute (${quali.slice(0, 4).join(', ')}`
+         + `${quali.length > 4 ? '…' : ''}): chi ha il sito in cache riceverebbe i file vecchi `
          + '— lancia python tools/versione.py');
     } else if (/Ciclo/.test(esito.out)) {
       nota('c\'è un ciclo di import fra i moduli: ' + esito.out.trim().split('\n')[0]);
+    } else if (/Traceback/.test(esito.out)) {
+      nota('versione.py non parte: ' + esito.out.trim().split('\n').pop());
     } else {
       console.log('  (controllo saltato: non trovo un python che risponda)');
     }

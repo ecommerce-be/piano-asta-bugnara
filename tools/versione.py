@@ -43,6 +43,14 @@ import re
 import sys
 from pathlib import Path
 
+# Su Windows Python scrive sul terminale con la codifica locale (cp1252), e chi
+# legge quel testo da un altro programma se lo aspetta in UTF-8: gli accenti
+# arrivano rotti. Costa una riga evitarlo, e ha gia' fatto perdere un'ora.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):
+    pass
+
 RADICE = Path(__file__).resolve().parent.parent
 PAGINE = sorted(RADICE.glob("*.html"))
 MODULI = sorted((RADICE / "assets").glob("*.js"))
@@ -146,12 +154,19 @@ def main() -> int:
         scrivi(f, prima, t)
 
     if controlla:
+        # La prima riga e' fatta per essere letta da un programma: sola ASCII,
+        # sempre nella stessa forma. Il resto e' per gli umani. Prima coerenza
+        # cercava la frase discorsiva, che conteneva un accento — e su Windows
+        # l'accento arriva rotto, la frase non combacia, e il controllo si
+        # arrendeva in silenzio dicendo «non trovo un python».
         if scaduti:
-            print("Questi file portano impronte non più valide:")
+            print(f"IMPRONTE: {len(scaduti)} scadute")
+            print("Questi file portano impronte non piu' valide:")
             for s in scaduti:
                 print(f"  - {s}")
-            print("\nLancia: python3 tools/versione.py")
+            print("\nLancia: python tools/versione.py")
             return 1
+        print("IMPRONTE: ok")
         print(f"Tutte le impronte sono aggiornate ({len(stampe)} file).")
         return 0
 
