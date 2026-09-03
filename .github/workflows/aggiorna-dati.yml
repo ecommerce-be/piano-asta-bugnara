@@ -1,8 +1,10 @@
 name: Aggiorna dati giocatori
 
 on:
-  schedule:
-    - cron: '0 6 * * *'
+    schedule:
+    - cron: '17 5 * * *'    # ~7:17 in Italia d'estate
+    - cron: '23 10 * * *'   # ~12:23, se la prima è saltata
+    - cron: '41 16 * * *'   # ~18:41, prende i trasferimenti di giornata
   workflow_dispatch:
     inputs:
       diagnosi:
@@ -36,6 +38,17 @@ jobs:
         run: |
           python tools/aggiorna_dati.py \
             ${{ inputs.diagnosi && '--diagnosi' || '' }}
+
+      - name: Controlla che la data del controllo sia di oggi
+        if: ${{ !inputs.diagnosi }}
+        run: |
+          oggi=$(date -u +%Y-%m-%d)
+          scritto=$(grep -oP "CONTROLLATO_IL = '\K[^']+" assets/app.js || true)
+          if [ "$scritto" != "$oggi" ]; then
+            echo "::error::CONTROLLATO_IL dice '$scritto' invece di '$oggi': l'aggiornamento non e' arrivato in fondo."
+            exit 1
+          fi
+          echo "Controllato oggi ($oggi)."
 
       - name: Fai commit se qualcosa e' cambiato
         if: ${{ !inputs.diagnosi }}
