@@ -14,6 +14,10 @@
  */
 import { fileURLToPath } from 'node:url';
 import { playwright, chromium, spiegazione } from './playwright.mjs';
+/* Lo stesso conto dei giorni che vede il sito, importato invece che
+   rifatto: quando erano due, questo controllo diceva «oggi» e
+   aggiorna.ps1 «ieri» sulla stessa data. */
+import { giorniDa } from '../assets/app.js';
 
 const BASE = process.argv[2] || 'http://localhost:8123/';
 
@@ -232,9 +236,10 @@ const nota = t => problemi.push(t);
     nota(`l'impronta dei dati in app.js è ${dichiarata} ma players.json vale ${impronta}: `
        + 'chi ha già aperto il sito continuerebbe a vedere il listone vecchio — lancia python3 tools/aggiorna_dati.py');
   }
-  const giorni = Math.floor((Date.now() - new Date(quando)) / 86400000);
+  const giorni = giorniDa(quando);
   const inf = JSON.parse(await readFile(new URL('assets/data/infortuni.json', radice), 'utf8'));
-  const eta = giorni === 0 ? 'oggi' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
+  const eta = giorni === null ? 'data ignota'
+    : giorni === 0 ? 'oggi' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
   console.log(`  listone: ${JSON.parse(testoPlayers).length} giocatori, aggiornato il ${quando} (${eta})`);
   console.log(`  infermeria: ${inf.voci?.length ?? 0} fermi, aggiornata il ${inf.aggiornato || '—'}`);
   const fuori = JSON.parse(testoPlayers).filter(p => p.fuori);
@@ -245,8 +250,9 @@ const nota = t => problemi.push(t);
      l'aggiornamento gira lo stesso ogni mattina; e' quando smette di girare
      che bisogna accorgersene, e prima dell'asta, non durante. */
   if (controllato) {
-    const g = Math.floor((Date.now() - new Date(controllato)) / 86400000);
-    const e = g === 0 ? 'oggi' : g === 1 ? 'ieri' : `${g} giorni fa`;
+    const g = giorniDa(controllato);
+    const e = g === null ? 'data ignota'
+      : g === 0 ? 'oggi' : g === 1 ? 'ieri' : `${g} giorni fa`;
     console.log(`  ultimo controllo automatico: ${controllato} (${e})`);
     if (g >= 2) {
       nota(`l'aggiornamento automatico non gira da ${g} giorni (ultimo controllo ${controllato}): `

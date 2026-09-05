@@ -1,10 +1,10 @@
 /* Pagina "Listone e asta live": parametri di lega, filtri, tracker crediti,
    scorte per fascia e segnalazione dei giocatori finiti agli avversari. */
 import {
-  caricaDati, ricalcola, asta, AGGIORNATO_IL, CONTROLLATO_IL,
+  caricaDati, ricalcola, asta, AGGIORNATO_IL, CONTROLLATO_IL, giorniDa,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
   fuoriListone, percheFuori,
-} from './app.js?v=76218b6a';
+} from './app.js?v=eba32d35';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
@@ -773,7 +773,7 @@ osservaAsta(r => {
 {
   const el = document.getElementById('dataDati');
   if (el && AGGIORNATO_IL) {
-    const giorni = Math.floor((Date.now() - new Date(AGGIORNATO_IL)) / 86400000);
+    const giorni = giorniDa(AGGIORNATO_IL) ?? 0;
     const quando = new Date(AGGIORNATO_IL)
       .toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
     const eta = giorni <= 0 ? 'oggi stesso' : giorni === 1 ? 'ieri' : `${giorni} giorni fa`;
@@ -781,8 +781,7 @@ osservaAsta(r => {
        voler dire che in due giorni non è successo niente. Il guasto è quando
        nessuno CONTROLLA più — e quello lo dice CONTROLLATO_IL. Confonderle
        vuol dire o spaventarsi per niente, o fidarsi di numeri morti. */
-    const gCtrl = CONTROLLATO_IL
-      ? Math.floor((Date.now() - new Date(CONTROLLATO_IL)) / 86400000) : null;
+    const gCtrl = giorniDa(CONTROLLATO_IL);
     const fermo = gCtrl === null || gCtrl >= 2;
 
     el.innerHTML = fermo

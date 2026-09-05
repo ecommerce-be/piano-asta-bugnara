@@ -18,6 +18,32 @@ export const AGGIORNATO_IL = '2026-09-05';
 export const CONTROLLATO_IL = '2026-09-05';
 
 /**
+ * Quanti giorni sono passati da una data 'AAAA-MM-GG'.
+ *
+ * Conta i giorni di CALENDARIO, non le ore. Alle 00:30 del 6 settembre una
+ * data del 5 settembre e' «ieri», anche se le ore passate sono 22 e non 24:
+ * dividendo per 86400000 veniva «oggi», e aggiorna.ps1 — che confronta le
+ * date — diceva «ieri» sulla stessa identica data. Con le ore, l'avviso
+ * «l'aggiornamento automatico non gira da N giorni» arriva sempre un giorno
+ * tardi, cioe' proprio quando serviva.
+ *
+ * Le due date si costruiscono a mezzanotte LOCALE, non con new Date('...'):
+ * quello e' mezzanotte UTC, che in Italia cade il giorno prima alle 2 del
+ * mattino. L'arrotondamento assorbe le giornate da 23 e 25 ore dell'ora
+ * legale.
+ *
+ * Restituisce null se la data manca o non si legge, cosi' chi chiama puo'
+ * distinguere «non lo so» da «zero giorni».
+ */
+export function giorniDa(data, adesso = new Date()) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(data ?? ''));
+  if (!m) return null;
+  const allora = new Date(+m[1], +m[2] - 1, +m[3]);
+  const oggi = new Date(adesso.getFullYear(), adesso.getMonth(), adesso.getDate());
+  return Math.round((oggi - allora) / 86400000);
+}
+
+/**
  * Chi e' fermo: infortunati e squalificati, da assets/data/infortuni.json.
  * Se il file non c'e' ancora (prima che l'aggiornamento automatico giri la
  * prima volta) non e' un errore: restituiamo un elenco vuoto e le pagine
