@@ -7,15 +7,15 @@ export const NOME_RUOLO = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', 
 /* Impronta dei dati: cambia solo quando players.json cambia davvero.
    La riscrive tools/aggiorna_dati.py, e serve a far riscaricare il listone a chi
    ha la versione vecchia in cache. NON toccare a mano. */
-export const VERSIONE_DATI = 'e301718ffa';
-export const AGGIORNATO_IL = '2026-09-11';
+export const VERSIONE_DATI = '1e1c00e8a1';
+export const AGGIORNATO_IL = '2026-09-12';
 
 /* Quando l'aggiornamento automatico e' arrivato in fondo l'ultima volta, anche
    se non ha trovato niente da cambiare. AGGIORNATO_IL dice quando i DATI sono
    cambiati; questa dice quando qualcuno e' andato a CONTROLLARE. Senza le due
    separate, «aggiornato due giorni fa» puo' voler dire due cose opposte: che
    non e' cambiato niente (bene) o che il meccanismo e' morto (male). */
-export const CONTROLLATO_IL = '2026-09-11';
+export const CONTROLLATO_IL = '2026-09-12';
 
 /**
  * Quanti giorni sono passati da una data 'AAAA-MM-GG'.
