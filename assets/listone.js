@@ -4,7 +4,7 @@ import {
   caricaDati, ricalcola, asta, AGGIORNATO_IL, CONTROLLATO_IL, giorniDa,
   toast, badgeRuolo, caricaInfortuni, classeGravita, RUOLI, NOME_RUOLO, CLASSE_VERDETTO,
   fuoriListone, percheFuori,
-} from './app.js?v=e768d09e';
+} from './app.js?v=8a1caef8';
 import {
   pronto, configurato, collegato, inLega, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,

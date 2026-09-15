@@ -2,8 +2,8 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   RUOLI, NOME_RUOLO,
-} from './app.js?v=e768d09e';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=da7ffa3d';
+} from './app.js?v=8a1caef8';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=cc0069f8';
 import { leggiCfg, salvaPiano } from './cfg.js?v=7661d252';
 import { esc } from './db.js?v=6824e6b7';
 import { toast } from './ui.js?v=2606df5a';
