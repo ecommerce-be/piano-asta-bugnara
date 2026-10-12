@@ -1,6 +1,6 @@
 /* Pagina "Bozza": la rosa ideale che costruite insieme.
    I dati stanno nel database condiviso, non nel browser. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=8049e1d6';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI, NOME_RUOLO } from './app.js?v=581105c5';
 import {
   pronto, configurato, collegato, inLega, squadra, utente, leggi, scrivi, osserva,
   montaAccesso, esc, quando,
