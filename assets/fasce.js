@@ -8,8 +8,8 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, classeGravita,
   gravita, giorniAlRientro, RUOLI, NOME_RUOLO, CLASSE_VERDETTO, fuoriListone,
-} from './app.js?v=b01400ef';
-import { valuta, titolariDi } from './consiglio.js?v=09d6117c';
+} from './app.js?v=7741bc1f';
+import { valuta, titolariDi } from './consiglio.js?v=57e49385';
 import { leggiCfg } from './cfg.js?v=7661d252';
 import { esc } from './db.js?v=6824e6b7';
 import { caricaAsta, statoAsta } from './astaLega.js?v=c262ae13';
