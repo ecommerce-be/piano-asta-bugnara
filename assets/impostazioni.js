@@ -1,9 +1,9 @@
 /* Pagina "Impostazioni": le regole della lega, condivise nel database. */
-import { caricaDati, caricaInfortuni, ricalcola, RUOLI, NOME_RUOLO } from './app.js?v=f9bfd155';
+import { caricaDati, caricaInfortuni, ricalcola, RUOLI, NOME_RUOLO } from './app.js?v=47d0dde1';
 import { leggiCfg, salvaCfg, salvaPiano, unisci } from './cfg.js?v=7661d252';
 import { pronto, collegato, inLega, squadra, montaAccesso, esc, quando } from './db.js?v=6824e6b7';
 import { toast, conferma as chiediConferma } from './ui.js?v=2606df5a';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=eb6a0a50';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=2f7b9f1d';
 
 const { players, lega } = await caricaDati();
 
