@@ -4,7 +4,7 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo,
   giorniAlRientro, gravita, classeGravita, RUOLI,
-} from './app.js?v=b12f8705';
+} from './app.js?v=a45f2a67';
 import { esc } from './db.js?v=6824e6b7';
 import { leggiCfg } from './cfg.js?v=7661d252';
 import { caricaAsta, statoAsta } from './astaLega.js?v=c262ae13';
