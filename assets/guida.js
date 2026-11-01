@@ -9,9 +9,9 @@
 import {
   caricaDati, caricaInfortuni, ricalcola, asta, badgeRuolo, simulaModificatore,
   RUOLI, NOME_RUOLO, CLASSE_VERDETTO, fuoriListone,
-} from './app.js?v=dd66b43b';
+} from './app.js?v=9d0e3e08';
 import { leggiCfg } from './cfg.js?v=7661d252';
-import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=96245454';
+import { valuta, tabellaModificatore, componiRosa, STRATEGIE, titolariDi } from './consiglio.js?v=190fa0cd';
 import { esc } from './db.js?v=6824e6b7';
 
 const { players, lega } = await caricaDati();
