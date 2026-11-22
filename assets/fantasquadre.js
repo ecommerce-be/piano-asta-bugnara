@@ -1,6 +1,6 @@
 /* Pagina "Fantasquadre": le squadre della lega, i proprietari, le rose che si
    formano durante l'asta e i crediti che restano. Condivisa nel database. */
-import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=c08cf21e';
+import { caricaDati, ricalcola, badgeRuolo, RUOLI } from './app.js?v=4153e2c7';
 import {
   pronto, configurato, collegato, squadra, squadreDellaLega, membriDellaLega,
   montaAccesso, esc, quando,
