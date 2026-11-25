@@ -7,7 +7,7 @@
      3. COMPOSIZIONE quali 28 comprare, dato il budget e una strategia.
 
    Nessuna dipendenza esterna: gira nel browser in qualche decimo di secondo. */
-import { asta, simulaModificatore, RUOLI, fuoriListone } from './app.js?v=54532b21';
+import { asta, simulaModificatore, RUOLI, fuoriListone } from './app.js?v=37ff02f9';
 
 const GIORNATE = 38;
 
